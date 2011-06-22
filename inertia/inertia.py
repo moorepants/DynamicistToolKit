@@ -1,3 +1,5 @@
+import numpy as np
+
 def parallel_axis(Ic, m, d):
     '''Returns the moment of inertia of a body about a different point.
 
@@ -48,9 +50,9 @@ def inertia_components(jay, beta):
         Ixx, Ixz, Izz
 
     '''
-    sb = unumpy.sin(beta)
-    cb = unumpy.cos(beta)
-    betaMat = unumpy.matrix(np.vstack((cb**2, -2 * sb * cb, sb**2)).T)
+    sb = np.sin(beta)
+    cb = np.cos(beta)
+    betaMat = np.matrix(np.vstack((cb**2, -2 * sb * cb, sb**2)).T)
     eye = np.squeeze(np.asarray(np.dot(betaMat.I, jay)))
     return eye
 
@@ -109,8 +111,8 @@ def total_com(coordinates, masses):
 
 def rotate_inertia_tensor(I, angle):
     '''Returns inertia tensor rotated through angle. Only for 2D'''
-    ca = umath.cos(angle)
-    sa = umath.sin(angle)
+    ca = np.cos(angle)
+    sa = np.sin(angle)
     C    =  np.array([[ca, 0., -sa],
                       [0., 1., 0.],
                       [sa, 0., ca]])
