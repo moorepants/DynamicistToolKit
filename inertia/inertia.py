@@ -33,7 +33,7 @@ def inertia_components(jay, beta):
     '''Returns the 2D orthogonal inertia tensor.
 
     When at least three moments of inertia and their axes orientations are
-    known relative to a common inertial frame of a planar object, the orthoganl
+    known relative to a common inertial frame of a planar object, the orthoganal
     moments of inertia relative the frame are computed.
 
     Parameters
