@@ -84,6 +84,34 @@ def tube_inertia(l, m, ro, ri):
     Iy = m / 12. * (3 * ro**2 + 3 * ri**2 + l**2)
     Iz = Iy
     return Ix, Iy, Iz
+    
+def cylinder_inertia(l, m, ro, ri):
+    '''Calculate the moment of inertia for a hollow cylinder (or solid cylinder) where the x axis is
+    aligned with the cylinder's axis.
+
+    Parameters
+    ----------
+    l : float
+        The length of the cylinder.
+    m : float
+        The mass of the cylinder.
+    ro : float
+        The outer radius of the cylinder.
+    ri : float
+        The inner radius of the cylinder. Set this to zero for a solid cylinder.
+
+    Returns
+    -------
+    Ix : float
+        Moment of inertia about cylinder axis.
+    Iy, Iz : float
+        Moment of inertia about cylinder axis.
+
+    '''
+    Ix = m / 2. * (ro**2 + ri**2)
+    Iy = m / 12. * (3 * ro**2 + 3 * ri**2 + l**2)
+    Iz = Iy
+    return Ix, Iy, Iz
 
 def total_com(coordinates, masses):
     '''Returns the center of mass of a group of objects if the indivdual
