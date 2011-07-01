@@ -22,25 +22,28 @@ def compound_pendulum_inertia(m, g, l, T):
 
     '''
 
-    I = (T / 2. / pi)**2. * m * g * l - m * l**2.
+    I = (T / 2. / np.pi)**2. * m * g * l - m * l**2.
 
     return I
 
-def tor_inertia(k, T):
-    '''Calculate the moment of inertia for an ideal torsional pendulm
+def torsional_pendulum_inertia(k, T):
+    '''Calculate the moment of inertia for an ideal torsional pendulum.
 
     Parameters:
     -----------
-    k: torsional stiffness
-    T: period
+    k : float
+        Torsional stiffness.
+    T : float
+        Period of oscillation.
 
     Returns:
     --------
-    I: moment of inertia
+    I : float
+        Moment of inertia.
 
     '''
 
-    I = k * T**2 / 4. / pi**2
+    I = k * T**2 / 4. / np.pi**2
 
     return I
 
@@ -61,13 +64,14 @@ def parallel_axis(Ic, m, d):
     Returns
     -------
     I : ndarray, shape(3,3)
-        The moment of inertia about of the body about a point located by d.
+        The moment of inertia of a body about a point located by the distances
+        in d.
 
     '''
     a = d[0]
     b = d[1]
     c = d[2]
-    dMat = np.zeros((3, 3), dtype=object)
+    dMat = np.zeros((3, 3))
     dMat[0] = np.array([b**2 + c**2, -a * b, -a * c])
     dMat[1] = np.array([-a * b, c**2 + a**2, -b * c])
     dMat[2] = np.array([-a * c, -b * c, a**2 + b**2])
