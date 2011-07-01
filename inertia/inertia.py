@@ -1,5 +1,49 @@
 import numpy as np
 
+def compound_pendulum_inertia(m, g, l, T):
+    '''Returns the moment of inertia for an object hung as a compound
+    pendulum.
+
+    Parameters
+    ----------
+    m : float
+        Mass of the pendulum.
+    g : float
+        Acceration due to gravity.
+    l : float
+        Length of the pendulum.
+    T : float
+        The period of oscillation.
+
+    Returns
+    -------
+    I : float
+        Moment of interia of the pendulum.
+
+    '''
+
+    I = (T / 2. / pi)**2. * m * g * l - m * l**2.
+
+    return I
+
+def tor_inertia(k, T):
+    '''Calculate the moment of inertia for an ideal torsional pendulm
+
+    Parameters:
+    -----------
+    k: torsional stiffness
+    T: period
+
+    Returns:
+    --------
+    I: moment of inertia
+
+    '''
+
+    I = k * T**2 / 4. / pi**2
+
+    return I
+
 def parallel_axis(Ic, m, d):
     '''Returns the moment of inertia of a body about a different point.
 
@@ -118,3 +162,25 @@ def rotate_inertia_tensor(I, angle):
                       [sa, 0., ca]])
     Irot =  np.dot(C, np.dot(I, C.T))
     return Irot
+
+def principal_axes(I):
+    '''Returns the principal moments of inertia and the orientation.
+
+    Parameters
+    ----------
+    I : ndarray, shape(3,3)
+        An inertia tensor.
+
+    Returns
+    -------
+    Ip : ndarray, shape(3,)
+        The principal moments of inertia. This is sorted smallest to largest.
+    C : ndarray, shape(3,3)
+        The rotation matrix.
+
+    '''
+    Ip, C = np.linalg.eig(I)
+    indices = np.argsort(Ip)
+    Ip = Ip[indices]
+    C = C.T[indices]
+    return Ip, C
