@@ -4,6 +4,7 @@ import numpy as np
 from numpy.fft import fft, fftfreq
 from scipy.integrate import trapz, cumtrapz
 from scipy.signal import butter, lfilter
+from scipy.stats import nanmean
 
 def curve_area_stats(x, y):
     '''
@@ -159,13 +160,15 @@ def butterworth(data, freq, sampRate, order=2, axis=-1):
     reverseFilter = lfilter(b, a, eval('data' + dataSlice), axis=axis)
     return(forwardFilter + eval('reverseFilter' + dataSlice)) / 2.
 
-def subtract_mean(sig):
+def subtract_mean(sig, hasNans=False):
     '''
     Subtracts the mean from a signal with nanmean.
 
     Parameters
     ----------
     sig : ndarray, shape(n,)
+    hasNans : boolean, optional
+        If your data has nans use this flag if you want to ignore them.
 
     Returns
     -------
@@ -173,15 +176,20 @@ def subtract_mean(sig):
         sig minus the mean of sig
 
     '''
-    return sig - nanmean(sig)
+    if hasNans:
+        return sig - nanmean(sig)
+    else:
+        return sig - np.mean(sig)
 
-def normalize(sig):
+def normalize(sig, hasNans=False):
     '''
     Normalizes the vector with respect to the maximum value.
 
     Parameters
     ----------
     sig : ndarray, shape(n,)
+    hasNans : boolean, optional
+        If your data has nans use this flag if you want to ignore them.
 
     Returns
     -------
@@ -189,46 +197,51 @@ def normalize(sig):
         The signal normalized with respect to the maximum value.
 
     '''
-    return sig / np.nanmax(sig)
+    if hasNans:
+        normSig = sig / np.nanmax(sig)
+    else:
+        normSig = sig / np.max(sig)
+
+    return normSig
 
 def derivative(x, y, method='forward'):
     '''
-    Return the derivative of y with respect to x.
+    Returns the derivative of y with respect to x.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     x : ndarray, shape(n,)
     y : ndarray, shape(n,)
-    method : string
-        'forward' : forward difference
-        'central' : central difference
-        'backward' : backward difference
-        'combination' : forward on the first point, backward on the last and
-        central on the rest
+    method : string, optional
+        'forward' : Use the forward difference method.
+        'central' : Use the central difference method.
+        'backward' : Use the backward difference method.
+        'combination' : Use forward on the first point, backward on the last
+            and central on the rest.
 
-    Returns:
-    --------
+    Returns
+    -------
     dydx : ndarray, shape(n,) or shape(n-1,)
         for combination else shape(n-1,)
 
-    The combo method doesn't work for matrices yet.
-
     '''
     if method == 'forward':
-        return np.diff(y)/np.diff(x)
+        return np.diff(y) / np.diff(x)
     elif method == 'combination':
         dxdy = np.zeros_like(y)
         for i, yi in enumerate(y[:]):
             if i == 0:
-                dxdy[i] = (-3*y[0] + 4*y[1] - y[2])/2/(x[1]-x[0])
+                dxdy[i] = (-3 * y[0] + 4 * y[1] - y[2])\
+                          / 2 / (x[1] - x[0])
             elif i == len(y) - 1:
-                dxdy[-1] = (3*y[-1] - 4*y[-2] + y[-3])/2/(x[-1] - x[-2])
+                dxdy[-1] = (3 * y[-1] - 4 * y[-2] + y[-3])\
+                           / 2 / (x[-1] - x[-2])
             else:
-                dxdy[i] = (y[i + 1] - y[i - 1])/2/(x[i] - x[i - 1])
+                dxdy[i] = (y[i + 1] - y[i - 1]) / 2 / (x[i] - x[i - 1])
         return dxdy
     else:
-        raise NotImplementedError('There is no %s method here! Try Again' %
-            method)
+        raise NotImplementedError("There is no %s method here! Only 'forward'\
+            and 'combination' are currently available." % method)
 
 def time_vector(numSamples, sampleRate):
     '''Returns a time vector starting at zero.
@@ -238,7 +251,7 @@ def time_vector(numSamples, sampleRate):
     numSamples : int or float
         Total number of samples.
     sampleRate : int or float
-        Sample rate.
+        Sample rate of the signal in hertz.
 
     Returns
     -------

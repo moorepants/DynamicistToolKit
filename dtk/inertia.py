@@ -71,7 +71,7 @@ def parallel_axis(Ic, m, d):
     a = d[0]
     b = d[1]
     c = d[2]
-    dMat = np.zeros((3, 3))
+    dMat = np.zeros((3, 3), dtype=Ic.dtype)
     dMat[0] = np.array([b**2 + c**2, -a * b, -a * c])
     dMat[1] = np.array([-a * b, c**2 + a**2, -b * c])
     dMat[2] = np.array([-a * c, -b * c, a**2 + b**2])
@@ -186,14 +186,25 @@ def total_com(coordinates, masses):
     return mT, cT
 
 def rotate_inertia_tensor(I, angle):
-    '''Returns inertia tensor rotated through angle. Only for 2D'''
+    '''Returns inertia tensor rotated through angle about the Y axis.
+
+    Parameters
+    ----------
+    I : ndarray, shape(3,)
+        An inertia tensor.
+    angle : float
+        Angle in radians about the positive Y axis of which to rotate the
+        inertia tensor.
+
+    '''
     ca = np.cos(angle)
     sa = np.sin(angle)
-    C    =  np.array([[ca, 0., -sa],
-                      [0., 1., 0.],
-                      [sa, 0., ca]])
-    Irot =  np.dot(C, np.dot(I, C.T))
-    return Irot
+    C = np.matrix([[ca, 0., -sa],
+                  [0., 1., 0.],
+                  [sa, 0., ca]])
+    Irot = C * I * C.T
+    #Irot =  np.dot(C, np.dot(I, C.T))
+    return np.array(Irot)
 
 def principal_axes(I):
     '''Returns the principal moments of inertia and the orientation.
