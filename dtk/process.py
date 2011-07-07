@@ -67,26 +67,23 @@ def curve_area_stats(x, y):
         xstats[k] = np.array(v)
     return xstats
 
-def freq_spectrum(Fs, Data):
-    '''
-    Return the frequency spectrum of a data set.
+def freq_spectrum(sampleRate, data):
+    '''Return the frequency spectrum of a data set.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
+    sampleRate : integer
+        The signal sampling rate in hertz.
+    data : ndarray, shape (n,m)
+        The array of time signals where n is the number of variables and m is
+        the number of time steps.
 
-    Fs : int
-        sampling frequency
-    Data : ndarray, shape (n,m)
-        the time history vector
-        n is the number of variables
-        m is the number of time steps
-
-    Returns:
-    --------
-
-    freq : ndarray, shape (p,)
-        the frequencies where p a power of 2 close to m
-    amp : ndarray, shape (p,n)
+    Returns
+    -------
+    frequency : ndarray, shape (p,)
+        The frequencies where p is a power of 2 close to m.
+    amplitude : ndarray, shape (p,n)
+        The amplitude at each frequency.
 
     '''
     def nextpow2(i):
@@ -98,27 +95,23 @@ def freq_spectrum(Fs, Data):
         while n < i: n *= 2
         return n
 
-    T = 1./Fs # sample time
-    #print 'T =', T
+    time = 1. / sampleRate # sample time
     try:
-        L = Data.shape[1] # length of Data if (n, m)
+        L = data.shape[1] # length of data if (n, m)
     except:
-        L = Data.shape[0] # length of Data if (n,)
-    #print 'L =', L
+        L = data.shape[0] # length of data if (n,)
     # calculate the closest power of 2 for the length of the data
     n = nextpow2(L)
-    #print 'n =', n
-    Y = fft(Data, n)/L # divide by L for scaling
-    #print 'Y =', Y, Y.shape, type(Y)
-    f = fftfreq(n, d=T)
-    #f = Fs/2.*linspace(0, 1, n)
+    Y = fft(data, n) / L # divide by L for scaling
+    f = fftfreq(n, d=time)
+    #f = sampleRate/2.*linspace(0, 1, n)
     #print 'f =', f, f.shape, type(f)
-    freq = f[1:n/2]
+    freq = f[1:n / 2]
     try:
-        amp = 2*abs(Y[:, 1:n/2]).T # multiply by 2 because we take half the vector
+        amp = 2 * abs(Y[:, 1:n / 2]).T # multiply by 2 because we take half the vector
         #power = abs(Y[:, 1:n/2])**2
     except:
-        amp = 2*abs(Y[1:n/2])
+        amp = 2 * abs(Y[1:n / 2])
         #power = abs(Y[1:n/2])**2
     return freq, amp
 
@@ -158,7 +151,7 @@ def butterworth(data, freq, sampRate, order=2, axis=-1):
     b, a = butter(order, float(freq) / float(sampRate) / 2.)
     forwardFilter = lfilter(b, a, data, axis=axis)
     reverseFilter = lfilter(b, a, eval('data' + dataSlice), axis=axis)
-    return(forwardFilter + eval('reverseFilter' + dataSlice)) / 2.
+    return (forwardFilter + eval('reverseFilter' + dataSlice)) / 2.
 
 def subtract_mean(sig, hasNans=False):
     '''
