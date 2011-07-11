@@ -3,8 +3,39 @@
 import numpy as np
 from numpy.fft import fft, fftfreq
 from scipy.integrate import trapz, cumtrapz
+from scipy.interpolate import UnivariateSpline
 from scipy.signal import butter, lfilter
 from scipy.stats import nanmean
+
+def spline_over_nan(x, y):
+    """
+    Returns a vector of which a cubic spline is used to fill in gaps in the
+    data from nan values.
+
+    Parameters
+    ----------
+    x : ndarray, shape(n,)
+        This x values should not contain nans.
+    y : ndarray, shape(n,)
+        The y values may contain nans.
+
+    Returns
+    -------
+    ySpline : ndarray, shape(n,)
+        The splined y values. If `y` doesn't contain any nans then `ySpline` is
+        `y`.
+
+    """
+
+    if np.isnan(y).any():
+        # remove the values with nans 
+        xNoNan = x[np.nonzero(np.isnan(y) == False)]
+        yNoNan = y[np.nonzero(np.isnan(y) == False)]
+        # fit a spline through the data
+        spline = UnivariateSpline(xNoNan, yNoNan, k=3, s=0)
+        return spline(x)
+    else:
+        return y
 
 def curve_area_stats(x, y):
     '''
@@ -67,16 +98,17 @@ def curve_area_stats(x, y):
         xstats[k] = np.array(v)
     return xstats
 
-def freq_spectrum(sampleRate, data):
-    '''Return the frequency spectrum of a data set.
+def freq_spectrum(data, sampleRate):
+    """
+    Return the frequency spectrum of a data set.
 
     Parameters
     ----------
-    sampleRate : integer
-        The signal sampling rate in hertz.
-    data : ndarray, shape (n,m)
+    data : ndarray, shape (m,) or shape(n,m)
         The array of time signals where n is the number of variables and m is
         the number of time steps.
+    sampleRate : int
+        The signal sampling rate in hertz.
 
     Returns
     -------
@@ -85,7 +117,7 @@ def freq_spectrum(sampleRate, data):
     amplitude : ndarray, shape (p,n)
         The amplitude at each frequency.
 
-    '''
+    """
     def nextpow2(i):
         '''
         Return the next power of 2 for the given number.
@@ -106,14 +138,14 @@ def freq_spectrum(sampleRate, data):
     f = fftfreq(n, d=time)
     #f = sampleRate/2.*linspace(0, 1, n)
     #print 'f =', f, f.shape, type(f)
-    freq = f[1:n / 2]
+    frequency = f[1:n / 2]
     try:
-        amp = 2 * abs(Y[:, 1:n / 2]).T # multiply by 2 because we take half the vector
+        amplitude = 2 * abs(Y[:, 1:n / 2]).T # multiply by 2 because we take half the vector
         #power = abs(Y[:, 1:n/2])**2
     except:
-        amp = 2 * abs(Y[1:n / 2])
+        amplitude = 2 * abs(Y[1:n / 2])
         #power = abs(Y[1:n/2])**2
-    return freq, amp
+    return frequency, amplitude
 
 def butterworth(data, freq, sampRate, order=2, axis=-1):
     """
