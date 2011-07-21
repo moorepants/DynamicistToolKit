@@ -6,5 +6,5 @@ setup(name='DynamicistToolKit',
       version='0.1.0dev',
       packages=['dtk'],
       license='Creative Commons Attribution-Noncommercial-Share Alike license',
-      long_description=open('README.txt').read(),
+      long_description=open('README.rst').read(),
       )

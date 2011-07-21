@@ -134,7 +134,8 @@ def tube_inertia(l, m, ro, ri):
     return Ix, Iy, Iz
 
 def cylinder_inertia(l, m, ro, ri):
-    '''Calculate the moment of inertia for a hollow cylinder (or solid cylinder) where the x axis is
+    """
+    Calculate the moment of inertia for a hollow cylinder (or solid cylinder) where the x axis is
     aligned with the cylinder's axis.
 
     Parameters
@@ -155,14 +156,15 @@ def cylinder_inertia(l, m, ro, ri):
     Iy, Iz : float
         Moment of inertia about cylinder axis.
 
-    '''
+    """
     Ix = m / 2. * (ro**2 + ri**2)
     Iy = m / 12. * (3 * ro**2 + 3 * ri**2 + l**2)
     Iz = Iy
     return Ix, Iy, Iz
 
 def total_com(coordinates, masses):
-    '''Returns the center of mass of a group of objects if the indivdual
+    """
+    Returns the center of mass of a group of objects if the indivdual
     centers of mass and mass is provided.
 
     coordinates : ndarray, shape(3,n)
@@ -179,14 +181,15 @@ def total_com(coordinates, masses):
     cT : ndarray, shape(3,)
         The x, y, and z coordinates of the total center of mass.
 
-    '''
+    """
     products = masses * coordinates
     mT = np.sum(masses)
     cT = np.sum(products, axis=1) / mT
     return mT, cT
 
-def rotate_inertia_tensor(I, angle):
-    '''Returns inertia tensor rotated through angle about the Y axis.
+def rotate_inertia_about_y(I, angle):
+    """
+    Returns inertia tensor rotated through angle about the Y axis.
 
     Parameters
     ----------
@@ -196,18 +199,18 @@ def rotate_inertia_tensor(I, angle):
         Angle in radians about the positive Y axis of which to rotate the
         inertia tensor.
 
-    '''
+    """
     ca = np.cos(angle)
     sa = np.sin(angle)
     C = np.matrix([[ca, 0., -sa],
-                  [0., 1., 0.],
-                  [sa, 0., ca]])
+                   [0., 1., 0.],
+                   [sa, 0., ca]])
     Irot = C * I * C.T
-    #Irot =  np.dot(C, np.dot(I, C.T))
     return np.array(Irot)
 
 def principal_axes(I):
-    '''Returns the principal moments of inertia and the orientation.
+    """
+    Returns the principal moments of inertia and the orientation.
 
     Parameters
     ----------
@@ -221,7 +224,7 @@ def principal_axes(I):
     C : ndarray, shape(3,3)
         The rotation matrix.
 
-    '''
+    """
     Ip, C = np.linalg.eig(I)
     indices = np.argsort(Ip)
     Ip = Ip[indices]
@@ -229,16 +232,17 @@ def principal_axes(I):
     return Ip, C
 
 def rotate3(angles):
-    '''Produces a three-dimensional rotation matrix as rotations around the 
+    """
+    Produces a three-dimensional rotation matrix as rotations around the
     three cartesian axes.
 
     Parameters
     ----------
     angles : numpy.array or list or tuple, shape(3,)
         Three angles (in units of radians) that specify the orientation of
-        a new reference frame with respect to a fixed reference frame. 
+        a new reference frame with respect to a fixed reference frame.
         The first angle is a pure rotation about the x-axis, the second about
-        the y-axis, and the third about the z-axis. All rotations are with 
+        the y-axis, and the third about the z-axis. All rotations are with
         respect to the initial fixed frame, and they occur in the order x,
         then y, then z.
 
@@ -246,7 +250,8 @@ def rotate3(angles):
     -------
     R : numpy.matrix, shape(3,3)
         Three dimensional rotation matrix about three different orthogonal axes.
-    '''
+
+    """
     cx = np.cos(angles[0])
     sx = np.sin(angles[0])
 
@@ -268,11 +273,11 @@ def rotate3(angles):
                  [  0, cx, -sx],
                  [  0, sx,  cx]])
 
-    return Rz*Ry*Rx
+    return Rz * Ry * Rx
 
-def rotate3_rel(angles):
-    '''The three-dimensional relative rotation matrix from Yeadon 1989-i used
-    to describe the orientation of a human with respect to a fixed frame.
+def euler_123(angles):
+    """
+    Returns the direction cosine matrix as a function of the Euler 123 angles.
 
     Parameters
     ----------
@@ -292,9 +297,10 @@ def rotate3_rel(angles):
     -------
     R : numpy.matrix, shape(3,3)
         Three dimensional rotation matrix about three different orthogonal axes.
-    '''
+
+    """
     cphi = np.cos(angles[0])
-    sphi= np.sin(angles[0])
+    sphi = np.sin(angles[0])
 
     cthe = np.cos(angles[1])
     sthe = np.sin(angles[1])
@@ -314,10 +320,11 @@ def rotate3_rel(angles):
                  [  spsi,  cpsi,     0],
                  [     0,     0,     1]])
 
-    return R1*R2*R3
+    return R1 * R2 * R3
 
 def rotate3_inertia(RotMat,relInertia):
-    '''Rotates an inertia tensor. A derivation of the formula in this function
+    """
+    Rotates an inertia tensor. A derivation of the formula in this function
     can be found in Crandall 1968, Dynamics of mechanical and electromechanical
     systems. This function only transforms an inertia tensor for rotations with
     respect to a fixed point. To translate an inertia tensor, one must use the
@@ -339,5 +346,5 @@ def rotate3_inertia(RotMat,relInertia):
     Inertia : numpy.matrix, shape(3,3)
         Inertia tensor with respect to a fixed coordinate system ("unrotated").
 
-    '''
+    """
     return RotMat * relInertia * RotMat.T

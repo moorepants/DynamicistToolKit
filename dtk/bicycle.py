@@ -1,6 +1,8 @@
 '''These are some general functions to deal with bicycle dynamics. They need
 to be cleaned up to work properly, as these were setup to work with
 uncertainties.'''
+import math
+import numpy as np
 
 def lambda_from_abc(rF, rR, a, b, c):
     '''Returns the steer axis tilt, lamba, for the parameter set based on the
@@ -123,7 +125,8 @@ def sort_modes(evals, evecs):
     return weave, capsize, caster
 
 def benchmark_par_to_canonical(p):
-    '''Returns the canonical matrices of the Whipple bicycle model linearized
+    """
+    Returns the canonical matrices of the Whipple bicycle model linearized
     about the upright constant velocity configuration. It uses the parameter
     definitions from Meijaard et al. 2007.
 
@@ -146,7 +149,7 @@ def benchmark_par_to_canonical(p):
 
     This function handles parameters with uncertanties.
 
-    '''
+    """
     mT = p['mR'] + p['mB'] + p['mH'] + p['mF']
     xT = (p['xB'] * p['mB'] + p['xH'] * p['mH'] + p['w'] * p['mF']) / mT
     zT = (-p['rR'] * p['mR'] + p['zB'] * p['mB'] +
@@ -172,16 +175,16 @@ def benchmark_par_to_canonical(p):
             (p['w'] - xA) * (p['rF'] + zA))
     IAzz = (p['IHzz'] + p['IFzz'] + p['mH'] * (p['xH'] - xA)**2 + p['mF'] *
             (p['w'] - xA)**2)
-    uA = (xA - p['w'] - p['c']) * umath.cos(p['lam']) - zA * umath.sin(p['lam'])
-    IAll = (mA * uA**2 + IAxx * umath.sin(p['lam'])**2 +
-            2 * IAxz * umath.sin(p['lam']) * umath.cos(p['lam']) +
-            IAzz * umath.cos(p['lam'])**2)
-    IAlx = (-mA * uA * zA + IAxx * umath.sin(p['lam']) + IAxz *
-            umath.cos(p['lam']))
-    IAlz = (mA * uA * xA + IAxz * umath.sin(p['lam']) + IAzz *
-            umath.cos(p['lam']))
+    uA = (xA - p['w'] - p['c']) * math.cos(p['lam']) - zA * math.sin(p['lam'])
+    IAll = (mA * uA**2 + IAxx * math.sin(p['lam'])**2 +
+            2 * IAxz * math.sin(p['lam']) * math.cos(p['lam']) +
+            IAzz * math.cos(p['lam'])**2)
+    IAlx = (-mA * uA * zA + IAxx * math.sin(p['lam']) + IAxz *
+            math.cos(p['lam']))
+    IAlz = (mA * uA * xA + IAxz * math.sin(p['lam']) + IAzz *
+            math.cos(p['lam']))
 
-    mu = p['c'] / p['w'] * umath.cos(p['lam'])
+    mu = p['c'] / p['w'] * math.cos(p['lam'])
 
     SR = p['IRyy'] / p['rR']
     SF = p['IFyy'] / p['rF']
@@ -197,27 +200,28 @@ def benchmark_par_to_canonical(p):
     K0pp = mT * zT # this value only reports to 13 digit precision it seems?
     K0pd = -SA
     K0dp = K0pd
-    K0dd = -SA * umath.sin(p['lam'])
+    K0dd = -SA * math.sin(p['lam'])
     K0 = np.array([[K0pp, K0pd], [K0dp, K0dd]])
 
     K2pp = 0.
-    K2pd = (ST - mT * zT) / p['w'] * umath.cos(p['lam'])
+    K2pd = (ST - mT * zT) / p['w'] * math.cos(p['lam'])
     K2dp = 0.
-    K2dd = (SA + SF * umath.sin(p['lam'])) / p['w'] * umath.cos(p['lam'])
+    K2dd = (SA + SF * math.sin(p['lam'])) / p['w'] * math.cos(p['lam'])
     K2 = np.array([[K2pp, K2pd], [K2dp, K2dd]])
 
     C1pp = 0.
-    C1pd = (mu*ST + SF*umath.cos(p['lam']) + ITxz / p['w'] *
-            umath.cos(p['lam']) - mu*mT*zT)
-    C1dp = -(mu * ST + SF * umath.cos(p['lam']))
-    C1dd = (IAlz / p['w'] * umath.cos(p['lam']) + mu * (SA +
-            ITzz / p['w'] * umath.cos(p['lam'])))
+    C1pd = (mu * ST + SF * math.cos(p['lam']) + ITxz / p['w'] *
+            math.cos(p['lam']) - mu*mT*zT)
+    C1dp = -(mu * ST + SF * math.cos(p['lam']))
+    C1dd = (IAlz / p['w'] * math.cos(p['lam']) + mu * (SA +
+            ITzz / p['w'] * math.cos(p['lam'])))
     C1 = np.array([[C1pp, C1pd], [C1dp, C1dd]])
 
     return M, C1, K0, K2
 
 def abMatrix(M, C1, K0, K2, v, g):
-    '''Calculate the A and B matrices for the Whipple bicycle model linearized
+    """
+    Calculate the A and B matrices for the Whipple bicycle model linearized
     about the upright configuration.
 
     Parameters
@@ -242,21 +246,19 @@ def abMatrix(M, C1, K0, K2, v, g):
     B : ndarray, shape(4,2)
         Input matrix.
 
-    The states are [roll rate,
-                    steer rate,
-                    roll angle,
-                    steer angle]
-    The inputs are [roll torque,
-                    steer torque]
+    Notes
+    -----
+    The states are [roll rate, steer rate, roll angle, steer angle]
+    The inputs are [roll torque, steer torque]
 
-    '''
+    """
 
     a11 = -v * C1
     a12 = -(g * K0 + v**2 * K2)
     a21 = np.eye(2)
     a22 = np.zeros((2, 2))
-    A = np.vstack((np.dot(unumpy.ulinalg.inv(M), np.hstack((a11, a12))),
+    A = np.vstack((np.dot(np.linalg.inv(M), np.hstack((a11, a12))),
                    np.hstack((a21, a22))))
-    B = np.vstack((unumpy.ulinalg.inv(M), np.zeros((2, 2))))
+    B = np.vstack((np.linalg.inv(M), np.zeros((2, 2))))
 
     return A, B
