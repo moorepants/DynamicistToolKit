@@ -25,10 +25,16 @@ def spline_over_nan(x, y):
         The splined y values. If `y` doesn't contain any nans then `ySpline` is
         `y`.
 
+    Notes
+    -----
+    The splined data is identical to the input data, except that the nan's are
+    replaced by new data from the spline fit.
+
     """
 
+    # if there are nans in the data then spline away
     if np.isnan(y).any():
-        # remove the values with nans 
+        # remove the values with nans
         xNoNan = x[np.nonzero(np.isnan(y) == False)]
         yNoNan = y[np.nonzero(np.isnan(y) == False)]
         # fit a spline through the data
