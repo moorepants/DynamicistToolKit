@@ -233,16 +233,16 @@ def principal_axes(I):
 
 def euler_rotation(angles, order):
     """
-    Returns a rotation matrix that of a reference frame in another reference
-    frame where the second frame is rotated relative to the first frame via
-    body fixed rotations (Euler angles).
+    Returns a rotation matrix for a reference frame, B,  in another reference
+    frame, A, where the B frame is rotated relative to the A frame via body
+    fixed rotations (Euler angles).
 
     Parameters
     ----------
     angles : array_like
         An array of three angles in radians that are in order of rotation.
     order : tuple
-        A three tuple containg a combination of ``1``, ``2``, and ``3`` where
+        A three tuple containing a combination of ``1``, ``2``, and ``3`` where
         ``1`` is about the x axis of the first reference frame, ``2`` is about
         the y axis of the this new frame and ``3`` is about the z axis. Note
         that (1, 1, 1) is a valid entry and will give you correct results, but
@@ -282,6 +282,15 @@ def euler_rotation(angles, order):
             [  1.22464680e-16]])
 
     """
+
+    # check the length of both inputs
+    if len(angles) != 3 or len(order) != 3:
+        raise StandardError('The length of angles and order should be 3')
+
+    # make sure the order contains proper values
+    for v in order:
+        if v not in [1, 2, 3]:
+            raise ValueError('The values in order have to be 1, 2 or 3')
 
     def x_rot(angle):
         sa = np.sin(angle)

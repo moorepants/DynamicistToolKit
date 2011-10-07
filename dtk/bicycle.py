@@ -1,8 +1,107 @@
 '''These are some general functions to deal with bicycle dynamics. They need
 to be cleaned up to work properly, as these were setup to work with
 uncertainties.'''
+from math import sin, cos, tan
 import math
 import numpy as np
+
+def benchmark_whipple_to_moore_whipple(benchmarkParameters, oldMassCenter=False):
+    """Returns the parameters for the Whipple model as derived by Jason K.
+    Moore.
+
+    Parameters
+    ----------
+    benchmarkParameters : dictionary
+        Contains the set of parameters for the Whipple bicycle model as
+        presented in Meijaard2007.
+    oldMassCenter : boolean
+        If true it returns the fork mass center dimensions, l3 and l4, with
+        respect to the rear offset intersection with the steer axis, otherwise
+        the dimensions are with respect to the front wheel.
+
+    Returns
+    -------
+    mooreParameters : dictionary
+        The parameter set for the Moore derivation of the whipple bicycle model
+        as presented in Moore2012.
+
+    """
+
+    bP = benchmarkParameters
+    mP = {}
+
+    # geometry
+    mP['rF'] = bP['rF']
+    mP['rR'] = bP['rR']
+    mP['d1'] =  cos(bp['lam']) * (bp['c'] + bp['w'] - bp['rR'] * tan(bp['lam']))
+    mP['d3'] = -cos(bp['lam']) * (bp['c'] - bp['rF'] * tan(bp['lam']))
+    mP['d2'] = (bp['rR'] + mP['d1'] * sin(bp['lam']) - bp['rF'] + mP['d3'] *
+            sin(bp['lam'])) / cos(bp['lam'])
+
+    # mass center locations
+    mP['l1'] = (bP['xB'] * cos(bP['lam']) - bP['zB'] * sin(bP['lam']) -
+        bP['rR'] * sin(bP['lam']))
+    mP['l2'] = (bP['xB'] * sin(bp['lam']) + bP['zB'] * cos(bp['lam']) +
+        bP['rR'] * cos(bp['lam']))
+
+    if oldMassCenter is True:
+        # l3 and l4 are with reference to the point where the rear offset line
+        # intersects the steer axis
+        mP['l3'] = (cos(bp['lam']) * bP['xH'] - sin(bp['lam']) * bP['zH'] -
+            bP['c'] * cos(bp['lam']) - bP['w'] * cos(bp['lam']))
+        mP['l4'] = (bP['rR'] * cos(bp['lam']) + bP['xH'] * sin(bp['lam']) +
+            bP['zH'] * cos(bp['lam']))
+    elif oldMassCenter is False:
+        # l3 and l4 are with reference to the front wheel center
+        mP['l4'] = ((bP['zH'] + bP['rF']) * cos(bP['lam']) + (bP['xH'] - bP['w'])
+            * sin(bP['lam']))
+        mP['l3'] = ((bP['xH'] - bP['w'] - mp['l4'] * sin(bP['lam'])) /
+            cos(bP['lam']))
+    else:
+        raise ValueError('oldMassCenter must be True or False')
+
+    # inertia
+    # rear wheel inertia
+    id11  =  IRxx
+    id22  =  IRyy
+    id33  =  IRxx
+    cf =  np.matrix([[cos(bp['lam']), 0, -sin(bp['lam'])],
+                     [0, 1, 0],
+                     [sin(bp['lam']), 0, cos(bp['lam'])]])
+
+    # rotate bicycle frame inertia through bp['lam']
+    IB =  np.matrix[IBxx,0,IBxz;
+                    0,IByy,0;
+                    IBxz,0,IBzz]
+    IBrot =  cf*IB*transpose(cf)
+
+    # bicycle frame inertia
+    ic11  =  IBrot[1,1]
+    ic12  =  IBrot[1,2]
+    ic22  =  IBrot[2,2]
+    ic23  =  IBrot[2,3]
+    ic31  =  IBrot[3,1]
+    ic33  =  IBrot[3,3]
+
+    % rotate fork inertia matrix through bp['lam']
+    IH    =  [IHxx,0,IHxz;0,IHyy,0;IHxz,0,IHzz]
+    IHrot =  cf*IH*transpose(cf)
+    % fork/handlebar inertia
+    ie11  =  IHrot[1,1]
+    ie12  =  IHrot[1,2]
+    ie22  =  IHrot[2,2]
+    ie23  =  IHrot[2,3]
+    ie31  =  IHrot[3,1]
+    ie33  =  IHrot[3,3]
+    % front wheel inertia
+    if11  =  IFxx
+    if22  =  IFyy
+    if33  =  IFxx
+    % masses
+    massc    =  mB
+    massd    =  mR
+    masse    =  mH
+    massf    =  mF
 
 def lambda_from_abc(rF, rR, a, b, c):
     '''Returns the steer axis tilt, lamba, for the parameter set based on the
