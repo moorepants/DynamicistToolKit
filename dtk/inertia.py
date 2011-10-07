@@ -231,6 +231,90 @@ def principal_axes(I):
     C = C.T[indices]
     return Ip, C
 
+def x_rot(angle):
+    """Returns the rotation matrix for a reference frame rotated through an
+    angle about the x axis.
+
+    Parameters
+    ----------
+    angle : float
+        The angle in radians.
+
+    Returns
+    -------
+    Rx : np.matrix, shape(3,3)
+        The rotation matrix.
+
+    Notes
+    -----
+    v' = Rx * v where v is the vector expressed the reference in the original
+    reference frame and v' is the vector expressed in the new rotated reference
+    frame.
+
+    """
+    sa = np.sin(angle)
+    ca = np.cos(angle)
+    Rx = np.matrix([[1., 0. , 0.],
+                    [0., ca, sa],
+                    [0., -sa, ca]])
+    return Rx
+
+def y_rot(angle):
+    """Returns the rotation matrix for a reference frame rotated through an
+    angle about the y axis.
+
+    Parameters
+    ----------
+    angle : float
+        The angle in radians.
+
+    Returns
+    -------
+    Rx : np.matrix, shape(3,3)
+        The rotation matrix.
+
+    Notes
+    -----
+    v' = Rx * v where v is the vector expressed the reference in the original
+    reference frame and v' is the vector expressed in the new rotated reference
+    frame.
+
+    """
+    sa = np.sin(angle)
+    ca = np.cos(angle)
+    Ry = np.matrix([[ca, 0. , -sa],
+                    [0., 1., 0.],
+                    [sa, 0., ca]])
+    return Ry
+
+def z_rot(angle):
+    """Returns the rotation matrix for a reference frame rotated through an
+    angle about the z axis.
+
+    Parameters
+    ----------
+    angle : float
+        The angle in radians.
+
+    Returns
+    -------
+    Rx : np.matrix, shape(3,3)
+        The rotation matrix.
+
+    Notes
+    -----
+    v' = Rx * v where v is the vector expressed the reference in the original
+    reference frame and v' is the vector expressed in the new rotated reference
+    frame.
+
+    """
+    sa = np.sin(angle)
+    ca = np.cos(angle)
+    Rz = np.matrix([[ca, sa , 0.],
+                    [-sa, ca, 0.],
+                    [0., 0., 1.]])
+    return Rz
+
 def euler_rotation(angles, order):
     """
     Returns a rotation matrix for a reference frame, B,  in another reference
@@ -292,29 +376,6 @@ def euler_rotation(angles, order):
         if v not in [1, 2, 3]:
             raise ValueError('The values in order have to be 1, 2 or 3')
 
-    def x_rot(angle):
-        sa = np.sin(angle)
-        ca = np.cos(angle)
-        Rx = np.matrix([[1., 0. , 0.],
-                        [0., ca, sa],
-                        [0., -sa, ca]])
-        return Rx
-
-    def y_rot(angle):
-        sa = np.sin(angle)
-        ca = np.cos(angle)
-        Ry = np.matrix([[ca, 0. , -sa],
-                        [0., 1., 0.],
-                        [sa, 0., ca]])
-        return Ry
-
-    def z_rot(angle):
-        sa = np.sin(angle)
-        ca = np.cos(angle)
-        Rz = np.matrix([[ca, sa , 0.],
-                        [-sa, ca, 0.],
-                        [0., 0., 1.]])
-        return Rz
 
     rot = [x_rot, y_rot, z_rot]
 
