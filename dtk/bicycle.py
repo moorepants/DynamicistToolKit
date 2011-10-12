@@ -4,7 +4,7 @@ import numpy as np
 
 from inertia import y_rot
 
-def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3):
+def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     """Returns the pitch angle of the bicycle frame for a given roll, steer and
     geometry.
 
@@ -25,20 +25,31 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3):
         and rear offset lines.
     d3 : float
         The front wheel offset from the steer axis.
+    guess : float, optional
+        A good guess for the pitch angle. If not specified, the program will
+        make a good guess for most roll and steer combinations.
 
     Returns
     -------
     q5 : float
         Pitch angle.
 
-    """
-    def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
-        return (d2 * cos(q4) * cos(q5) + d3 * (sin(q4) * sin(q7) - sin(q5) *
-                sin(q4) * sin(q7)) + rF * (1 - (sin(q4) * sin(q7) + sin(q5) *
-                sin(q7) * sin(q4))**2)**(0.5) - rR * sin(q4) - d1 * sin(q5) * sin(q4))
+    Notes
+    -----
+    All of the geometry parameters should be expressed in the same units.
 
-    # guess based on steer and roll being both zero
-    guess = lambda_from_abc(rF, rR, d1, d2, d3)
+    """
+    print q4, q7, rF, rR, d1, d2, d3
+    def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
+        return (cos(q4) * cos(q5) * (d2 + rF * cos(q4) * cos(q5)) +
+                (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)) *
+                (d3 + rF * (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)))
+                - rR * cos(q4) - d1 * sin(q5) * cos(q4))
+
+    if guess is None:
+        # guess based on steer and roll being both zero
+        guess = lambda_from_abc(rF, rR, d1, d3, d2)
+    print guess
 
     args = (q4, q7, rF, rR, d1, d2, d3)
 
@@ -168,10 +179,10 @@ def lambda_from_abc(rF, rR, a, b, c):
     a : float
         The rear wheel offset from the steer axis.
     b : float
+        The front wheel offset from the steer axis.
+    c : float
         The distance along the steer axis between the intersection of the front
         and rear offset lines.
-    c : float
-        The front wheel offset from the steer axis.
 
     Returns
     -------
