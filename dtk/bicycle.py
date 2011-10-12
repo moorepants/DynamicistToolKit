@@ -4,6 +4,48 @@ import numpy as np
 
 from inertia import y_rot
 
+def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3):
+    """Returns the pitch angle of the bicycle frame for a given roll, steer and
+    geometry.
+
+    Parameters
+    ----------
+    q4 : float
+        Roll angle.
+    q5 : float
+        Steer angle.
+    rF : float
+        Front wheel radius.
+    rR : float
+        Rear wheel radius.
+    d1 : float
+        The rear wheel offset from the steer axis.
+    d2 : float
+        The distance along the steer axis between the intersection of the front
+        and rear offset lines.
+    d3 : float
+        The front wheel offset from the steer axis.
+
+    Returns
+    -------
+    q5 : float
+        Pitch angle.
+
+    """
+    def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
+        return (d2 * cos(q4) * cos(q5) + d3 * (sin(q4) * sin(q7) - sin(q5) *
+                sin(q4) * sin(q7)) + rF * (1 - (sin(q4) * sin(q7) + sin(q5) *
+                sin(q7) * sin(q4))**2)**(0.5) - rR * sin(q4) - d1 * sin(q5) * sin(q4))
+
+    # guess based on steer and roll being both zero
+    guess = lambda_from_abc(rF, rR, d1, d2, d3)
+
+    args = (q4, q7, rF, rR, d1, d2, d3)
+
+    q5 = newton(pitch_constraint, guess, args=args)
+
+    return q5
+
 def benchmark_whipple_to_moore_whipple(benchmarkParameters, oldMassCenter=False):
     """Returns the parameters for the Whipple model as derived by Jason K.
     Moore.
@@ -62,10 +104,10 @@ def benchmark_whipple_to_moore_whipple(benchmarkParameters, oldMassCenter=False)
         raise ValueError('oldMassCenter must be True or False')
 
     # masses
-    mP['mC'] =  bP['mB']
-    mP['mD'] =  bP['mR']
-    mP['mE'] =  bP['mH']
-    mP['mF'] =  bP['mF']
+    mP['mc'] =  bP['mB']
+    mP['md'] =  bP['mR']
+    mP['me'] =  bP['mH']
+    mP['mf'] =  bP['mF']
 
     # inertia
     # rear wheel inertia
