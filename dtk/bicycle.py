@@ -39,7 +39,6 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     All of the geometry parameters should be expressed in the same units.
 
     """
-    print q4, q7, rF, rR, d1, d2, d3
     def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
         return (cos(q4) * cos(q5) * (d2 + rF * cos(q4) * cos(q5)) +
                 (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)) *
@@ -49,7 +48,6 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     if guess is None:
         # guess based on steer and roll being both zero
         guess = lambda_from_abc(rF, rR, d1, d3, d2)
-    print guess
 
     args = (q4, q7, rF, rR, d1, d2, d3)
 
