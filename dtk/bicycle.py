@@ -1,8 +1,133 @@
-from math import sin, cos, tan, atan
+from math import sin, cos, tan, atan, pi
 from scipy.optimize import newton
 import numpy as np
+from matplotlib.pyplot import figure
 
 from inertia import y_rot
+
+def meijaard_figure_four(time, rollRate, steerRate, speed):
+    width = 3.0 # inches
+    golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
+    height = width * golden_ratio
+    fig = figure()
+    fig.set_size_inches([width, height])
+    fig.subplots_adjust(right=0.75)
+    rateAxis = fig.add_subplot(111)
+    speedAxis = rateAxis.twinx()
+
+    p1, = rateAxis.plot(time, rollRate, "k--",label="Roll Rate")
+    p2, = rateAxis.plot(time, steerRate, "k:", label="Steer Rate")
+    p3, = speedAxis.plot(time, speed, "k-", label="Speed")
+
+    rateAxis.set_ylim(-0.5, 1.0)
+    rateAxis.set_yticks([-0.5, 0.0, 0.5, 1.0])
+    rateAxis.set_xticks([0., 1., 2., 3., 4., 5.])
+    rateAxis.set_xlabel('Time [sec]')
+    rateAxis.set_ylabel('Angular Rate [rad/sec]')
+    lines = [p1, p2, p3]
+    rateAxis.legend(lines, [l.get_label() for l in lines])
+    speedAxis.set_ylim(4.55, 4.7)
+    speedAxis.set_yticks([4.55, 4.60, 4.65, 4.70])
+    speedAxis.set_ylabel('Speed [m/s]')
+
+    return fig
+
+def moore_to_basu_state_derivative():
+    """Place holder"""
+
+def basu_table_one_output():
+
+    basu = {}
+    basu['xdd'] = -0.5041626315047
+    basu['ydd'] = -0.3449706619454
+    basu['zdd'] = -1.4604528332980
+    basu['thetadd'] = 0.8353281706379
+    basu['psidd'] = -7.8555281128244
+    basu['phidd'] = 0.1205543897884
+    basu['psifdd'] = -4.6198904039403
+    basu['betardd'] = 1.8472554144217
+    basu['betafdd'] = 2.4548072904550
+
+    return basu
+
+def basu_table_one_input():
+
+    basu = {}
+    # coordinates
+    basu['x'] = 0.
+    basu['y'] = 0.
+    basu['z'] = 0.2440472102925
+    basu['theta'] = 0.
+    basu['psi'] = 0.9501292851472
+    basu['phi'] = 3.1257073014894
+    basu['psif'] = 0.2311385135743
+    basu['betar'] = 0.
+    basu['betaf'] = 0.
+    # speeds
+    basu['xd'] = -2.8069345714545
+    basu['yd'] = -0.1480982396001
+    basu['zd'] = 0.1058778746261
+    basu['thetad'] = 0.7830033527065
+    basu['psid'] = 0.6068425835418
+    basu['phid'] = -0.0119185528069
+    basu['psifd'] = 0.4859824687093
+    basu['betard'] = 8.9129896614890
+    basu['betafd'] = 8.0133620584155
+
+    return basu
+
+def basu_to_moore_input(basu, rr, lam):
+    """Returns the coordinates and speeds of the Moore2012 derivation of the
+    Whipple bicycle model as a function of the states and speeds of the
+    Basu-Mandal2007 coordinates and speeds.
+
+    Parameters
+    ----------
+    basu : dictionary
+        A dictionary containing the states and speeds of the Basu-Mandal
+        formulation. The states are represented with words corresponding to the
+        greek letter and the speeds are the words with `d` appended, e.g. `psi`
+        and `psid`.
+    rr : float
+        Rear wheel radius.
+    lam : float
+        Steer axis tilt.
+
+    Returns
+    -------
+    moore : dictionary
+        A dictionary with the coordinates, q's, and speeds, u's, for the Moore
+        formulation.
+
+    """
+
+    moore = {}
+
+    # coordinates
+    moore['q1'] = -rr * sin(basu['theta']) * cos(basu['psi']) - basu['x']
+    moore['q2'] = basu['y'] - rr * cos(basu['theta']) * cos(basu['psi'])
+    moore['q3'] = -basu['theta']
+    moore['q4'] = pi / 2. - basu['psi']
+    moore['q5'] = pi - basu['phi'] + lam
+    moore['q6'] = -basu['betar']
+    moore['q7'] = -basu['psif']
+    moore['q8'] = -basu['betaf']
+
+    # speeds
+    moore['u1'] = (rr * basu['psid'] * sin(basu['theta']) * sin(basu['psi']) -
+        rr * basu['thetad'] * cos(basu['theta']) * cos(basu['psi']) -
+        basu['xd'])
+    moore['u2'] = (basu['yd'] + rr * basu['thetad'] * sin(basu['theta']) *
+        cos(basu['psi']) + rr * basu['psid'] * cos(basu['theta']) *
+        sin(basu['psi']))
+    moore['u3'] = -basu['thetad']
+    moore['u4'] = -basu['psid']
+    moore['u5'] = -basu['phid']
+    moore['u6'] = -basu['betard']
+    moore['u7'] = -basu['psifd']
+    moore['u8'] = -basu['betafd']
+
+    return moore
 
 def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     """Returns the pitch angle of the bicycle frame for a given roll, steer and
@@ -55,7 +180,7 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
 
     return q5
 
-def benchmark_whipple_to_moore_whipple(benchmarkParameters, oldMassCenter=False):
+def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     """Returns the parameters for the Whipple model as derived by Jason K.
     Moore.
 
@@ -161,6 +286,9 @@ def benchmark_whipple_to_moore_whipple(benchmarkParameters, oldMassCenter=False)
     mP['ie23'] =  IHrot[1, 2]
     mP['ie31'] =  IHrot[2, 0]
     mP['ie33'] =  IHrot[2, 2]
+
+    # gravity
+    mP['g'] = bP['g']
 
     return mP
 
