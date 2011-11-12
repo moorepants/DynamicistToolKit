@@ -165,10 +165,14 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
 
     """
     def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
-        return (cos(q4) * cos(q5) * (d2 + rF * cos(q4) * cos(q5)) +
-                (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)) *
-                (d3 + rF * (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)))
-                - rR * cos(q4) - d1 * sin(q5) * cos(q4))
+        zero = (d2 * cos(q4) * cos(q5) + rF * cos(q4)**2 * cos(q5)**2 /
+            (cos(q4)**2 * cos(q5)**2 + (sin(q4) * sin(q7) - sin(q5) *
+            cos(q4) * cos(q7))**2)**0.5 + (sin(q4) * sin(q7)  -
+            sin(q5) * cos(q4) * cos(q7)) * (d3+rF * (sin(q4) * sin(q7) -
+            sin(q5) * cos(q4) * cos(q7)) / (cos(q4)**2 * cos(q5)**2 +
+            (sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7))**2)**0.5) -
+            rR * cos(q4) - d1 * sin(q5) * cos(q4))
+        return zero
 
     if guess is None:
         # guess based on steer and roll being both zero
