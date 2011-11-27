@@ -71,6 +71,7 @@ def moore_to_basu(moore, rr, lam):
 
     basu['x'] = rr * s3 * s4 - m['q1']
     basu['y'] = rr * c3 * s4 + m['q2']
+    basu['z'] = rr * c4
     basu['theta'] = -m['q3']
     basu['psi'] = pi / 2.0 - m['q4']
     basu['phi'] = pi + lam - m['q5']
@@ -80,6 +81,7 @@ def moore_to_basu(moore, rr, lam):
 
     basu['xd'] = rr * (c3 * s4 * m['u3'] + s3 * c4 * m['u4']) - m['u1']
     basu['yd'] = rr * (-s3 * s4 * m['u3'] + c3 * c4 * m['u4']) + m['u2']
+    basu['zd'] = -rr * m['u4'] * s4
     basu['thetad'] = -m['u3']
     basu['psid'] = -m['u4']
     basu['phid'] = -m['u5']
@@ -92,7 +94,8 @@ def moore_to_basu(moore, rr, lam):
         + s3 * c4 * m['u4p']) - m['u1p'])
     basu['ydd'] = (m['u2p'] - rr * c3 * s4 * m['u3']**2 - rr * s3 * c4 * m['u3']
         * m['u4'] - rr * s3 * s4 * m['u3p'] - rr * s3 * c4 * m['u3'] * m['u4']
-        * - rr * c3 * s4 * m['u4']**2 + rr * c3 * c4 * m['u4p'])
+        - rr * c3 * s4 * m['u4']**2 + rr * c3 * c4 * m['u4p'])
+    basu['zdd'] = -rr * (m['u4p'] * s4 + m['u4']**2 * c4)
     basu['thetadd'] = -m['u3p']
     basu['psidd'] = -m['u4p']
     basu['phidd'] = -m['u5p']
@@ -101,6 +104,33 @@ def moore_to_basu(moore, rr, lam):
     basu['betafdd'] = -m['u8p']
 
     return basu
+
+def basu_sig_figs():
+    """Returns the number of significant figures reported in Table 1 of
+    Basu-Mandal2007.
+
+    """
+    # q, qd, qdd
+    sigFigTable = [[0, 14, 13], # x
+                   [0, 13, 13], # y
+                   [13, 13, 13], # z
+                   [0, 13, 13], # theta
+                   [13, 13, 14], # psi
+                   [14, 12, 13], # phi
+                   [13, 13, 14], # psif
+                   [0, 13, 14], # betar
+                   [0, 14, 13]] # betaf
+
+    deriv = ['', 'd', 'dd']
+    coordinates = ['x', 'y', 'z', 'theta', 'psi', 'phi', 'psif', 'betar', 'betaf']
+
+    sigFigs = {}
+    for i, row in enumerate(sigFigTable):
+        for j, col in enumerate(row):
+            sigFigs[coordinates[i] + deriv[j]] = col
+
+    return sigFigs
+
 
 def basu_table_one_output():
 
