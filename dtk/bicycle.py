@@ -41,8 +41,66 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
 
     return fig
 
-def moore_to_basu_state_derivative():
-    """Place holder"""
+def moore_to_basu(moore, rr, lam):
+    """Returns the coordinates, speeds, and accelerations in BasuMandal2007's
+    convention.
+
+    Parameters
+    ----------
+    moore : dictionary
+        A dictionary containg values for the q's, u's and u dots.
+    rr : float
+        Rear wheel radius.
+    lam : float
+        Steer axis tilt.
+
+    Returns
+    -------
+    basu : dictionary
+        A dictionary containing the coordinates, speeds and accelerations.
+
+    """
+
+    m = moore
+    basu = {}
+
+    s3 = sin(m['q3'])
+    c3 = cos(m['q3'])
+    s4 = sin(m['q4'])
+    c4 = cos(m['q4'])
+
+    basu['x'] = rr * s3 * s4 - m['q1']
+    basu['y'] = rr * c3 * s4 + m['q2']
+    basu['theta'] = -m['q3']
+    basu['psi'] = pi / 2.0 - m['q4']
+    basu['phi'] = pi + lam - m['q5']
+    basu['betar'] = -m['q6']
+    basu['psif'] = -m['q7']
+    basu['betaf'] = -m['q8']
+
+    basu['xd'] = rr * (c3 * s4 * m['u3'] + s3 * c4 * m['u4']) - m['u1']
+    basu['yd'] = rr * (-s3 * s4 * m['u3'] + c3 * c4 * m['u4']) + m['u2']
+    basu['thetad'] = -m['u3']
+    basu['psid'] = -m['u4']
+    basu['phid'] = -m['u5']
+    basu['betard'] = -m['u6']
+    basu['psifd'] = -m['u7']
+    basu['betafd'] = -m['u8']
+
+    basu['xdd'] = (rr * (-s3 * s4 * m['u3']**2 + c3 * c4 * m['u3'] * m['u4'] +
+        c3 * s4 * m['u3p'] + c3 * c4 * m['u3'] * m['u4'] - s3 * s4 * m['u4']**2
+        + s3 * c4 * m['u4p']) - m['u1p'])
+    basu['ydd'] = (m['u2p'] - rr * c3 * s4 * m['u3']**2 - rr * s3 * c4 * m['u3']
+        * m['u4'] - rr * s3 * s4 * m['u3p'] - rr * s3 * c4 * m['u3'] * m['u4']
+        * - rr * c3 * s4 * m['u4']**2 + rr * c3 * c4 * m['u4p'])
+    basu['thetadd'] = -m['u3p']
+    basu['psidd'] = -m['u4p']
+    basu['phidd'] = -m['u5p']
+    basu['betardd'] = -m['u6p']
+    basu['psifdd'] = -m['u7p']
+    basu['betafdd'] = -m['u8p']
+
+    return basu
 
 def basu_table_one_output():
 
