@@ -307,8 +307,8 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     mP = {}
 
     # geometry
-    mP['rF'] = bP['rF']
-    mP['rR'] = bP['rR']
+    mP['rf'] = bP['rF']
+    mP['rr'] = bP['rR']
     mP['d1'] =  cos(bP['lam']) * (bP['c'] + bP['w'] - bP['rR'] * tan(bP['lam']))
     mP['d3'] = -cos(bP['lam']) * (bP['c'] - bP['rF'] * tan(bP['lam']))
     mP['d2'] = (bP['rR'] + mP['d1'] * sin(bP['lam']) - bP['rF'] + mP['d3'] *
@@ -322,19 +322,17 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
         bP['rR'] * cos(bP['lam']))
 
     # bicycle fork
-    # l3 and l4 are with reference to the front wheel center (the new way)
-    mP['l4'] = ((bP['zH'] + bP['rF']) * cos(bP['lam']) + (bP['xH'] - bP['w'])
-        * sin(bP['lam']))
-    mP['l3'] = ((bP['xH'] - bP['w'] - mP['l4'] * sin(bP['lam'])) /
-        cos(bP['lam']))
-
     if oldMassCenter is True:
         # l3 and l4 are with reference to the point where the rear offset line
         # intersects the steer axis (this is the old way)
         mP['l3'] = mP['d3'] + mP['l3']
         mP['l4'] = mP['d2'] + mP['l4']
     elif oldMassCenter is False:
-        pass
+        # l3 and l4 are with reference to the front wheel center (the new way)
+        mP['l4'] = ((bP['zH'] + bP['rF']) * cos(bP['lam']) + (bP['xH'] - bP['w'])
+            * sin(bP['lam']))
+        mP['l3'] = ((bP['xH'] - bP['w'] - mP['l4'] * sin(bP['lam'])) /
+            cos(bP['lam']))
     else:
         raise ValueError('oldMassCenter must be True or False')
 
