@@ -5,6 +5,75 @@ from matplotlib.pyplot import figure, rcParams
 
 from inertia import y_rot
 
+def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
+    """Returns the location in the ground plane of the front wheel contact
+    point.
+
+    Parameters
+    ----------
+    q1 : float
+        The location of the rear wheel contact point with respect to the
+        inertial origin along the 1 axis.
+    q2 : float
+        The location of the rear wheel contact point with respect to the
+        inertial origin along the 2 axis.
+    q3 : float
+        The yaw angle.
+    q4 : float
+        The roll angle.
+    q7 : float
+        The steer angle.
+    d1 : float
+        The distance from the rear wheel center to the steer axis.
+    d2 : float
+        The distance between the front and rear wheel centers along the steer
+        axis.
+    d3 : float
+        The distance from the front wheel center to the steer axis.
+    rr : float
+        The radius of the rear wheel.
+    rf : float
+        The radius of the front wheel.
+    guess : float, optional
+        A guess for the pitch angle. This may be only needed for extremely
+        large steer and roll angles.
+
+    Returns
+    -------
+    q9 : float
+        The location of the front wheel contact point with respect to the
+        inertial origin along the 1 axis.
+    q10 : float
+        The location of the front wheel contact point with respect to the
+        inertial origin along the 2 axis.
+
+    """
+
+    q5 = pitch_from_roll_and_steer(q4, q7, rf, rr, d1, d2, d3, guess=guess)
+
+    q9 = q1 + (d2 * (sin(q5) * cos(q3) + sin(q3) * sin(q4) * cos(q5)) + d1 *
+        (cos(q3) * cos(q5) - sin(q3) * sin(q4) * sin(q5)) + rf * cos(q4) *
+        cos(q5) * (sin(q5) * cos(q3) + sin(q3) * sin(q4) * cos(q5)) /
+        pow((pow(cos(q4), 2) * pow(cos(q5), 2) + pow((sin(q4) * sin(q7) -
+        sin(q5) * cos(q4) * cos(q7)), 2)), 0.5) + (cos(q3) * cos(q5) *
+        cos(q7) - sin(q3) * (sin(q7) * cos(q4) + sin(q4) * sin(q5) *
+        cos(q7))) * (d3 + rf * (sin(q4) * sin(q7) - sin(q5) * cos(q4) *
+        cos(q7)) / pow((pow(cos(q4), 2) * pow(cos(q5), 2) + pow((sin(q4) *
+        sin(q7)-sin(q5) * cos(q4) * cos(q7)), 2)), 0.5)) - rr * sin(q3) *
+        sin(q4))
+
+    q10 = q2 + (rr * sin(q4) * cos(q3) + d1 * (sin(q3) * cos(q5) + sin(q4) *
+        sin(q5) * cos(q3)) + d2 * (sin(q3) * sin(q5) - sin(q4) * cos(q3) *
+        cos(q5)) + rf * cos(q4) * cos(q5) * (sin(q3) * sin(q5) - sin(q4) *
+        cos(q3) * cos(q5)) / pow((pow(cos(q4), 2) * pow(cos(q5), 2) +
+        pow((sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)), 2)), 0.5) +
+        (sin(q3) * cos(q5) * cos(q7) + cos(q3) * (sin(q7) * cos(q4) + sin(q4) *
+        sin(q5) * cos(q7))) * (d3 + rf * (sin(q4) * sin(q7) - sin(q5) *
+        cos(q4) * cos(q7)) / pow((pow(cos(q4), 2) * pow(cos(q5), 2) +
+        pow((sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)), 2)), 0.5)))
+
+    return q9, q10
+
 def meijaard_figure_four(time, rollRate, steerRate, speed):
     width = 4.0 # inches
     golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
