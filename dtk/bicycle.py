@@ -13,10 +13,10 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
     ----------
     q1 : float
         The location of the rear wheel contact point with respect to the
-        inertial origin along the 1 axis.
+        inertial origin along the 1 axis (forward).
     q2 : float
         The location of the rear wheel contact point with respect to the
-        inertial origin along the 2 axis.
+        inertial origin along the 2 axis (right).
     q3 : float
         The yaw angle.
     q4 : float
