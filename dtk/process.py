@@ -4,7 +4,7 @@ import numpy as np
 from numpy.fft import fft, fftfreq
 from scipy.integrate import trapz, cumtrapz
 from scipy.interpolate import UnivariateSpline
-from scipy.signal import butter, lfilter
+from scipy.signal import butter, filtfilt
 from scipy.stats import nanmean
 
 def spline_over_nan(x, y):
@@ -153,43 +153,37 @@ def freq_spectrum(data, sampleRate):
         #power = abs(Y[1:n/2])**2
     return frequency, amplitude
 
-def butterworth(data, freq, sampRate, order=2, axis=-1):
+def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
     """
-    Returns the Butterworth filtered data set.
+    Returns the filtered data for a low pass Butterworth filter.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : ndarray
-    freq : float or int
-        cutoff frequency in hertz
-    sampRate : float or int
-        sampling rate in hertz
+        The data to filter.
+    cutoff : float or int
+        The cutoff frequency in hertz.
+    sampleRate : float or int
+        The sampling rate in hertz.
     order : int
-        the order of the Butterworth filter
+        The order of the Butterworth filter.
     axis : int
-        the axis to filter along
+        The axis to filter along.
 
-    Returns:
-    --------
+    Returns
+    -------
     filteredData : ndarray
-        filtered version of data
+        The low pass filtered version of data.
 
-    This does a forward and backward Butterworth filter and averages the two.
+    Notes
+    -----
+    This does a forward and backward Butterworth filter.
 
     """
-    nDim = len(data.shape)
-    dataSlice = '['
-    for dim in range(nDim):
-        if dim == axis or (np.sign(axis) == -1 and dim == nDim + axis):
-            dataSlice = dataSlice + '::-1, '
-        else:
-            dataSlice = dataSlice + ':, '
-    dataSlice = dataSlice[:-2] + '].copy()'
 
-    b, a = butter(order, float(freq) / float(sampRate) / 2.)
-    forwardFilter = lfilter(b, a, data, axis=axis)
-    reverseFilter = lfilter(b, a, eval('data' + dataSlice), axis=axis)
-    return (forwardFilter + eval('reverseFilter' + dataSlice)) / 2.
+    b, a = butter(order, float(cutoff) / float(sampleRate) / 2.)
+
+    return filtfilt(b, a, data, axis=axis)
 
 def subtract_mean(sig, hasNans=False):
     '''
