@@ -1,6 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+class Bode(object):
+    def __init__(self):
+
+    def mag_phase(self):
+        I = np.eye(A.shape[0])
+        for i, f in enumerate(frequency):
+            # this inverse is expensive, can this be reformed to be solved with
+            # a faster method?
+            sImA_inv = np.linalg.inv(1j * f * I - A)
+            G = np.dot(np.dot(C, sImA_inv), B) + D
+            magnitude[i] = 20. * np.log10(np.abs(G))
+            phase[i] = np.angle(G)
+        phase = 180. / np.pi * np.unwrap(phase)
+
 def bode(system, frequency, fig=None, label=None, title=None, color=None):
     """Creates a Bode plot of the given system.
 
