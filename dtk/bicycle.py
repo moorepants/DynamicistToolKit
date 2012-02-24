@@ -5,6 +5,79 @@ from matplotlib.pyplot import figure, rcParams
 
 from inertia import y_rot
 
+def benchmark_parameters():
+    """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
+
+    p = {}
+
+    p['w'] = 1.02
+    p['c'] = 0.08
+    p['lam'] = pi / 10.
+    p['g'] = 9.81
+    p['rR'] = 0.3
+    p['mR'] = 2.0
+    p['IRxx'] = 0.0603
+    p['IRyy'] = 0.12
+    p['xB'] = 0.3
+    p['zB'] = -0.9
+    p['mB'] = 85.0
+    p['IBxx'] = 9.2
+    p['IByy'] = 11.0
+    p['IBzz'] = 2.8
+    p['IBxz'] = 2.4
+    p['xH'] = 0.9
+    p['zH'] = -0.7
+    p['mH'] = 4.0
+    p['IHxx'] = 0.05892
+    p['IHyy'] = 0.06
+    p['IHzz'] = 0.00708
+    p['IHxz'] = -0.00756
+    p['rF'] = 0.35
+    p['mF'] = 3.0
+    p['IFxx'] = 0.1405
+    p['IFyy'] = 0.28
+
+    return p
+
+def benchmark_matrices():
+    """Returns the entries to the M, C1, K0, and K2 matrices for the benchmark parameter
+    set printed in [Meijaard2007]_.
+
+    Returns
+    -------
+    M : numpy.Matrix, shape(2,2)
+        The mass matrix.
+    C1 : numpy.Matrix, shape(2,2)
+        The speed proportional damping matrix.
+    K0 : numpy.Matrix, shape(2,2)
+        The gravity proportional stiffness matrix.
+    K2 : numpy.Matrix, shape(2,2)
+        The speed squared proportional stiffness matrix.
+
+    Notes
+    -----
+    The equations of motion take this form:
+
+    M * q'' + v * C1 * q' + [g * K0 + v**2 * K2] * q' = f
+
+    where q = [roll angle,
+               steer angle]
+    and f = [roll torque,
+             steer torque]
+
+    """
+
+    M = np.matrix([[80.81722, 2.31941332208709],
+                   [2.31941332208709, 0.29784188199686]])
+    C1 = np.matrix([[0., 33.86641391492494],
+                    [-0.85035641456978, 1.68540397397560]])
+    K0 = np.matrix([[-80.95, -2.59951685249872],
+                    [-2.59951685249872, -0.80329488458618]])
+    K2 = np.matrix([[0., 76.59734589573222],
+                   [0., 2.65431523794604]])
+
+    return M, C1, K0, K2
+
 def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
     """Returns the location in the ground plane of the front wheel contact
     point.
