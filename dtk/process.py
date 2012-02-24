@@ -7,6 +7,35 @@ from scipy.interpolate import UnivariateSpline
 from scipy.signal import butter, filtfilt
 from scipy.stats import nanmean
 
+def fit_goodness(ym, yp):
+    '''
+    Calculate the goodness of fit.
+
+    Parameters
+    ----------
+    ym : ndarray, shape(n,)
+        The vector of measured values.
+    yp : ndarry, shape(n,)
+        The vector of predicted values.
+
+    Returns
+    -------
+    rsq : float
+        The r squared value of the fit.
+    SSE : float
+        The error sum of squares.
+    SST : float
+        The total sum of squares.
+    SSR : float
+        The regression sum of squares.
+
+    '''
+    SSR = sum((yp - np.mean(ym))**2)
+    SST = sum((ym - np.mean(ym))**2)
+    SSE = SST - SSR
+    rsq = SSR / SST
+    return rsq, SSE, SST, SSR
+
 def spline_over_nan(x, y):
     """
     Returns a vector of which a cubic spline is used to fill in gaps in the
