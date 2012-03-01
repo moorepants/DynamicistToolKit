@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 class Bode(object):
     """A class for creating Bode plots and the associated data."""
-    def __init__(self, frequency, *args):
+    def __init__(self, frequency, *args, **kwargs):
         """Returns a Bode object for a set of systems.
 
         Parameters
@@ -23,6 +23,11 @@ class Bode(object):
         for system in args:
             self.systems.append(system)
 
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        self.mag_phase()
+
     def mag_phase(self):
         """Computes the magnitude and phase for all the systems in the Bode
         object.
@@ -39,9 +44,31 @@ class Bode(object):
     def plot(self, **kwargs):
         """Plots the Bode plots for all systems in the Bode object."""
 
+        try:
+            del self.figs
+        except AttributeError:
+            pass
+
+        try:
+            kwargs
+        except NameError:
+            kwargs = {}
+
         for i, system in enumerate(self.systems):
+            if self.colors is not None:
+                kwargs['color'] = self.colors[i]
+            if self.linestyles is not None:
+                kwargs['linestyle'] = self.linestyles[i]
             self.plot_system(system, self.magnitudes[i], self.phases[i],
                     **kwargs)
+
+        for f in self.figs:
+            leg = f.phaseAx.legend(loc=4)
+            plt.setp(leg.get_texts(), fontsize='6.0') #'xx-small')
+
+    def show(self):
+        for f in self.figs:
+            f.show()
 
     def mag_phase_system(self, system):
         """Returns the magnitude and phase for a single system.
@@ -92,7 +119,8 @@ class Bode(object):
 
         return magnitude, phase
 
-    def plot_system(self, system, magnitude, phase, decibel=True, degree=True):
+    def plot_system(self, system, magnitude, phase, decibel=True, degree=True,
+            **kwargs):
         """Plots the Bode plots of a single system. If a system for this object
         has already been plotted, it will add new lines to the existing plots.
 
@@ -158,11 +186,12 @@ class Bode(object):
                     fig = self.figs[plotNum]
 
                 # plot the lines
+
                 fig.magAx.semilogx(self.frequency, magnitude[:, o, i],
-                        label=system.name)
+                        label=system.name, **kwargs)
 
                 fig.phaseAx.semilogx(self.frequency, phase[:, o, i],
-                        label=system.name)
+                        label=system.name, **kwargs)
 
                 plotNum += 1
 
