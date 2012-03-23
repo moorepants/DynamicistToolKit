@@ -463,6 +463,12 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     mP['l2'] = (bP['xB'] * sin(bP['lam']) + bP['zB'] * cos(bP['lam']) +
         bP['rR'] * cos(bP['lam']))
 
+    if 'xcl' in bP.keys() and 'zcl' in bP.keys():
+        mP['d4'] = (bP['xcl'] * cos(bP['lam']) - bP['zcl'] * sin(bP['lam']) -
+            bP['rR'] * sin(bP['lam']))
+        mP['d5'] = (bP['xcl'] * sin(bP['lam']) + bP['zcl'] * cos(bP['lam']) +
+            bP['rR'] * cos(bP['lam']))
+
     # bicycle fork
     if oldMassCenter is True:
         # l3 and l4 are with reference to the point where the rear offset line
