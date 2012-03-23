@@ -62,9 +62,9 @@ class Bode(object):
             self.plot_system(system, self.magnitudes[i], self.phases[i],
                     **kwargs)
 
-        for f in self.figs:
-            leg = f.phaseAx.legend(loc=4)
-            plt.setp(leg.get_texts(), fontsize='6.0') #'xx-small')
+        #for f in self.figs:
+            #leg = f.phaseAx.legend(loc=4)
+            #plt.setp(leg.get_texts(), fontsize='6.0') #'xx-small')
 
     def show(self):
         for f in self.figs:
