@@ -5,6 +5,77 @@ from matplotlib.pyplot import figure, rcParams
 
 from inertia import y_rot
 
+def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None,
+        v0=0., vf=10., num=50, g=9.81):
+    """Returns the state and input matrices for a set of speeds.
+
+    Parameters
+    ----------
+    M : numpy.Matrix, shape(2,2)
+        The mass matrix.
+    C1 : numpy.Matrix, shape(2,2)
+        The speed proportional damping matrix.
+    K0 : numpy.Matrix, shape(2,2)
+        The gravity proportional stiffness matrix.
+    K2 : numpy.Matrix, shape(2,2)
+        The speed squared proportional stiffness matrix.
+    speeds : array_like, shape(n,), optional
+        An array of speeds in meters per second at which to compute the state
+        and input matrices. If none, the `v0`, `vf`, and `num` parameters are
+        used to generate a linearly spaced array.
+    v0 : float, optional, default: 0.0
+        The initial speed.
+    vf : float, optional, default: 10.0
+        The final speed.
+    num : int, optional, default: 50
+        The number of speeds.
+    g : float, optional, default: 9.81
+        Acceleration due to gravity in meters per second squared.
+
+    Returns
+    -------
+    speeds : array_like, shape(n,)
+        An array of speeds in meters per second.
+    As : array_like, shape(n,4,4)
+        The state matrices evaluated at each speed in `speeds`.
+    Bs : array_like, shape(n,4,2)
+        The input matrices
+
+    Notes
+    -----
+    The second order equations of motion take this form:
+
+    M * q'' + v * C1 * q' + [g * K0 + v**2 * K2] * q' = f
+
+    where q = [roll angle,
+               steer angle]
+    and f = [roll torque,
+             steer torque]
+
+    The first order equations of motion take this form:
+
+    x' = A * x + B * u
+
+    where x = [roll angle,
+               steer angle,
+               roll rate,
+               steer rate]
+    and u = [roll torque,
+             steer torque]
+
+    """
+
+    if speeds is None:
+        speeds = np.linspace(v0, vf, num=num)
+    As = np.zeros((len(speeds), 4, 4))
+    Bs = np.zeros((len(speeds), 4, 2))
+    for i, v in enumerate(speeds):
+        A, B = benchmark_state_space(M, C1, K0, K2, v, g)
+        As[i] = A
+        Bs[i] = B
+
+    return speeds, As, Bs
+
 def benchmark_parameters():
     """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
 
@@ -12,7 +83,7 @@ def benchmark_parameters():
 
     p['w'] = 1.02
     p['c'] = 0.08
-    p['lam'] = pi / 10.
+    p['lam'], p['lambda'] = pi / 10., pi / 10.
     p['g'] = 9.81
     p['rR'] = 0.3
     p['mR'] = 2.0
@@ -272,7 +343,6 @@ def basu_sig_figs():
             sigFigs[coordinates[i] + deriv[j]] = col
 
     return sigFigs
-
 
 def basu_table_one_output():
 
@@ -554,8 +624,8 @@ def lambda_from_abc(rF, rR, a, b, c):
     b : float
         The front wheel offset from the steer axis.
     c : float
-        The distance along the steer axis between the intersection of the front
-        and rear offset lines.
+        The distance along the steer axis between the front wheel and rear
+        wheel.
 
     Returns
     -------
@@ -575,7 +645,7 @@ def lambda_from_abc(rF, rR, a, b, c):
     return lam
 
 def trail(rF, lam, fo):
-    '''Caluculate the trail and mechanical trail
+    '''Returns the trail and mechanical trail.
 
     Parameters:
     -----------
