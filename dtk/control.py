@@ -1,6 +1,120 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def sort_modes(evals, evecs):
+    """Sort a series of eigenvalues and eigenvectors into modes.
+
+    Parameters
+    ----------
+    evals : ndarray, shape (n, m)
+        eigenvalues
+    evecs : ndarray, shape (n, m, m)
+        eigenvectors
+
+    """
+    evalsorg = np.zeros_like(evals)
+    evecsorg = np.zeros_like(evecs)
+    # set the first row to be the same
+    evalsorg[0] = evals[0]
+    evecsorg[0] = evecs[0]
+    # for each speed
+    for i, speed in enumerate(evals):
+        if i == evals.shape[0] - 1:
+            break
+        # for each current eigenvalue
+        used = []
+        for j, e in enumerate(speed):
+            x, y = np.real(evalsorg[i, j]), np.imag(evalsorg[i, j])
+            # for each eigenvalue at the next speed
+            dist = np.zeros(evals.shape[1])
+            for k, eignext in enumerate(evals[i + 1]):
+                xn, yn = np.real(eignext), np.imag(eignext)
+                # distance between points in the real/imag plane
+                dist[k] = np.abs(((xn - x)**2 + (yn - y)**2)**0.5)
+            if np.argmin(dist) in used:
+                # set the already used indice higher
+                dist[np.argmin(dist)] = np.max(dist) + 1.
+            else:
+                pass
+            evalsorg[i + 1, j] = evals[i + 1, np.argmin(dist)]
+            evecsorg[i + 1, :, j] = evecs[i + 1, :, np.argmin(dist)]
+            # keep track of the indices we've used
+            used.append(np.argmin(dist))
+    return evalsorg, evecsorg
+
+def eigen_vs_parameter(stateMatrices):
+
+    s = stateMatrices.shape
+
+    eigenvalues = np.zeros((s[0], s[1]), dtype=np.complex)
+    eigenvectors = np.zeros(s, dtype=np.complex)
+
+    for i, A in enumerate(stateMatrices):
+        eVal, eVec = np.linalg.eig(stateMatrices[i])
+        eigenvalues[i] = eVal
+        eigenvectors[i] = eVec
+
+    return eigenvalues, eigenvectors
+
+def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False, **kwargs):
+    """Returns a root locus plot of a series of eigenvalues with respect to a
+    series of values.
+
+    Parameters
+    ----------
+    parvalues : array_like, shape(n,)
+        The parameter values corresponding to each eigenvalue.
+    eigenvalues : array_like, shape(n,m)
+        The m eigenvalues for each parameter value.
+    skipZeros : boolean, optional, default = False
+        If true any eigenvalues close to zero will not be plotted.
+    **kwargs : varies
+        Any option keyword argments for a matplotlib scatter plot.
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+
+    """
+
+    fig = plt.figure()
+
+    if typ == 'complex':
+        default = {'s': 20,
+                   'c': parvalues,
+                   'cmap': plt.cm.gist_rainbow,
+                   'edgecolors': 'none'}
+        for k, v in default.items():
+            if k not in kwargs.keys():
+                kwargs[k] = v
+
+        x = eigenvalues.real
+        y = eigenvalues.imag
+
+        if skipZeros is True:
+            for i in range(x.shape[1]):
+                if (abs(x[:, i] - np.zeros_like(x[:, i])) > 1e-8).any():
+                    plt.scatter(x[:, i], y[:, i], **kwargs)
+        else:
+            plt.scatter(x, y, **kwargs)
+
+        plt.colorbar()
+        plt.grid()
+        plt.axis('equal')
+        plt.xlabel('Real [1/s]')
+        plt.ylabel('Imaginary [1/s]')
+    elif typ == 'separate':
+        ax = fig.add_subplot(1, 1, 1)
+        for i, e in enumerate(eigenvalues.T):
+            realLine = ax.plot(parvalues, e.real, **kwargs)
+            color = realLine[0].get_color()
+            ax.plot(parvalues, e.imag, color=color, **kwargs)
+        ax.grid()
+        ax.set_xlabel('Real [1/s]')
+        ax.set_ylabel('Imaginary [1/s]')
+
+    return fig
+
 class Bode(object):
     """A class for creating Bode plots and the associated data."""
     def __init__(self, frequency, *args, **kwargs):
@@ -195,11 +309,7 @@ class Bode(object):
 
                 plotNum += 1
 
-class System(object):
-    """A placeholder class for a linear dynamic system."""
-    pass
-
-class StateSpace(System):
+class StateSpace(object):
     """A linear time invariant system described by its state space."""
     def __init__(self, A, B, C, D, **kwargs):
         """Returns a StateSpace object.
