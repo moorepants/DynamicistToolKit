@@ -56,7 +56,8 @@ def eigen_vs_parameter(stateMatrices):
 
     return eigenvalues, eigenvectors
 
-def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False, **kwargs):
+def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False,
+        fig=None, **kwargs):
     """Returns a root locus plot of a series of eigenvalues with respect to a
     series of values.
 
@@ -68,6 +69,8 @@ def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False, **kw
         The m eigenvalues for each parameter value.
     skipZeros : boolean, optional, default = False
         If true any eigenvalues close to zero will not be plotted.
+    fig : matplotlib.Figure, optional, default = None
+        Pass in a figure to plot on.
     **kwargs : varies
         Any option keyword argments for a matplotlib scatter plot.
 
@@ -77,9 +80,16 @@ def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False, **kw
 
     """
 
-    fig = plt.figure()
+    if fig is None:
+        fig = plt.figure()
+        needsBar = True
+    else:
+        needsBar = False
+
+    ax = fig.add_subplot(1, 1, 1)
 
     if typ == 'complex':
+
         default = {'s': 20,
                    'c': parvalues,
                    'cmap': plt.cm.gist_rainbow,
@@ -94,22 +104,26 @@ def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False, **kw
         if skipZeros is True:
             for i in range(x.shape[1]):
                 if (abs(x[:, i] - np.zeros_like(x[:, i])) > 1e-8).any():
-                    plt.scatter(x[:, i], y[:, i], **kwargs)
+                    scat = ax.scatter(x[:, i], y[:, i], **kwargs)
         else:
-            plt.scatter(x, y, **kwargs)
+            for i in range(x.shape[1]):
+                scat = ax.scatter(x[:, i], y[:, i], **kwargs)
 
-        plt.colorbar()
-        plt.grid()
+        if needsBar is True:
+            fig.colorbar(scat)
+
+        ax.grid(b=True)
         plt.axis('equal')
         plt.xlabel('Real [1/s]')
         plt.ylabel('Imaginary [1/s]')
+
     elif typ == 'separate':
-        ax = fig.add_subplot(1, 1, 1)
+
         for i, e in enumerate(eigenvalues.T):
             realLine = ax.plot(parvalues, e.real, **kwargs)
             color = realLine[0].get_color()
             ax.plot(parvalues, e.imag, color=color, **kwargs)
-        ax.grid()
+        ax.grid(b=True)
         ax.set_xlabel('Real [1/s]')
         ax.set_ylabel('Imaginary [1/s]')
 
