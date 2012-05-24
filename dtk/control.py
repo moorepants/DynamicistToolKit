@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -42,21 +43,36 @@ def sort_modes(evals, evecs):
             used.append(np.argmin(dist))
     return evalsorg, evecsorg
 
-def eigen_vs_parameter(stateMatrices):
+def eig_of_series(matrices):
+    """Returns the eigenvalues and eigenvectors for a series of matrices.
 
-    s = stateMatrices.shape
+    Parameters
+    ----------
+    matrices : array_like, shape(n,m,m)
+        A series of square matrices.
+
+    Returns
+    -------
+    eigenvalues : ndarray, shape(n,m)
+        The eigenvalues of the matrices.
+    eigenvectors : ndarray, shape(n,m,m)
+        The eigenvectors of the matrices.
+
+    """
+
+    s = matrices.shape
 
     eigenvalues = np.zeros((s[0], s[1]), dtype=np.complex)
     eigenvectors = np.zeros(s, dtype=np.complex)
 
-    for i, A in enumerate(stateMatrices):
-        eVal, eVec = np.linalg.eig(stateMatrices[i])
+    for i, A in enumerate(matrices):
+        eVal, eVec = np.linalg.eig(matrices[i])
         eigenvalues[i] = eVal
         eigenvectors[i] = eVec
 
     return eigenvalues, eigenvectors
 
-def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False,
+def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
         fig=None, **kwargs):
     """Returns a root locus plot of a series of eigenvalues with respect to a
     series of values.
@@ -88,46 +104,98 @@ def plot_root_locus(parvalues, eigenvalues, typ='complex', skipZeros=False,
 
     ax = fig.add_subplot(1, 1, 1)
 
-    if typ == 'complex':
+    default = {'s': 20,
+               'c': parvalues,
+               'cmap': plt.cm.gist_rainbow,
+               'edgecolors': 'none'}
+    for k, v in default.items():
+        if k not in kwargs.keys():
+            kwargs[k] = v
 
-        default = {'s': 20,
-                   'c': parvalues,
-                   'cmap': plt.cm.gist_rainbow,
-                   'edgecolors': 'none'}
-        for k, v in default.items():
-            if k not in kwargs.keys():
-                kwargs[k] = v
+    x = eigenvalues.real
+    y = eigenvalues.imag
 
-        x = eigenvalues.real
-        y = eigenvalues.imag
-
-        if skipZeros is True:
-            for i in range(x.shape[1]):
-                if (abs(x[:, i] - np.zeros_like(x[:, i])) > 1e-8).any():
-                    scat = ax.scatter(x[:, i], y[:, i], **kwargs)
-        else:
-            for i in range(x.shape[1]):
+    if skipZeros is True:
+        for i in range(x.shape[1]):
+            if (abs(x[:, i] - np.zeros_like(x[:, i])) > 1e-8).any():
                 scat = ax.scatter(x[:, i], y[:, i], **kwargs)
+    else:
+        for i in range(x.shape[1]):
+            scat = ax.scatter(x[:, i], y[:, i], **kwargs)
 
-        if needsBar is True:
-            fig.colorbar(scat)
+    if needsBar is True:
+        fig.colorbar(scat)
 
-        ax.grid(b=True)
-        plt.axis('equal')
-        plt.xlabel('Real [1/s]')
-        plt.ylabel('Imaginary [1/s]')
-
-    elif typ == 'separate':
-
-        for i, e in enumerate(eigenvalues.T):
-            realLine = ax.plot(parvalues, e.real, **kwargs)
-            color = realLine[0].get_color()
-            ax.plot(parvalues, e.imag, color=color, **kwargs)
-        ax.grid(b=True)
-        ax.set_xlabel('Real [1/s]')
-        ax.set_ylabel('Imaginary [1/s]')
+    ax.grid(b=True)
+    plt.axis('equal')
+    ax.set_xlabel('Real [1/s]')
+    ax.set_ylabel('Imaginary [1/s]')
 
     return fig
+
+def plot_root_locus_components(parvalues, eigenvalues, parts='both',
+        parName=None, parUnits=None, skipZeros=True, ax=None, **kwargs):
+    """Returns a root locus plot of a series of eigenvalues with respect to a
+    series of values.
+
+    Parameters
+    ----------
+    parvalues : array_like, shape(n,)
+        The parameter values corresponding to each eigenvalue.
+    eigenvalues : array_like, shape(n,m)
+        The m eigenvalues for each parameter value.
+    parts : string, optional, {*'both'*|'real'|'imaginary'}
+        Specify whether both the real and imaginary lines should be plotted or
+        one or the other.
+    parName : string, optional
+        Specify the name or abbreviation of the parameter name.
+    parUnits : string, optional
+        Specify the units of the parameter.
+    skipZeros : boolean, optional, {*True*|False}
+        If true any eigenvalues close to zero will not be plotted.
+    **kwargs : varies
+        Any option keyword argments for the matplotlib plot function. This will
+        be applied to all lines.
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Nothing is returned if an axis is provided.
+
+    """
+    newAx = False
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        newAx = True
+
+    colors = itertools.cycle(plt.rcParams['axes.color_cycle'])
+
+    for i, ev in enumerate(eigenvalues.T):
+        # don't plot the zero eigenvalues
+        isZero = (abs(ev.real - np.zeros_like(ev.real)) < 1e-14).all()
+        if isZero and skipZeros==True:
+            pass
+        else:
+            color = next(colors)
+            if parts == 'both' or parts == 'imaginary':
+                if (abs(ev.imag - np.zeros_like(ev.imag)) > 1e-14).any():
+                   ax.plot(parvalues, ev.imag, '--', color=color,
+                       label='Imaginary')
+            if parts == 'both' or parts == 'real':
+                ax.plot(parvalues, ev.real, '-', color=color, label='Real')
+
+    ax.grid(b=True)
+    ax.set_ylabel('Eigenvalue Component [$s^{-1}$]')
+    ax.legend()
+
+    if parName is not None and parUnits is not None:
+        ax.set_xlabel('{} {}'.format(parName, parUnits))
+
+    if newAx is True:
+        if parName is not None:
+            plt.title('Root locus with respect to {}'.format(parName))
+        return fig
 
 class Bode(object):
     """A class for creating Bode plots and the associated data."""
@@ -183,10 +251,15 @@ class Bode(object):
             kwargs = {}
 
         for i, system in enumerate(self.systems):
-            if self.colors is not None:
+            try:
                 kwargs['color'] = self.colors[i]
-            if self.linestyles is not None:
+            except AttributeError:
+                pass
+            try:
                 kwargs['linestyle'] = self.linestyles[i]
+            except AttributeError:
+                pass
+
             self.plot_system(system, self.magnitudes[i], self.phases[i],
                     **kwargs)
 
