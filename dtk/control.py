@@ -2,6 +2,57 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
+def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None, show=False):
+    """Returns a phasor plot of the given eigenvalues and eigenvectors.
+
+    Parameters
+    ----------
+    eigenvalues : array_like, shape(n)
+        The eigenvalues.
+    eigenvectors : array_like, shape(n,n)
+        The eigenvectors where each column corresponds to the eigenvalues.
+    components : array_like, optional
+        The indices of the eigenvector components to plot.
+    show : boolean, optional, {True | *False*}
+        If true the plots will be displayed.
+
+    Returns
+    -------
+    figs : list
+        A list of matplotlib figures.
+
+    Notes
+    -----
+    Plots are not produced for zero eigenvalues.
+
+    """
+
+    figs = []
+    lw = range(1, len(components) + 1)
+    lw.reverse()
+    for i, eVal in enumerate(eigenvalues):
+        figs.append(plt.figure())
+        ax = figs[-1].add_subplot(1, 1, 1, polar=True)
+        if components is None:
+            eVec = eigenvectors[:, i]
+        else:
+            eVec = eigenvectors[components, i]
+        maxCom = abs(eVec).max()
+        for j, component in enumerate(eVec):
+            radius = abs(component) / maxCom
+            theta = np.angle(component)
+            ax.plot([0, theta], [0, radius], lw=lw[j])
+        ax.set_rmax(1.0)
+        ax.set_title('Eigenvalue: %1.3f$\pm$%1.3fj' % (eVal.real, eVal.imag))
+        if compNames is not None:
+            ax.legend(compNames)
+
+    if show is True:
+        for fig in figs:
+            fig.show()
+
+    return figs
+
 def sort_modes(evals, evecs):
     """Sort a series of eigenvalues and eigenvectors into modes.
 
@@ -73,7 +124,7 @@ def eig_of_series(matrices):
     return eigenvalues, eigenvectors
 
 def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
-        fig=None, **kwargs):
+        fig=None, parName=None, parUnits=None, **kwargs):
     """Returns a root locus plot of a series of eigenvalues with respect to a
     series of values.
 
@@ -87,6 +138,10 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
         If true any eigenvalues close to zero will not be plotted.
     fig : matplotlib.Figure, optional, default = None
         Pass in a figure to plot on.
+    parName : string, optional
+        Specify the name or abbreviation of the parameter name.
+    parUnits : string, optional
+        Specify the units of the parameter.
     **kwargs : varies
         Any option keyword argments for a matplotlib scatter plot.
 
@@ -102,7 +157,7 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
     else:
         needsBar = False
 
-    ax = fig.add_subplot(1, 1, 1)
+    ax = fig.add_subplot(1, 1, 1, aspect='equal')
 
     default = {'s': 20,
                'c': parvalues,
@@ -124,10 +179,11 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
             scat = ax.scatter(x[:, i], y[:, i], **kwargs)
 
     if needsBar is True:
-        fig.colorbar(scat)
+        cb = fig.colorbar(scat)
+        if parName is not None and parUnits is not None:
+            cb.set_label('{} {}'.format(parName, parUnits))
 
     ax.grid(b=True)
-    plt.axis('equal')
     ax.set_xlabel('Real [1/s]')
     ax.set_ylabel('Imaginary [1/s]')
 
