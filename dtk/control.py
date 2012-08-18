@@ -423,9 +423,8 @@ class Bode(object):
                     fig.suptitle('Input: {}, Output: {}'.format(system.inputNames[i],
                         system.outputNames[o]))
 
-                    # axes [left, bottom, width, height]
-                    fig.magAx = fig.add_axes([.125, .525, .825, .275], **fig.axprops)
-                    fig.phaseAx = fig.add_axes([.125, .2, .825, .275], **fig.axprops)
+                    fig.magAx = fig.add_subplot(2, 1, 1, **fig.axprops)
+                    fig.phaseAx = fig.add_subplot(2, 1, 2, **fig.axprops)
 
                     fig.magAx.set_ylabel('Magnitude [dB]', **fig.yprops)
                     fig.phaseAx.set_ylabel('Phase [deg]', **fig.yprops)
