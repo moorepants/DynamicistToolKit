@@ -217,6 +217,168 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
         pow((sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)), 2)), 0.5)))
 
     return q9, q10
+    
+    
+#Steer torque:
+def steer_torque_slip(v, l1, l2, mc, ic11, ic33, ic31, q2, q4, u1, u2, u4, u8, u9, u10, u1d, u2d, u4d, u8d, u10d):
+
+    """Returns the steer torque under the slip
+    condition, pointing downward along the steer axis.	
+    
+    Parameters
+    ----------
+    v : float
+		The forward speed.
+    l1 : float
+		The rear frame mass center location relative to 		the rear wheel center along C['1'] axis.
+    l2 : float
+		The rear frame mass center location relative to 		the rear wheel center along C['3'] axis.
+    mc : float 
+		The rear frame mass.
+    ic11 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and C['1'] 		axis.
+    ic33 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and C['3'] 		axis.
+    ic31 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and C['1'] 		and C['3'] axis.
+    q2 : float
+		The roll angle.
+    q4 : float 
+		The steer angle.
+    u1 : float
+		The yaw rate.
+    u2 : float
+		The roll rate.
+    u4 : float
+		The steer rate.
+    u8 : float
+		The rear wheel contact point rate in N['2'].
+    u9 : float
+		The front wheel contact point rate in N['1'].
+    u10 : float
+		The front wheel contact point rate in N['2'].
+    u1d : float
+		The yaw acc.
+    u2d : float
+		The roll acc.
+    u4d : float
+		The steer acc.
+    u8d : float
+		The rear wheel contact point acc in N['2'].
+    u10d : float
+		The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    T4 : float
+		The steer torque.
+
+    """
+
+	T4 = 0.0535*mc*u8d*(0.95*l1 + 0.312*l2) - q2*(0.525*mc*(0.95*l1 + 0.312*l2) + 4.85) - q4*(0.156*l1*mc + 0.0512*l2*mc - 0.893*v*(0.0535*mc*v*(0.95*l1 + 0.312*l2) + 0.586*v) + 1.51) - u10*v*(0.0157*mc*(0.95*l1 + 0.312*l2) + 0.172) + 0.495*u10d + u1d*(0.00522*ic11 - 0.0318*ic31 + 0.0483*ic33 + 0.0535*mc*(0.95*l1 + 0.312*l2)**2 + 0.0497) + u2*v*(2.79e-18*mc*(0.95*l1 + 0.312*l2) - 0.315) + u2d*(-0.0159*ic11 + 0.0431*ic31 + 0.0159*ic33 + 0.0535*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) + 0.413) + u4*v*(0.00287*mc*(0.95*l1 + 0.312*l2) + 0.496) + 0.173*u4d - u8*v*(0.0503*mc*(0.95*l1 + 0.312*l2) + 0.551) + u9*v*(0.00522*mc*(0.95*l1 + 0.312*l2) + 0.0572)
+	
+	return T4
+	
+def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33, ic31, q1, q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
+
+	"""Returns the contact forces for each wheel, with
+	respect to the inertial frame.
+	
+    Paramters
+    ---------
+    v : float
+		The forward speed.
+    l1 : float
+		The rear frame mass center location relative 			to the rear wheel center along C['1'] axis.
+    l2 : float
+		The rear frame mass center location relative 			to the rear wheel center along C['3'] axis.
+    mc : float 
+		The rear frame mass.
+    ic11 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and 			C['1'] axis.
+    ic22 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and 			C['2'] axis.
+    ic33 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and 			C['3'] axis.
+    ic31 : float
+		One component of the rear frame moment of 			inertia, with respect to mass center and 			C['1'] and C['3'] axis.
+    q1 : float
+		The yaw angle.
+    q2 : float
+		The roll angle.
+    q3 : float
+		The pitch angle.
+    q4 : float 
+		The steer angle.
+    u1 : float
+		The yaw rate.
+    u2 : float
+		The roll rate.
+    u3 : float
+		The pitch rate.
+    u4 : float
+		The steer rate.
+    u5 : float
+		The rear wheel angular rate.
+    u6 : float
+		The front wheel angular rate.
+    u7 : float
+		The rear wheel contact point rate in N['1'].
+    u8 : float
+		The rear wheel contact point rate in N['2'].
+    u9 : float
+		The front wheel contact point rate in N['1'].
+    u10 : float
+		The front wheel contact point rate in N['2'].
+    u1d : float
+		The yaw acc.
+    u2d : float
+		The roll acc.
+    u3d : float
+		The pitch acc.
+    u4d : float
+		The steer acc.
+    u5d : float
+		The rear wheel angular acc.
+    u6d : float
+		The front wheel angular acc.
+    u7d : float
+		The rear wheel contact point acc in N['1'].
+    u8d : float
+		The rear wheel contact point acc in N['2'].
+    u9d : float
+		The front wheel contact point acc in N['1'].
+    u10d : float
+		The front wheel contact point acc in N['2'].
+
+	Returns
+	-------
+	Fx_r_s : float
+		The rear wheel contact force along N['1']
+		direction under the slip condition.
+	Fy_r_s : float
+		The rear wheel contact force along N['2']
+		direction under the slip condition.
+	Fx_f_s : float
+		The front wheel contact force along N['1']
+		direction under the slip condition.
+	Fy_f_s : float
+		The front wheel contact force along N['2']
+		direction under the slip condition.
+		
+	"""
+
+	Fx_r_s = u3d*(0.279*ic22 - mc*(0.312*l1 - 0.95*l2 + 0.333) + 0.279*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) - 0.316) - u5d*(-0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.333*mc + 1.44) + 0.318*u6d + u7d*(-0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + mc + 4.45) - 0.952*u9d
+
+
+	Fy_r_s = q1*(2.6*l1*mc + 0.854*l2*mc - 3.62) - q2*(7.91*l1*mc + 2.6*l2*mc - 9.22*mc*(0.95*l1 + 0.312*l2) + 1.19) + q4*(2.73*l1*mc + 0.899*l2*mc + 0.893*v*(-0.94*mc*v*(0.95*l1 + 0.312*l2) + mc*v + 6.15*v) - 3.81) - u10*v*(-0.276*mc*(0.95*l1 + 0.312*l2) + 0.293*mc + 1.8) + 1.25*u10d - u1d*(0.0916*ic11 - 0.558*ic31 + 0.848*ic33 + 0.94*mc*(0.95*l1 + 0.312*l2)**2 - mc*(0.95*l1 + 0.312*l2) + 0.518) + u2*v*(-4.91e-17*mc*(0.95*l1 + 0.312*l2) + 5.22e-17*mc + 0.641) + u2d*(0.279*ic11 - 0.757*ic31 - 0.279*ic33 + mc*(0.312*l1 - 0.95*l2 + 0.333) - 0.94*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) + 2.94) + u3d*(0.0167*ic22 + 0.0167*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) + 0.447) + u4*v*(-0.0503*mc*(0.95*l1 + 0.312*l2) + 0.0535*mc + 1.6) - 0.019*u4d + u5d*(0.0167*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.0112) + 0.176*u6d - u7d*(0.0167*mc*(0.312*l1 - 0.95*l2 + 0.333) + 0.0272) - u8*v*(-0.884*mc*(0.95*l1 + 0.312*l2) + 0.94*mc + 5.78) + u8d*(-0.94*mc*(0.95*l1 + 0.312*l2) + mc + 4.9) + u9*v*(-0.0917*mc*(0.95*l1 + 0.312*l2) + 0.0976*mc + 0.6) - 0.474*u9d 
+
+	Fx_f_s = 0.0976*mc*u8d*(0.95*l1 + 0.312*l2) - q2*(0.957*mc*(0.95*l1 + 0.312*l2) - 1.27) - q4*(1.15*l1*mc + 0.377*l2*mc - 0.0871*v*(mc*v*(0.95*l1 + 0.312*l2) - 1.33*v) - 1.6) - u10*v*(0.0286*mc*(0.95*l1 + 0.312*l2) - 0.0379) - 0.129*u10d + u1d*(0.00951*ic11 - 0.0579*ic31 + 0.0881*ic33 + 0.0976*mc*(0.95*l1 + 0.312*l2)**2 + 0.0537) + u2*v*(5.09e-18*mc*(0.95*l1 + 0.312*l2) - 0.0666) + u2d*(-0.0289*ic11 + 0.0786*ic31 + 0.0289*ic33 + 0.0976*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) - 0.136) - u3d*(0.279*ic22 + 0.279*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) + 7.16) + u4*v*(0.00522*mc*(0.95*l1 + 0.312*l2) - 0.139) + 0.00197*u4d - u5d*(0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.187) - 2.65*u6d + u7d*(0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + 0.454) - u8*v*(0.0917*mc*(0.95*l1 + 0.312*l2) - 0.122) + u9*v*(0.00952*mc*(0.95*l1 + 0.312*l2) - 0.0126) + 7.9*u9d
+
+	Fy_f_s = -0.293*mc*u8d*(0.95*l1 + 0.312*l2) - q1*(2.6*l1*mc + 0.854*l2*mc - 3.62) + q2*(7.91*l1*mc + 2.6*l2*mc + 2.88*mc*(0.95*l1 + 0.312*l2) - 14.8) + q4*(1.0*l1*mc + 0.329*l2*mc - 0.893*v*(0.293*mc*v*(0.95*l1 + 0.312*l2) - 7.34*v) - 1.4) + u10*v*(0.0861*mc*(0.95*l1 + 0.312*l2) - 2.15) + 7.34*u10d - u1d*(0.0286*ic11 - 0.174*ic31 + 0.265*ic33 + 0.293*mc*(0.95*l1 + 0.312*l2)**2 + 1.49) - u2*v*(1.53e-17*mc*(0.95*l1 + 0.312*l2) - 0.2) - u2d*(-0.087*ic11 + 0.236*ic31 + 0.087*ic33 + 0.293*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) - 6.25) - u4*v*(0.0157*mc*(0.95*l1 + 0.312*l2) - 7.39) + 0.56*u4d + u8*v*(0.276*mc*(0.95*l1 + 0.312*l2) - 6.9) - u9*v*(0.0286*mc*(0.95*l1 + 0.312*l2) - 0.716)
+	
+	return Fx_r_s, Fy_r_s, Fx_f_s, Fy_f_s
+
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
     width = 4.0 # inches
