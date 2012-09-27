@@ -1,0 +1,33 @@
+Metadata-Version: 1.0
+Name: DynamicistToolKit
+Version: 0.1.0dev
+Summary: UNKNOWN
+Home-page: UNKNOWN
+Author: Jason Moore
+Author-email: moorepants@gmail.com
+License: Creative Commons Attribution-Noncommercial-Share Alike license
+Description: =================
+        DynamicistToolKit
+        =================
+        
+        This is a collection of python modules and tools that are helpful for a
+        dynamicist. Basically a place to throw things general tools that I use in the
+        other software I write.
+        
+        Modules
+        =======
+        
+        process
+        -------
+        Various tools for signal processing.
+        
+        inertia
+        -------
+        Various functions for calculating and manipulating inertial quantities.
+        
+        bicycle
+        -------
+        Generic tools for basic bicycle dynamics analysis. (These are not in a stable
+        state yet).
+        
+Platform: UNKNOWN
