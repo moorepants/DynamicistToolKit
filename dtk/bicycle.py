@@ -219,6 +219,42 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
     return q9, q10
     
     
+def front_wheel_rate(q1, q2, q4, u9, u10, lam, rF):
+	"""Returns the angular velocity of the front wheel.
+	
+	Parameters
+	----------
+	q1 : float
+		The yaw angle.
+	q2 : float
+		The roll angle.
+	q4 : float
+		The steer angle of the handlebar.
+	u9 : float
+		The front wheel contact point rate in N['1'].
+	u10 : float
+		The front wheel contact point rate in N['2'].
+	lam : float
+		The steer axis tilt angle.
+	rF : float
+		The front wheel radius.
+		
+	Returns
+	-------
+	u6 : float
+		The front wheel rate.
+	
+	"""
+	#steer angle of front wheel relative to inertia frame, N['1']
+	q4_wheel = q4 * cos(lam) * cos(q2) + q1
+	#forward speed of front wheel
+	v_front = cos(q4_wheel) * u9 + sin(q4_wheel) * u10
+	
+	u6 = v_front / (-rF)
+	
+	return u6
+
+    
 #Steer torque:
 def steer_torque_slip(v, l1, l2, mc, ic11, ic33, ic31, q2, 
 		q4, u1, u2, u4, u8, u9, u10, u1d, u2d, u4d, u8d, u10d):
