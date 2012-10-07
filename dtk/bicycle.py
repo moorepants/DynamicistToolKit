@@ -218,8 +218,64 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
 	return q9, q10
 
+def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, guess1=None, guess2=None):
+	"""Returns the yaw angle of the front wheel.
+	
+	Parameters
+	----------
+	q1 : float
+		The yaw angle.
+	q2 : float
+		The roll angle.
+	q4 : float
+		The steer angle.
+	d1 : float
+		The distance from the rear wheel center to the steer axis.
+	d2 : float
+		The distance between the front and rear wheel centers along the steer
+		axis.
+	d3 : float
+		The distance from the front wheel center to the steer axis.
+	lam : float
+		The steer axis tilt angle.
+	rr : float
+		The radius of the rear wheel.
+	rf : float
+		The radius of the front wheel.
+	guess1 : float, optional
+		A guess for the yaw angel of the front wheel.
+	guess2 : float, optional
+		A guess for the pitch angle. This may be only needed for extremely
+		large steer and roll angles.
 
-def front_wheel_rate(q1, q2, q4, u9, u10, lam, rF):
+	Returns
+	-------
+	q1_front_wheel : float
+		The yaw angle of the front wheel, which is diffent from q3 of rear wheel.
+
+	"""
+	q3 = pitch_from_roll_and_steer(q2, q4, rf, rr, d1, d2, d3, guess=guess2)
+
+	def yaw_front_wheel_constraint(q1_front_wheel, q1, q2, q3, q4):
+		zero = (cos(q1_front_wheel) - ((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
+	cos(q4)) * cos(q1) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
+	cos(q4))**2 + sin(q4)**2 * cos(q3)**2) - sin(q1) * sin(q4) * 
+	cos(q3) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
+	cos(q4))**2 + sin(q4)**2 * cos(q3)**2)))
+		return zero
+
+	if guess1 is None:
+		#guess besed on roll angle being zero and pitch angle being lam
+		guess1 = q1 + q4 * cos(lam)
+
+	args = (q1, q2, q3, q4)
+
+	q1_front_wheel = newton(yaw_front_wheel_constraint, guess1, args=args)
+
+	return q1_front_wheel
+
+
+def front_wheel_rate(q1, q2, q4, u9, u10, d1, d2, d3, lam, rr, rf, guess1=None, guess2=None):
 	"""Returns the angular velocity of the front wheel.
 
 	Parameters
@@ -234,23 +290,37 @@ def front_wheel_rate(q1, q2, q4, u9, u10, lam, rF):
 		The front wheel contact point rate in N['1'].
 	u10 : float
 		The front wheel contact point rate in N['2'].
+	d1 : float
+		The distance from the rear wheel center to the steer axis.
+	d2 : float
+		The distance between the front and rear wheel centers along the steer
+		axis.
+	d3 : float
+		The distance from the front wheel center to the steer axis.
 	lam : float
 		The steer axis tilt angle.
-	rF : float
-		The front wheel radius.
+	rr : float
+		The radius of the rear wheel.
+	rf : float
+		The radius of the front wheel.
+	guess1 : float, optional
+		A guess for the yaw angel of the front wheel.
+	guess2 : float, optional
+		A guess for the pitch angle. This may be only needed for extremely
+		large steer and roll angles.
 
 	Returns
 	-------
 	u6 : float
-		The front wheel rate.
+		The front wheel rate in E['2'].
 
 	"""
-	#steer angle of front wheel relative to inertia frame, N['1']
-	q4_wheel = q4 * cos(lam) * cos(q2) + q1
-	#forward speed of front wheel
-	v_front = cos(q4_wheel) * u9 + sin(q4_wheel) * u10
 
-	u6 = v_front / (-rF)
+	q1_front_wheel = front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, guess1=None, guess2=None)
+
+	v_front = cos(q1_front_wheel) * u9 + sin(q1_front_wheel) * u10
+
+	u6 = v_front / (-rf)
 
 	return u6
 
