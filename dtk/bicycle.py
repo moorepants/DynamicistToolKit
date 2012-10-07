@@ -1,4 +1,4 @@
-from math import sin, cos, tan, atan, pi
+from numpy import sin, cos, tan, arctan, pi
 from scipy.optimize import newton
 import numpy as np
 from matplotlib.pyplot import figure, rcParams
@@ -220,7 +220,7 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
 def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, guess1=None, guess2=None):
 	"""Returns the yaw angle of the front wheel.
-	
+
 	Parameters
 	----------
 	q1 : float
@@ -258,10 +258,10 @@ def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, guess1=None, gues
 
 	def yaw_front_wheel_constraint(q1_front_wheel, q1, q2, q3, q4):
 		zero = (cos(q1_front_wheel) - ((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
-	cos(q4)) * cos(q1) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
-	cos(q4))**2 + sin(q4)**2 * cos(q3)**2) - sin(q1) * sin(q4) * 
-	cos(q3) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
-	cos(q4))**2 + sin(q4)**2 * cos(q3)**2)))
+		cos(q4)) * cos(q1) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
+		cos(q4))**2 + sin(q4)**2 * cos(q3)**2) - sin(q1) * sin(q4) * 
+		cos(q3) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * cos(q4))**2 +
+		sin(q4)**2 * cos(q3)**2)))
 		return zero
 
 	if guess1 is None:
