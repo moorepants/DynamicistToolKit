@@ -572,10 +572,10 @@ def contact_forces_nonslip(l1, l2, mc, q1, q2, q4, u1, u2, u3, u4, u5, u6, u1d, 
     return Fx_r_ns, Fy_r_ns, Fx_f_ns, Fy_f_ns
 
 def contact_points_acceleration(frameAccX, frameAccY, frameAccZ, 
-        yawAngle, rollAngle, pitchAngle, steerAngle, 
+        yawAngle, rollAngle, steerAngle, 
         yawRate, rollRate, pitchRate, steerRate, rearWheelRate, frontWheelRate, 
         yawAcc, rollAcc, pitchAcc, steerAcc, rearWheelAcc, frontWheelAcc, 
-        d1, d2, d3, rr, rf, s1, s3):
+        d1, d2, d3, rr, rf, s1, s3, guess=None):
     """Returns the contact points acceleration for each wheel, with 
     respect to the inertial frame N, expressed by the inertial frame N.
 
@@ -638,8 +638,10 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     vn3 = frameAccZ
     q1 = yawAngle; u1 = yawRate; u1d = yawAcc
     q2 = rollAngle; u2 = rollRate; u2d = rollAcc
-    q3 = pitchAngle; u3 = pitchRate; u3d = pitchAcc
+    u3 = pitchRate; u3d = pitchAcc
     q4 = steerAngle; u4 = steerRate; u4d = steerAcc
+
+    q3 = pitch_from_roll_and_steer(q2, q4, rf, rr, d1, d2, d3, guess=guess)
 
     u7d = (-rr*(u1*sin(q2) + u3 + u5)**2 - rr*u2**2)*sin(q1)*sin(q2) +
     (rr*(u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d) +
@@ -965,7 +967,7 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
     u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) + vn2)*sin(q2)
 
-	return u7d, u8d, u11d, u9d, u10d, u12d
+    return u7d, u8d, u11d, u9d, u10d, u12d
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
     width = 4.0 # inches
