@@ -647,17 +647,17 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     (rr*(u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d) +
     rr*u1*u2*cos(q2))*cos(q1) + (-sin(q1)*sin(q2)*sin(q3) +
     cos(q1)*cos(q3))*(d1*(u1*sin(q2) + u3)**2 - d2*(u1*u2*cos(q2) +
-    sin(q2)*u1d + u3d) + s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) -
+    sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
     s3*(u1*sin(q2) + u3)**2 - (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
     d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)) - (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    u2*sin(q3)) - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)) + vn1) + (sin(q1)*sin(q2)*cos(q3) +
     sin(q3)*cos(q1))*(d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
-    d2*(u1*sin(q2) + u3)**2 - s1*(u1*sin(q2) + u3)**2 - s3*(u1*u2*cos(q2)
+    d2*(u1*sin(q2) + u3)**2 + s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
     + sin(q2)*u1d + u3d) + (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
     d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(-u1*sin(q3)*cos(q2) +
-    u2*cos(q3)) + (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    u2*cos(q3)) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
     u2*cos(q3)) + vn3) - (rr*(u1*sin(q2) + u3 + u5)*u1*cos(q2) -
     rr*((-u1*sin(q3)*cos(q2) + u2*cos(q3))*u5*sin(q3) -
@@ -667,10 +667,10 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
     u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
     u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
-    cos(q3)*u2d) + s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
-    - s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
-    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) + s3*(u1*sin(q2) +
-    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) -
+    cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+    + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
     u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
     cos(q2)*cos(q3)*u1d) + vn2)*sin(q1)*cos(q2)
 
@@ -678,17 +678,17 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     (rr*(u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d) +
     rr*u1*u2*cos(q2))*sin(q1) + (sin(q1)*sin(q3) -
     sin(q2)*cos(q1)*cos(q3))*(d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
-    d2*(u1*sin(q2) + u3)**2 - s1*(u1*sin(q2) + u3)**2 - s3*(u1*u2*cos(q2)
+    d2*(u1*sin(q2) + u3)**2 + s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
     + sin(q2)*u1d + u3d) + (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
     d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(-u1*sin(q3)*cos(q2) +
-    u2*cos(q3)) + (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    u2*cos(q3)) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
     u2*cos(q3)) + vn3) + (sin(q1)*cos(q3) +
     sin(q2)*sin(q3)*cos(q1))*(d1*(u1*sin(q2) + u3)**2 - d2*(u1*u2*cos(q2)
-    + sin(q2)*u1d + u3d) + s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) -
+    + sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
     s3*(u1*sin(q2) + u3)**2 - (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
     d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)) - (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    u2*sin(q3)) - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)) + vn1) + (rr*(u1*sin(q2) + u3 + u5)*u1*cos(q2) -
     rr*((-u1*sin(q3)*cos(q2) + u2*cos(q3))*u5*sin(q3) -
@@ -698,10 +698,10 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
     u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
     u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
-    cos(q3)*u2d) + s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
-    - s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
-    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) + s3*(u1*sin(q2) +
-    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) -
+    cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+    + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
     u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
     cos(q2)*cos(q3)*u1d) + vn2)*cos(q1)*cos(q2)
 
@@ -709,27 +709,27 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     + u3 + u5)*u1*cos(q2) - rr*((-u1*sin(q3)*cos(q2) +
     u2*cos(q3))*u5*sin(q3) - (u1*cos(q2)*cos(q3) + u2*sin(q3))*u5*cos(q3)
     - u1*u3*cos(q2) + u2d))*sin(q2) - (d1*(u1*sin(q2) + u3)**2 -
-    d2*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + s1*(u1*u2*cos(q2) +
-    sin(q2)*u1d + u3d) - s3*(u1*sin(q2) + u3)**2 -
+    d2*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) +
+    sin(q2)*u1d + u3d) + s3*(u1*sin(q2) + u3)**2 -
     (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(-u1*sin(q3)*cos(q2) +
     u2*cos(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) -
-    (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
+    (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + vn1)*sin(q3)*cos(q2)
-    + (d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + d2*(u1*sin(q2) + u3)**2 -
-    s1*(u1*sin(q2) + u3)**2 - s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+    + (d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + d2*(u1*sin(q2) + u3)**2 +
+    s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
     (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(-u1*sin(q3)*cos(q2) +
     u2*cos(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
-    (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
+    (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
     vn3)*cos(q2)*cos(q3) + (-d1*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
     u2*cos(q3)) - d1*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
     u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
     u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
     u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
-    cos(q3)*u2d) + s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
-    - s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
-    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) + s3*(u1*sin(q2) +
-    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) -
+    cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+    + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
     u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
     cos(q2)*cos(q3)*u1d) + vn2)*sin(q2)
 
@@ -779,9 +779,9 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     - sin(q3)*cos(q2)*cos(q4))**2 +
     cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
     u4))*(u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)) +
-    (-sin(q1)*sin(q2)*sin(q3) + cos(q1)*cos(q3))*(s1*(u1*u2*cos(q2) +
-    sin(q2)*u1d + u3d) - s3*(u1*sin(q2) + u3)**2 -
-    (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
+    (-sin(q1)*sin(q2)*sin(q3) + cos(q1)*cos(q3))*(-s1*(u1*u2*cos(q2) +
+    sin(q2)*u1d + u3d) + s3*(u1*sin(q2) + u3)**2 -
+    (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + vn1) +
     (sin(q1)*sin(q2)*cos(q3) + sin(q3)*cos(q1))*(-rf*((sin(q2)*cos(q4) +
     sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
@@ -802,13 +802,13 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
     u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
     u2*cos(q3)*cos(q4) + u3*sin(q4))) + (sin(q1)*sin(q2)*cos(q3) +
-    sin(q3)*cos(q1))*(-s1*(u1*sin(q2) + u3)**2 - s3*(u1*u2*cos(q2) +
-    sin(q2)*u1d + u3d) + (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    sin(q3)*cos(q1))*(s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2) +
+    sin(q2)*u1d + u3d) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
-    u2*cos(q3)) + vn3) - (s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)) - s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) -
-    u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d + cos(q3)*u2d) + s3*(u1*sin(q2) +
-    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) -
+    u2*cos(q3)) + vn3) - (-s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) +
+    u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) -
+    u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
     u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
     cos(q2)*cos(q3)*u1d) + vn2)*sin(q1)*cos(q2)
 
@@ -877,18 +877,17 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
     u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
     u2*cos(q3)*cos(q4) + u3*sin(q4))) + (sin(q1)*sin(q3) -
-    sin(q2)*cos(q1)*cos(q3))*(-s1*(u1*sin(q2) + u3)**2 -
-    s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + (-s1*(-u1*sin(q3)*cos(q2) +
-    u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + vn3) +
-    (sin(q1)*cos(q3) + sin(q2)*sin(q3)*cos(q1))*(s1*(u1*u2*cos(q2) +
-    sin(q2)*u1d + u3d) - s3*(u1*sin(q2) + u3)**2 -
-    (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + vn1) +
-    (s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) -
-    s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
-    sin(q3)*cos(q2)*u1d + cos(q3)*u2d) + s3*(u1*sin(q2) +
-    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) -
+    sin(q2)*cos(q1)*cos(q3))*(s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
+    + sin(q2)*u1d + u3d) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+    s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
+    u2*cos(q3)) + vn3) + (sin(q1)*cos(q3) +
+    sin(q2)*sin(q3)*cos(q1))*(-s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+    s3*(u1*sin(q2) + u3)**2 - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+    s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
+    u2*sin(q3)) + vn1) + (-s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) +
+    u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) -
+    u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+    u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
     u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
     cos(q2)*cos(q3)*u1d) + vn2)*cos(q1)*cos(q2)
 
@@ -953,18 +952,18 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     - sin(q3)*cos(q2)*cos(q4))**2 +
     cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
     u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
-    u2*cos(q3)*cos(q4) + u3*sin(q4)))*cos(q2)*cos(q3) + (-s1*(u1*sin(q2)
-    + u3)**2 - s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
-    (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) + s3*(u1*cos(q2)*cos(q3) +
+    u2*cos(q3)*cos(q4) + u3*sin(q4)))*cos(q2)*cos(q3) + (s1*(u1*sin(q2) +
+    u3)**2 + s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+    (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
     u2*sin(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
-    vn3)*cos(q2)*cos(q3) - (s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) -
-    s3*(u1*sin(q2) + u3)**2 - (-s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+    vn3)*cos(q2)*cos(q3) - (-s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+    s3*(u1*sin(q2) + u3)**2 - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
     s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
-    u2*sin(q3)) + vn1)*sin(q3)*cos(q2) + (s1*(u1*sin(q2) +
-    u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) - s1*(u1*u2*sin(q2)*sin(q3) -
+    u2*sin(q3)) + vn1)*sin(q3)*cos(q2) + (-s1*(u1*sin(q2) +
+    u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) -
     u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
-    cos(q3)*u2d) + s3*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
-    u2*cos(q3)) + s3*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
+    cos(q3)*u2d) - s3*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
+    u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
     u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) + vn2)*sin(q2)
 
     return u7d, u8d, u11d, u9d, u10d, u12d
