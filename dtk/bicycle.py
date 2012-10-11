@@ -1,4 +1,4 @@
-from numpy import sin, cos, tan, arctan, pi
+from numpy import sin, cos, tan, arctan, pi, sqrt
 from scipy.optimize import newton
 import numpy as np
 from matplotlib.pyplot import figure, rcParams
@@ -218,7 +218,8 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
     return q9, q10
 
-def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, guess1=None, guess2=None):
+def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, 
+                                guess1=None, guess2=None):
     """Returns the yaw angle of the front wheel.
 
     Parameters
@@ -318,7 +319,7 @@ def front_wheel_rate(q1, q2, q4, u9, u10, d1, d2, d3, lam,
     """
 
     q1_front_wheel = front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, 
-                                        uess1=None, guess2=None)
+                                        guess1=None, guess2=None)
 
     v_front = cos(q1_front_wheel) * u9 + sin(q1_front_wheel) * u10
 
