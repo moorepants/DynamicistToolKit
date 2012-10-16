@@ -3,6 +3,8 @@ from scipy.optimize import newton
 import numpy as np
 from matplotlib.pyplot import figure, rcParams
 
+import pdb
+
 from inertia import y_rot
 
 def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None,
@@ -403,15 +405,62 @@ def steer_torque_slip(v, l1, l2, mc, ic11, ic33, ic31,
 
     return T4
 
+def contact_force_rear_longitudinal_slip(l1, l2, mc, ic22, 
+                        u3, u5, u6, u7, u9, u3d, u5d, u6d, u7d, u9d):
+    """Return longitudinal contact force of rear wheel under the slip condition.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic22 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['2'] axis.
+    u3 : float
+        The pitch rate.
+    u5 : float
+        The rear wheel angular rate.
+    u6 : float
+        The front wheel angular rate.
+    u7 : float
+        The rear wheel contact point rate in N['1'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u3d : float
+        The pitch acc.
+    u5d : float
+        The rear wheel angular acc.
+    u6d : float
+        The front wheel angular acc.
+    u7d : float
+        The rear wheel contact point acc in N['1'].
+    u9d : float
+        The front wheel contact point acc in N['1'].
 
-def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33, 
-        ic31, q1, q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, 
-        u10, u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
-    """Return contact forces for each wheel, with respect to inertial
-    frame, under the slip condition.
+    Returns
+    -------
+    Fx_r_s : float
+        The rear wheel longitudinal contact force along N['1'] direction 
+        under the slip condition.
 
-    Paramters
-    ---------
+    """
+
+    Fx_r_s = u3d*(0.279*ic22 - mc*(0.312*l1 - 0.95*l2 + 0.333) +
+        0.279*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) - 0.316) - \
+        u5d*(-0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.333*mc + 1.44) + \
+        0.318*u6d + u7d*(-0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + mc +
+        4.45) - 0.952*u9d
+
+    return Fx_r_s
+
+def contact_force_rear_lateral_slip(v, l1, l2, mc, ic11, ic22, ic33, ic31,
+                q1, q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10,
+                u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
+
+    """Return lateral contact force of rear wheel under the slip condition.
     v : float
         The forward speed.
     l1 : float
@@ -438,8 +487,6 @@ def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33,
         The yaw angle.
     q2 : float
         The roll angle.
-    q3 : float
-        The pitch angle.
     q4 : float
         The steer angle.
     u1 : float
@@ -485,27 +532,11 @@ def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33,
 
     Returns
     -------
-    Fx_r_s : float
-        The rear wheel contact force along N['1']
-        direction under the slip condition.
     Fy_r_s : float
-        The rear wheel contact force along N['2']
-        direction under the slip condition.
-    Fx_f_s : float
-        The front wheel contact force along N['1']
-        direction under the slip condition.
-    Fy_f_s : float
-        The front wheel contact force along N['2']
-        direction under the slip condition.
+        The rear wheel lateral contact force along N['2'] direction 
+        under the slip condition.
 
     """
-
-    Fx_r_s = u3d*(0.279*ic22 - mc*(0.312*l1 - 0.95*l2 + 0.333) +
-        0.279*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) - 0.316) - \
-        u5d*(-0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.333*mc + 1.44) + \
-        0.318*u6d + u7d*(-0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + mc +
-        4.45) - 0.952*u9d
-
 
     Fy_r_s = q1*(2.6*l1*mc + 0.854*l2*mc - 3.62) - q2*(7.91*l1*mc +
         2.6*l2*mc - 9.22*mc*(0.95*l1 + 0.312*l2) + 1.19) + q4*(2.73*l1*mc
@@ -527,6 +558,88 @@ def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33,
         u9*v*(-0.0917*mc*(0.95*l1 + 0.312*l2) + 0.0976*mc + 0.6) - \
         0.474*u9d 
 
+    return Fy_r_s
+
+def contact_force_front_longitudinal_slip(v, l1, l2, mc, ic11, ic22, ic33, ic31,
+                q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10,
+                u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
+
+    """Return longitudinal contact force of front wheel under the slip condition.
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] axis.
+    ic22 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['2'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] and C['3'] axis.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u5 : float
+        The rear wheel angular rate.
+    u6 : float
+        The front wheel angular rate.
+    u7 : float
+        The rear wheel contact point rate in N['1'].
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u5d : float
+        The rear wheel angular acc.
+    u6d : float
+        The front wheel angular acc.
+    u7d : float
+        The rear wheel contact point acc in N['1'].
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u9d : float
+        The front wheel contact point acc in N['1'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    Fx_f_s : float
+        The front wheel longitudinal contact force along N['1'] direction 
+        under the slip condition.
+
+    """
+
     Fx_f_s = 0.0976*mc*u8d*(0.95*l1 + 0.312*l2) - q2*(0.957*mc*(0.95*l1 +
         0.312*l2) - 1.27) - q4*(1.15*l1*mc + 0.377*l2*mc -
         0.0871*v*(mc*v*(0.95*l1 + 0.312*l2) - 1.33*v) - 1.6) - \
@@ -544,6 +657,67 @@ def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33,
         u8*v*(0.0917*mc*(0.95*l1 + 0.312*l2) - 0.122) + \
         u9*v*(0.00952*mc*(0.95*l1 + 0.312*l2) - 0.0126) + 7.9*u9d
 
+    return Fx_f_s
+ 
+def contact_force_front_lateral_slip(v, l1, l2, mc, ic11, ic33, ic31,
+                q1, q2, q4, u1, u2, u4, u8, u9, u10,
+                u1d, u2d, u4d, u8d, u10d):
+
+    """Return longitudinal contact force of front wheel under the slip condition.
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] and C['3'] axis.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u4 : float
+        The steer rate.
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u4d : float
+        The steer acc.
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    Fy_f_s : float
+        The front wheel lateral contact force along N['2'] direction 
+        under the slip condition.
+
+    """
+
     Fy_f_s = -0.293*mc*u8d*(0.95*l1 + 0.312*l2) - q1*(2.6*l1*mc +
         0.854*l2*mc - 3.62) + q2*(7.91*l1*mc + 2.6*l2*mc +
         2.88*mc*(0.95*l1 + 0.312*l2) - 14.8) + q4*(1.0*l1*mc +
@@ -558,71 +732,47 @@ def contact_forces_slip(v, l1, l2, mc, ic11, ic22, ic33,
         u8*v*(0.276*mc*(0.95*l1 + 0.312*l2) - 6.9) - \
         u9*v*(0.0286*mc*(0.95*l1 + 0.312*l2) - 0.716)
 
-    return Fx_r_s, Fy_r_s, Fx_f_s, Fy_f_s
+    return Fy_f_s
 
-def contact_forces_nonslip(l1, l2, mc, 
-        q1, q2, q4, u1, u2, u3, u4, u5, u6, u1d, u2d, u3d, u4d, u5d, u6d):
+def contact_force_rear_longitudinal_nonslip(l1, l2, mc,
+                        q1, q2, u1, u2, u3, u5, u1d, u2d, u3d, u5d):
 
-    """Returns the contact forces for each wheel, with 
-    respect to the inertial frame under nonslip condition.
-
-    Paramters
-    ---------
+    """Return longitudinal contact force of rear wheel 
+    under the constraint condition.
     l1 : float
-        The rear frame mass center location relative to the rear 
-        wheel center along C['1'] axis.
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
     l2 : float
-        The rear frame mass center location relative to the rear 
-        wheel center along C['3'] axis.
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
     mc : float 
         The rear frame mass.
     q1 : float
         The yaw angle.
     q2 : float
         The roll angle.
-    q3 : float
-        The pitch angle.
-    q4 : float 
-        The steer angle.
     u1 : float
         The yaw rate.
     u2 : float
         The roll rate.
     u3 : float
         The pitch rate.
-    u4 : float
-        The steer rate.
     u5 : float
         The rear wheel angular rate.
-    u6 : float
-        The front wheel angular rate.
     u1d : float
         The yaw acc.
     u2d : float
         The roll acc.
     u3d : float
         The pitch acc.
-    u4d : float
-        The steer acc.
     u5d : float
         The rear wheel angular acc.
-    u6d : float
-        The front wheel angular acc.
 
     Returns
     -------
     Fx_r_ns : float
-        The rear wheel contact force along N['1'] 
-        direction under the nonslip condition.
-    Fy_r_ns : float
-        The rear wheel contact force along N['2'] 
-        direction under the nonslip condition.
-    Fx_f_ns : float
-        The front wheel contact force along N['1'] 
-        direction under the nonslip condition.
-    Fy_f_ns : float
-        The front wheel contact force along N['2'] 
-        direction under the nonslip condition.
+        The rear wheel longitudinal contact force along N['1'] direction 
+        under the constraint condition.
 
     """
 
@@ -646,6 +796,51 @@ def contact_forces_nonslip(l1, l2, mc,
         + 1.63*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - u2d)*sin(q1)*cos(q2) \
         - 1.63*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*cos(q1)
 
+    return Fx_r_ns
+
+def contact_force_rear_lateral_nonslip(l1, l2, mc,
+                    q1, q2, u1, u2, u3, u5, u1d, u2d, u3d, u5d):
+
+    """Return lateral contact force of rear wheel 
+    under the constraint condition.
+
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u5 : float
+        The rear wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u5d : float
+        The rear wheel angular acc.
+
+    Returns
+    -------
+    Fy_r_ns : float
+        The rear wheel lateral contact force along N['2'] direction 
+        under the constraint condition.
+
+    """
+
     Fy_r_ns = -0.333*mc*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + u2**2)*sin(q2)*cos(q1) \
         - 0.333*mc*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - \
         u2d)*cos(q1)*cos(q2) - mc*(0.312*sin(q1) - \
@@ -664,7 +859,50 @@ def contact_forces_nonslip(l1, l2, mc,
         0.333*mc*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*sin(q1) - \
         1.63*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + u2**2)*sin(q2)*cos(q1) \
         - 1.63*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - u2d)*cos(q1)*cos(q2) \
-        - 1.63*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*sin(q1)
+        - 1.63*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*sin(q1) 
+
+    return Fy_r_ns
+
+def contact_force_front_longitudinal_nonslip(q1, q2, q4, u1, u2, u3, u4, u6,
+                                        u1d, u2d, u3d, u4d, u6d):
+
+    """Return longitudinal contact force of front wheel 
+    under the constraint condition.
+
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u6 : float
+        The front wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u6d : float
+        The front wheel angular acc.
+
+    Returns
+    -------
+    Fx_f_ns : float
+        The front wheel longitudinal contact force along N['1'] direction 
+        under the constraint condition.
+
+    """
 
     Fx_f_ns = -0.52*((0.312*sin(q1)*sin(q2) - 0.95*cos(q1))*sin(q4) - \
         sin(q1)*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
@@ -933,6 +1171,49 @@ def contact_forces_nonslip(l1, l2, mc,
         0.0286*u1*u3*sin(q4)*cos(q2) + 0.0094*u2*u3*sin(q4) - \
         0.0286*sin(q4)*u2d + 0.0301*cos(q4)*u3d)
 
+    return Fx_f_ns
+
+def contact_force_front_lateral_nonslip(q1, q2, q4, u1, u2, u3, u4, u6,
+                                        u1d, u2d, u3d, u4d, u6d):
+
+    """Return longitudinal contact force of front wheel 
+    under the constraint condition.
+
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u6 : float
+        The front wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u6d : float
+        The front wheel angular acc.
+
+    Returns
+    -------
+    Fy_f_ns : float
+        The front wheel lateral contact force along N['2'] direction 
+        under the constraint condition.
+
+    """
+
     Fy_f_ns = 0.52*((0.95*sin(q1) + 0.312*sin(q2)*cos(q1))*sin(q4) - \
         cos(q1)*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
         0.312*cos(q2)*cos(q4))**2 + \
@@ -1199,7 +1480,7 @@ def contact_forces_nonslip(l1, l2, mc,
         0.0286*u1*u3*sin(q4)*cos(q2) + 0.0094*u2*u3*sin(q4) - \
         0.0286*sin(q4)*u2d + 0.0301*cos(q4)*u3d)
 
-    return Fx_r_ns, Fy_r_ns, Fx_f_ns, Fy_f_ns
+    return Fy_f_ns
 
 def contact_points_acceleration(frameAccX, frameAccY, frameAccZ, 
         yawAngle, rollAngle, steerAngle, 
