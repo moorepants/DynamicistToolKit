@@ -1493,11 +1493,11 @@ def contact_points_acceleration(frameAccX, frameAccY, frameAccZ,
     Paramters
     ---------
     frameAccX : float
-        The frame acceleration in forward direction, A['1'].
+        The frame acceleration in body-fixed coordinates, C['1'].
     frameAccY : float
-        The frame acceleration in lateral direction, A['2'].
+        The frame acceleration in body-fixed coordinates, C['2'].
     frameAccZ : float 
-        The frame acceleration in downward direction, A['3'].
+        The frame acceleration in body-fixed coordinates, C['3'].
     yawAngle, yawRate, yawAcc : float
         The yaw angle, angular rate, and angular acceleration, respectively.
     rollAngle, rollRate, rollAcc : float
