@@ -1,7 +1,9 @@
-from math import sin, cos, tan, atan, pi
+from numpy import sin, cos, tan, arctan, pi, sqrt
 from scipy.optimize import newton
 import numpy as np
 from matplotlib.pyplot import figure, rcParams
+
+import pdb
 
 from inertia import y_rot
 
@@ -217,6 +219,1667 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
         pow((sin(q4) * sin(q7) - sin(q5) * cos(q4) * cos(q7)), 2)), 0.5)))
 
     return q9, q10
+
+def front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, 
+                                guess1=None, guess2=None):
+    """Returns the yaw angle of the front wheel.
+
+    Parameters
+    ----------
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    d1 : float
+        The distance from the rear wheel center to the steer axis.
+    d2 : float
+        The distance between the front and rear wheel centers along the steer
+        axis.
+    d3 : float
+        The distance from the front wheel center to the steer axis.
+    lam : float
+        The steer axis tilt angle.
+    rr : float
+        The radius of the rear wheel.
+    rf : float
+        The radius of the front wheel.
+    guess1 : float, optional
+        A guess for the yaw angel of the front wheel.
+    guess2 : float, optional
+        A guess for the pitch angle. This may be only needed for extremely
+        large steer and roll angles.
+
+    Returns
+    -------
+    q1_front_wheel : float
+        The yaw angle of the front wheel, which is diffent from q3 of rear wheel.
+
+    """
+    q3 = pitch_from_roll_and_steer(q2, q4, rf, rr, d1, d2, d3, guess=guess2)
+
+    def yaw_front_wheel_equation(q1_front_wheel, q1, q2, q3, q4):
+        zero = (cos(q1_front_wheel) - ((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * 
+        cos(q4)) * cos(q1) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) *
+        cos(q4))**2 + sin(q4)**2 * cos(q3)**2) - sin(q1) * sin(q4) * 
+        cos(q3) / sqrt((-sin(q2) * sin(q3) * sin(q4) + cos(q2) * cos(q4))**2 +
+        sin(q4)**2 * cos(q3)**2)))
+        return zero
+
+    if guess1 is None:
+        #guess besed on roll angle being zero and pitch angle being lam
+        guess1 = q1 + q4 * cos(lam)
+
+    args = (q1, q2, q3, q4)
+
+    q1_front_wheel = newton(yaw_front_wheel_equation, guess1, args=args)
+
+    return q1_front_wheel
+
+
+def front_wheel_rate(q1, q2, q4, u9, u10, d1, d2, d3, lam, 
+                rr, rf, guess1=None, guess2=None):
+    """Returns the angular velocity of the front wheel.
+
+    Parameters
+    ----------
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle of the handlebar.
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    d1 : float
+        The distance from the rear wheel center to the steer axis.
+    d2 : float
+        The distance between the front and rear wheel centers along the steer
+        axis.
+    d3 : float
+        The distance from the front wheel center to the steer axis.
+    lam : float
+        The steer axis tilt angle.
+    rr : float
+        The radius of the rear wheel.
+    rf : float
+        The radius of the front wheel.
+    guess1 : float, optional
+        A guess for the yaw angel of the front wheel.
+    guess2 : float, optional
+        A guess for the pitch angle. This may be only needed for extremely
+        large steer and roll angles.
+
+    Returns
+    -------
+    u6 : float
+        The front wheel rate in E['2'].
+
+    """
+
+    q1_front_wheel = front_wheel_yaw_angle(q1, q2, q4, d1, d2, d3, lam, rr, rf, 
+                                        guess1=None, guess2=None)
+
+    v_front = cos(q1_front_wheel) * u9 + sin(q1_front_wheel) * u10
+
+    u6 = v_front / (-rf)
+
+    return u6
+
+
+def steer_torque_slip(v, l1, l2, mc, ic11, ic33, ic31, 
+            q2, q4, u1, u2, u4, u8, u9, u10, u1d, u2d, u4d, u8d, u10d):
+    """Returns the steer torque under the slip condition, pointing 
+    downward along the steer axis.  
+
+    Parameters
+    ----------
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the rear wheel 
+        center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the rear wheel 
+        center along C['3'] axis.
+    mc : float
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with respect 
+        to mass center and C['1'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with respect 
+        to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with respect 
+        to mass center and C['1'] and C['3'] axis.
+    q2 : float
+        The roll angle.
+    q4 : float 
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u4 : float
+        The steer rate.
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u4d : float
+        The steer acc.
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    T4 : float
+        The steer torque.
+
+    """
+
+    T4 = 0.0535*mc*u8d*(0.95*l1 + 0.312*l2) - q2*(0.525*mc*(0.95*l1 +
+        0.312*l2) + 4.85) - q4*(0.156*l1*mc + 0.0512*l2*mc -
+        0.893*v*(0.0535*mc*v*(0.95*l1 + 0.312*l2) + 0.586*v) + 1.51) - \
+        u10*v*(0.0157*mc*(0.95*l1 + 0.312*l2) + 0.172) + 0.495*u10d + \
+        u1d*(0.00522*ic11 - 0.0318*ic31 + 0.0483*ic33 +
+        0.0535*mc*(0.95*l1 + 0.312*l2)**2 + 0.0497) + \
+        u2*v*(2.79e-18*mc*(0.95*l1 + 0.312*l2) - 0.315) + \
+        u2d*(-0.0159*ic11 + 0.0431*ic31 + 0.0159*ic33 +
+        0.0535*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 +
+        0.312*l2)) + 0.413) + u4*v*(0.00287*mc*(0.95*l1 + 0.312*l2) +
+        0.496) + 0.173*u4d - u8*v*(0.0503*mc*(0.95*l1 + 0.312*l2) +
+        0.551) + u9*v*(0.00522*mc*(0.95*l1 + 0.312*l2) + 0.0572)
+
+    return T4
+
+def contact_force_rear_longitudinal_slip(l1, l2, mc, ic22, 
+                        u3, u5, u6, u7, u9, u3d, u5d, u6d, u7d, u9d):
+    """Return longitudinal contact force of rear wheel under the slip condition.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic22 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['2'] axis.
+    u3 : float
+        The pitch rate.
+    u5 : float
+        The rear wheel angular rate.
+    u6 : float
+        The front wheel angular rate.
+    u7 : float
+        The rear wheel contact point rate in N['1'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u3d : float
+        The pitch acc.
+    u5d : float
+        The rear wheel angular acc.
+    u6d : float
+        The front wheel angular acc.
+    u7d : float
+        The rear wheel contact point acc in N['1'].
+    u9d : float
+        The front wheel contact point acc in N['1'].
+
+    Returns
+    -------
+    Fx_r_s : float
+        The rear wheel longitudinal contact force along N['1'] direction 
+        under the slip condition.
+
+    """
+
+    Fx_r_s = u3d*(0.279*ic22 - mc*(0.312*l1 - 0.95*l2 + 0.333) +
+        0.279*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2 + 0.111) - 0.316) - \
+        u5d*(-0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.333*mc + 1.44) + \
+        0.318*u6d + u7d*(-0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + mc +
+        4.45) - 0.952*u9d
+
+    return Fx_r_s
+
+def contact_force_rear_lateral_slip(v, l1, l2, mc, ic11, ic22, ic33, ic31,
+                q1, q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10,
+                u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
+
+    """Return lateral contact force of rear wheel under the slip condition.
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] axis.
+    ic22 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['2'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] and C['3'] axis.
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u5 : float
+        The rear wheel angular rate.
+    u6 : float
+        The front wheel angular rate.
+    u7 : float
+        The rear wheel contact point rate in N['1'].
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u5d : float
+        The rear wheel angular acc.
+    u6d : float
+        The front wheel angular acc.
+    u7d : float
+        The rear wheel contact point acc in N['1'].
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u9d : float
+        The front wheel contact point acc in N['1'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    Fy_r_s : float
+        The rear wheel lateral contact force along N['2'] direction 
+        under the slip condition.
+
+    """
+
+    Fy_r_s = q1*(2.6*l1*mc + 0.854*l2*mc - 3.62) - q2*(7.91*l1*mc +
+        2.6*l2*mc - 9.22*mc*(0.95*l1 + 0.312*l2) + 1.19) + q4*(2.73*l1*mc
+        + 0.899*l2*mc + 0.893*v*(-0.94*mc*v*(0.95*l1 + 0.312*l2) + mc*v +
+        6.15*v) - 3.81) - u10*v*(-0.276*mc*(0.95*l1 + 0.312*l2) +
+        0.293*mc + 1.8) + 1.25*u10d - u1d*(0.0916*ic11 - 0.558*ic31 +
+        0.848*ic33 + 0.94*mc*(0.95*l1 + 0.312*l2)**2 - mc*(0.95*l1 +
+        0.312*l2) + 0.518) + u2*v*(-4.91e-17*mc*(0.95*l1 + 0.312*l2) +
+        5.22e-17*mc + 0.641) + u2d*(0.279*ic11 - 0.757*ic31 - 0.279*ic33
+        + mc*(0.312*l1 - 0.95*l2 + 0.333) - 0.94*mc*(0.316*l1 + 0.104*l2
+        + (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) + 2.94) + \
+        u3d*(0.0167*ic22 + 0.0167*mc*(l1**2 + 0.208*l1 + l2**2 - 0.632*l2
+        + 0.111) + 0.447) + u4*v*(-0.0503*mc*(0.95*l1 + 0.312*l2) +
+        0.0535*mc + 1.6) - 0.019*u4d + u5d*(0.0167*mc*(0.104*l1 -
+        0.316*l2 + 0.111) + 0.0112) + 0.176*u6d - \
+        u7d*(0.0167*mc*(0.312*l1 - 0.95*l2 + 0.333) + 0.0272) - \
+        u8*v*(-0.884*mc*(0.95*l1 + 0.312*l2) + 0.94*mc + 5.78) + \
+        u8d*(-0.94*mc*(0.95*l1 + 0.312*l2) + mc + 4.9) + \
+        u9*v*(-0.0917*mc*(0.95*l1 + 0.312*l2) + 0.0976*mc + 0.6) - \
+        0.474*u9d 
+
+    return Fy_r_s
+
+def contact_force_front_longitudinal_slip(v, l1, l2, mc, ic11, ic22, ic33, ic31,
+                q2, q4, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10,
+                u1d, u2d, u3d, u4d, u5d, u6d, u7d, u8d, u9d, u10d):
+
+    """Return longitudinal contact force of front wheel under the slip condition.
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] axis.
+    ic22 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['2'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] and C['3'] axis.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u5 : float
+        The rear wheel angular rate.
+    u6 : float
+        The front wheel angular rate.
+    u7 : float
+        The rear wheel contact point rate in N['1'].
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u5d : float
+        The rear wheel angular acc.
+    u6d : float
+        The front wheel angular acc.
+    u7d : float
+        The rear wheel contact point acc in N['1'].
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u9d : float
+        The front wheel contact point acc in N['1'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    Fx_f_s : float
+        The front wheel longitudinal contact force along N['1'] direction 
+        under the slip condition.
+
+    """
+
+    Fx_f_s = 0.0976*mc*u8d*(0.95*l1 + 0.312*l2) - q2*(0.957*mc*(0.95*l1 +
+        0.312*l2) - 1.27) - q4*(1.15*l1*mc + 0.377*l2*mc -
+        0.0871*v*(mc*v*(0.95*l1 + 0.312*l2) - 1.33*v) - 1.6) - \
+        u10*v*(0.0286*mc*(0.95*l1 + 0.312*l2) - 0.0379) - 0.129*u10d + \
+        u1d*(0.00951*ic11 - 0.0579*ic31 + 0.0881*ic33 +
+        0.0976*mc*(0.95*l1 + 0.312*l2)**2 + 0.0537) + \
+        u2*v*(5.09e-18*mc*(0.95*l1 + 0.312*l2) - 0.0666) + \
+        u2d*(-0.0289*ic11 + 0.0786*ic31 + 0.0289*ic33 +
+        0.0976*mc*(0.316*l1 + 0.104*l2 + (0.312*l1 - 0.95*l2)*(0.95*l1 +
+        0.312*l2)) - 0.136) - u3d*(0.279*ic22 + 0.279*mc*(l1**2 +
+        0.208*l1 + l2**2 - 0.632*l2 + 0.111) + 7.16) + \
+        u4*v*(0.00522*mc*(0.95*l1 + 0.312*l2) - 0.139) + 0.00197*u4d - \
+        u5d*(0.279*mc*(0.104*l1 - 0.316*l2 + 0.111) + 0.187) - 2.65*u6d + \
+        u7d*(0.279*mc*(0.312*l1 - 0.95*l2 + 0.333) + 0.454) - \
+        u8*v*(0.0917*mc*(0.95*l1 + 0.312*l2) - 0.122) + \
+        u9*v*(0.00952*mc*(0.95*l1 + 0.312*l2) - 0.0126) + 7.9*u9d
+
+    return Fx_f_s
+ 
+def contact_force_front_lateral_slip(v, l1, l2, mc, ic11, ic33, ic31,
+                q1, q2, q4, u1, u2, u4, u8, u9, u10,
+                u1d, u2d, u4d, u8d, u10d):
+
+    """Return longitudinal contact force of front wheel under the slip condition.
+    v : float
+        The forward speed.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    ic11 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] axis.
+    ic33 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['3'] axis.
+    ic31 : float
+        One component of the rear frame moment of inertia, with 
+        respect to mass center and C['1'] and C['3'] axis.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u4 : float
+        The steer rate.
+    u8 : float
+        The rear wheel contact point rate in N['2'].
+    u9 : float
+        The front wheel contact point rate in N['1'].
+    u10 : float
+        The front wheel contact point rate in N['2'].
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u4d : float
+        The steer acc.
+    u8d : float
+        The rear wheel contact point acc in N['2'].
+    u10d : float
+        The front wheel contact point acc in N['2'].
+
+    Returns
+    -------
+    Fy_f_s : float
+        The front wheel lateral contact force along N['2'] direction 
+        under the slip condition.
+
+    """
+
+    Fy_f_s = -0.293*mc*u8d*(0.95*l1 + 0.312*l2) - q1*(2.6*l1*mc +
+        0.854*l2*mc - 3.62) + q2*(7.91*l1*mc + 2.6*l2*mc +
+        2.88*mc*(0.95*l1 + 0.312*l2) - 14.8) + q4*(1.0*l1*mc +
+        0.329*l2*mc - 0.893*v*(0.293*mc*v*(0.95*l1 + 0.312*l2) - 7.34*v)
+        - 1.4) + u10*v*(0.0861*mc*(0.95*l1 + 0.312*l2) - 2.15) + \
+        7.34*u10d - u1d*(0.0286*ic11 - 0.174*ic31 + 0.265*ic33 +
+        0.293*mc*(0.95*l1 + 0.312*l2)**2 + 1.49) - \
+        u2*v*(1.53e-17*mc*(0.95*l1 + 0.312*l2) - 0.2) - u2d*(-0.087*ic11
+        + 0.236*ic31 + 0.087*ic33 + 0.293*mc*(0.316*l1 + 0.104*l2 + \
+        (0.312*l1 - 0.95*l2)*(0.95*l1 + 0.312*l2)) - 6.25) - \
+        u4*v*(0.0157*mc*(0.95*l1 + 0.312*l2) - 7.39) + 0.56*u4d + \
+        u8*v*(0.276*mc*(0.95*l1 + 0.312*l2) - 6.9) - \
+        u9*v*(0.0286*mc*(0.95*l1 + 0.312*l2) - 0.716)
+
+    return Fy_f_s
+
+def contact_force_rear_longitudinal_nonslip(l1, l2, mc,
+                        q1, q2, u1, u2, u3, u5, u1d, u2d, u3d, u5d):
+
+    """Return longitudinal contact force of rear wheel 
+    under the constraint condition.
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u5 : float
+        The rear wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u5d : float
+        The rear wheel angular acc.
+
+    Returns
+    -------
+    Fx_r_ns : float
+        The rear wheel longitudinal contact force along N['1'] direction 
+        under the constraint condition.
+
+    """
+
+    Fx_r_ns = mc*(0.312*sin(q1)*sin(q2) - 0.95*cos(q1))*(l1*(u1*sin(q2) + u3)**2 - \
+        l2*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + (l1*(0.95*u1*cos(q2) + \
+        0.312*u2) + l2*(0.312*u1*cos(q2) - 0.95*u2))*(0.95*u1*cos(q2) + \
+        0.312*u2)) - mc*(0.95*sin(q1)*sin(q2) + \
+        0.312*cos(q1))*(l1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + \
+        l2*(u1*sin(q2) + u3)**2 + (l1*(0.95*u1*cos(q2) + 0.312*u2) + \
+        l2*(0.312*u1*cos(q2) - 0.95*u2))*(0.312*u1*cos(q2) - 0.95*u2)) + \
+        0.333*mc*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + \
+        u2**2)*sin(q1)*sin(q2) + 0.333*mc*((u1*sin(q2) + u3 + \
+        u5)*u1*cos(q2) - u2d)*sin(q1)*cos(q2) - mc*(-l1*(u1*sin(q2) + \
+        u3)*(0.312*u1*cos(q2) - 0.95*u2) + l1*(-0.95*u1*u2*sin(q2) - \
+        0.312*u1*u3*cos(q2) + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d) \
+        + l2*(u1*sin(q2) + u3)*(0.95*u1*cos(q2) + 0.312*u2) + \
+        l2*(-0.312*u1*u2*sin(q2) + 0.95*u1*u3*cos(q2) + 0.312*u2*u3 + \
+        0.312*cos(q2)*u1d - 0.95*u2d))*sin(q1)*cos(q2) - \
+        0.333*mc*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*cos(q1) + \
+        1.63*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + u2**2)*sin(q1)*sin(q2) \
+        + 1.63*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - u2d)*sin(q1)*cos(q2) \
+        - 1.63*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*cos(q1)
+
+    return Fx_r_ns
+
+def contact_force_rear_lateral_nonslip(l1, l2, mc,
+                    q1, q2, u1, u2, u3, u5, u1d, u2d, u3d, u5d):
+
+    """Return lateral contact force of rear wheel 
+    under the constraint condition.
+
+    l1 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['1'] axis.
+    l2 : float
+        The rear frame mass center location relative to the 
+        rear wheel center along C['3'] axis.
+    mc : float 
+        The rear frame mass.
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u5 : float
+        The rear wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u5d : float
+        The rear wheel angular acc.
+
+    Returns
+    -------
+    Fy_r_ns : float
+        The rear wheel lateral contact force along N['2'] direction 
+        under the constraint condition.
+
+    """
+
+    Fy_r_ns = -0.333*mc*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + u2**2)*sin(q2)*cos(q1) \
+        - 0.333*mc*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - \
+        u2d)*cos(q1)*cos(q2) - mc*(0.312*sin(q1) - \
+        0.95*sin(q2)*cos(q1))*(l1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + \
+        l2*(u1*sin(q2) + u3)**2 + (l1*(0.95*u1*cos(q2) + 0.312*u2) + \
+        l2*(0.312*u1*cos(q2) - 0.95*u2))*(0.312*u1*cos(q2) - 0.95*u2)) - \
+        mc*(0.95*sin(q1) + 0.312*sin(q2)*cos(q1))*(l1*(u1*sin(q2) + \
+        u3)**2 - l2*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + \
+        (l1*(0.95*u1*cos(q2) + 0.312*u2) + l2*(0.312*u1*cos(q2) - \
+        0.95*u2))*(0.95*u1*cos(q2) + 0.312*u2)) + mc*(-l1*(u1*sin(q2) + \
+        u3)*(0.312*u1*cos(q2) - 0.95*u2) + l1*(-0.95*u1*u2*sin(q2) - \
+        0.312*u1*u3*cos(q2) + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d) \
+        + l2*(u1*sin(q2) + u3)*(0.95*u1*cos(q2) + 0.312*u2) + \
+        l2*(-0.312*u1*u2*sin(q2) + 0.95*u1*u3*cos(q2) + 0.312*u2*u3 + \
+        0.312*cos(q2)*u1d - 0.95*u2d))*cos(q1)*cos(q2) - \
+        0.333*mc*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*sin(q1) - \
+        1.63*((u1*sin(q2) + u3 + u5)*u1*sin(q2) + u2**2)*sin(q2)*cos(q1) \
+        - 1.63*((u1*sin(q2) + u3 + u5)*u1*cos(q2) - u2d)*cos(q1)*cos(q2) \
+        - 1.63*(2.0*u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d)*sin(q1) 
+
+    return Fy_r_ns
+
+def contact_force_front_longitudinal_nonslip(q1, q2, q4, u1, u2, u3, u4, u6,
+                                        u1d, u2d, u3d, u4d, u6d):
+
+    """Return longitudinal contact force of front wheel 
+    under the constraint condition.
+
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u6 : float
+        The front wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u6d : float
+        The front wheel angular acc.
+
+    Returns
+    -------
+    Fx_f_ns : float
+        The front wheel longitudinal contact force along N['1'] direction 
+        under the constraint condition.
+
+    """
+
+    Fx_f_ns = -0.52*((0.312*sin(q1)*sin(q2) - 0.95*cos(q1))*sin(q4) - \
+        sin(q1)*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + (sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(-0.95*u1*u2*sin(q2) - 0.312*u1*u3*cos(q2) \
+        + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d + u4d) + \
+        (sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)/((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2) + 0.95*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u2*sin(q2) + 0.312*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u3*cos(q2) + 0.95*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + (0.95*u1*cos(q2) + \
+        0.312*u2 + u4)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) - 0.95*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1d + (0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2))*u1 - 0.312*u2*u3*cos(q4) - \
+        0.95*u2*u4*sin(q4) + u3*u4*cos(q4) + sin(q4)*u3d + \
+        0.95*cos(q4)*u2d)*cos(q2) - 0.95*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2)/((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)) - 5.4*((0.312*sin(q1)*sin(q2) - \
+        0.95*cos(q1))*sin(q4) - \
+        sin(q1)*cos(q2)*cos(q4))*(-0.694*(u1*sin(q2) + u3)*u4*cos(q4) - \
+        0.694*(0.312*u1*cos(q2) - 0.95*u2)*u4*sin(q4) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*(0.95*u1*cos(q2) + 0.312*u2 + u4) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + 0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(-0.95*u1*u2*sin(q2) - \
+        0.312*u1*u3*cos(q2) + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d + \
+        u4d) - 0.694*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*u1d - \
+        0.694*(0.312*sin(q2)*cos(q4) + sin(q4)*cos(q2))*u1*u2 - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4))*cos(q2) \
+        + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u3*cos(q2) + 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1d + (0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2))*u1 - 0.312*u2*u3*cos(q4) - \
+        0.95*u2*u4*sin(q4) + u3*u4*cos(q4) + sin(q4)*u3d + \
+        0.95*cos(q4)*u2d)*cos(q2) + 0.0301*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4)) + 0.694*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.0286*u1*u2*sin(q2) + 0.66*u1*u3*cos(q2)*cos(q4) - \
+        0.0094*u1*u3*cos(q2) + 0.217*u2*u3*cos(q4) + 0.0286*u2*u3 - \
+        0.694*sin(q4)*u3d + 0.0286*cos(q2)*u1d - 0.66*cos(q4)*u2d + \
+        0.0094*u2d + 0.0301*u4d) - 1.55*((0.312*sin(q1)*sin(q2) - \
+        0.95*cos(q1))*cos(q4) + \
+        sin(q1)*sin(q4)*cos(q2))*(0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*cos(q2) + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u3*cos(q2) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d)*cos(q2)) - 5.4*((0.312*sin(q1)*sin(q2) - \
+        0.95*cos(q1))*cos(q4) + \
+        sin(q1)*sin(q4)*cos(q2))*(0.694*(u1*sin(q2) + u3)*u4*sin(q4) - \
+        0.694*(0.312*u1*cos(q2) - 0.95*u2)*u4*cos(q4) + \
+        0.694*(0.312*sin(q2)*sin(q4) - cos(q2)*cos(q4))*u1*u2 + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) - 0.694*(sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*cos(q2) + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u3*cos(q2) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d)*cos(q2) + 0.0301*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4))**2 - \
+        (0.95*u1*cos(q2) + 0.312*u2 + u4)*(0.694*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 - 0.0286*u1*cos(q2) + 0.66*u2*cos(q4) - \
+        0.0094*u2 + 0.694*u3*sin(q4) - 0.0301*u4) - \
+        0.66*u1*u3*sin(q4)*cos(q2) - 0.217*u2*u3*sin(q4) + \
+        0.66*sin(q4)*u2d - 0.694*cos(q4)*u3d) + \
+        1.55*(0.95*sin(q1)*sin(q2) + \
+        0.312*cos(q1))*(0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + u6) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d) - (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4)) + \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2))) + 5.4*(0.95*sin(q1)*sin(q2) + \
+        0.312*cos(q1))*(-0.0301*(u1*sin(q2) + u3)*u4*sin(q4) + \
+        0.0301*(0.312*u1*cos(q2) - 0.95*u2)*u4*cos(q4) - \
+        0.0301*(0.312*sin(q2)*sin(q4) - cos(q2)*cos(q4))*u1*u2 + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + u6) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d) + 0.0301*(sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d - (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4)) + \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) + ((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*(0.694*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*u1 - \
+        0.0286*u1*cos(q2) + 0.66*u2*cos(q4) - 0.0094*u2 + \
+        0.694*u3*sin(q4) - 0.0301*u4) + 0.694*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4))**2 + \
+        0.0286*u1*u3*sin(q4)*cos(q2) + 0.0094*u2*u3*sin(q4) - \
+        0.0286*sin(q4)*u2d + 0.0301*cos(q4)*u3d)
+
+    return Fx_f_ns
+
+def contact_force_front_lateral_nonslip(q1, q2, q4, u1, u2, u3, u4, u6,
+                                        u1d, u2d, u3d, u4d, u6d):
+
+    """Return longitudinal contact force of front wheel 
+    under the constraint condition.
+
+    q1 : float
+        The yaw angle.
+    q2 : float
+        The roll angle.
+    q4 : float
+        The steer angle.
+    u1 : float
+        The yaw rate.
+    u2 : float
+        The roll rate.
+    u3 : float
+        The pitch rate.
+    u4 : float
+        The steer rate.
+    u6 : float
+        The front wheel angular rate.
+    u1d : float
+        The yaw acc.
+    u2d : float
+        The roll acc.
+    u3d : float
+        The pitch acc.
+    u4d : float
+        The steer acc.
+    u6d : float
+        The front wheel angular acc.
+
+    Returns
+    -------
+    Fy_f_ns : float
+        The front wheel lateral contact force along N['2'] direction 
+        under the constraint condition.
+
+    """
+
+    Fy_f_ns = 0.52*((0.95*sin(q1) + 0.312*sin(q2)*cos(q1))*sin(q4) - \
+        cos(q1)*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + (sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(-0.95*u1*u2*sin(q2) - 0.312*u1*u3*cos(q2) \
+        + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d + u4d) + \
+        (sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)/((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2) + 0.95*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u2*sin(q2) + 0.312*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u3*cos(q2) + 0.95*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + (0.95*u1*cos(q2) + \
+        0.312*u2 + u4)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) - 0.95*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1d + (0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2))*u1 - 0.312*u2*u3*cos(q4) - \
+        0.95*u2*u4*sin(q4) + u3*u4*cos(q4) + sin(q4)*u3d + \
+        0.95*cos(q4)*u2d)*cos(q2) - 0.95*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2)/((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)) + 5.4*((0.95*sin(q1) + \
+        0.312*sin(q2)*cos(q1))*sin(q4) - \
+        cos(q1)*cos(q2)*cos(q4))*(-0.694*(u1*sin(q2) + u3)*u4*cos(q4) - \
+        0.694*(0.312*u1*cos(q2) - 0.95*u2)*u4*sin(q4) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*(0.95*u1*cos(q2) + 0.312*u2 + u4) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + 0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(-0.95*u1*u2*sin(q2) - \
+        0.312*u1*u3*cos(q2) + 0.95*u2*u3 + 0.95*cos(q2)*u1d + 0.312*u2d + \
+        u4d) - 0.694*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*u1d - \
+        0.694*(0.312*sin(q2)*cos(q4) + sin(q4)*cos(q2))*u1*u2 - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4))*cos(q2) \
+        + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*u3*cos(q2) + 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + \
+        u4)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1d + (0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2))*u1 - 0.312*u2*u3*cos(q4) - \
+        0.95*u2*u4*sin(q4) + u3*u4*cos(q4) + sin(q4)*u3d + \
+        0.95*cos(q4)*u2d)*cos(q2) + 0.0301*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4)) + 0.694*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.0286*u1*u2*sin(q2) + 0.66*u1*u3*cos(q2)*cos(q4) - \
+        0.0094*u1*u3*cos(q2) + 0.217*u2*u3*cos(q4) + 0.0286*u2*u3 - \
+        0.694*sin(q4)*u3d + 0.0286*cos(q2)*u1d - 0.66*cos(q4)*u2d + \
+        0.0094*u2d + 0.0301*u4d) + 1.55*((0.95*sin(q1) + \
+        0.312*sin(q2)*cos(q1))*cos(q4) + \
+        sin(q4)*cos(q1)*cos(q2))*(0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) + (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*cos(q2) + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u3*cos(q2) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d)*cos(q2)) + 5.4*((0.95*sin(q1) + \
+        0.312*sin(q2)*cos(q1))*cos(q4) + \
+        sin(q4)*cos(q1)*cos(q2))*(0.694*(u1*sin(q2) + u3)*u4*sin(q4) - \
+        0.694*(0.312*u1*cos(q2) - 0.95*u2)*u4*cos(q4) + \
+        0.694*(0.312*sin(q2)*sin(q4) - cos(q2)*cos(q4))*u1*u2 + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6) - 0.694*(sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*cos(q2) + 0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 \
+        + 0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u2*sin(q2) + 0.105*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*u3*cos(q2) - 0.319*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d)*cos(q2) + 0.0301*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4))**2 - \
+        (0.95*u1*cos(q2) + 0.312*u2 + u4)*(0.694*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 - 0.0286*u1*cos(q2) + 0.66*u2*cos(q4) - \
+        0.0094*u2 + 0.694*u3*sin(q4) - 0.0301*u4) - \
+        0.66*u1*u3*sin(q4)*cos(q2) - 0.217*u2*u3*sin(q4) + \
+        0.66*sin(q4)*u2d - 0.694*cos(q4)*u3d) + 1.55*(0.312*sin(q1) - \
+        0.95*sin(q2)*cos(q1))*(0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + u6) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d) - (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4)) + \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2))) + 5.4*(0.312*sin(q1) - \
+        0.95*sin(q2)*cos(q1))*(-0.0301*(u1*sin(q2) + u3)*u4*sin(q4) + \
+        0.0301*(0.312*u1*cos(q2) - 0.95*u2)*u4*cos(q4) - \
+        0.0301*(0.312*sin(q2)*sin(q4) - cos(q2)*cos(q4))*u1*u2 + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-1.5)*(-(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*(0.312*u2*sin(q2)*cos(q4) + \
+        u2*sin(q4)*cos(q2) - 0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) \
+        + 0.312*u4*sin(q4)*cos(q2)) + 0.903*u2*sin(q2)*cos(q2) + \
+        0.297*u3*cos(q2)**2)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + u6) + \
+        0.336*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) \
+        - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d + (-0.312*u2*sin(q2)*sin(q4) + \
+        u2*cos(q2)*cos(q4) + 0.95*u3*sin(q4)*cos(q2) - u4*sin(q2)*sin(q4) \
+        + 0.312*u4*cos(q2)*cos(q4))*u1 + 0.312*u2*u3*sin(q4) - \
+        0.95*u2*u4*cos(q4) - u3*u4*sin(q4) - 0.95*sin(q4)*u2d + \
+        cos(q4)*u3d + u6d) + 0.0301*(sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1d - (0.336*(sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*(0.95*u1*cos(q2) + 0.312*u2 + u4) - \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*cos(q2))*((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + u3*sin(q4)) + \
+        0.319*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + \
+        u3*cos(q4))*((sin(q2)*cos(q4) + 0.312*sin(q4)*cos(q2))*u1 - \
+        0.95*u2*sin(q4) + u3*cos(q4) + u6)*cos(q2) + \
+        0.336*((sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))**2 + \
+        0.903*cos(q2)**2)**(-0.5)*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4) + \
+        u6)*(0.312*u2*sin(q2)*cos(q4) + u2*sin(q4)*cos(q2) - \
+        0.95*u3*cos(q2)*cos(q4) + u4*sin(q2)*cos(q4) + \
+        0.312*u4*sin(q4)*cos(q2)) + ((sin(q2)*sin(q4) - \
+        0.312*cos(q2)*cos(q4))*u1 + 0.95*u2*cos(q4) + \
+        u3*sin(q4))*(0.694*(sin(q2)*sin(q4) - 0.312*cos(q2)*cos(q4))*u1 - \
+        0.0286*u1*cos(q2) + 0.66*u2*cos(q4) - 0.0094*u2 + \
+        0.694*u3*sin(q4) - 0.0301*u4) + 0.694*((sin(q2)*cos(q4) + \
+        0.312*sin(q4)*cos(q2))*u1 - 0.95*u2*sin(q4) + u3*cos(q4))**2 + \
+        0.0286*u1*u3*sin(q4)*cos(q2) + 0.0094*u2*u3*sin(q4) - \
+        0.0286*sin(q4)*u2d + 0.0301*cos(q4)*u3d)
+
+    return Fy_f_ns
+
+def contact_points_acceleration(frameAccX, frameAccY, frameAccZ, 
+        yawAngle, rollAngle, steerAngle, 
+        yawRate, rollRate, pitchRate, steerRate, rearWheelRate, frontWheelRate, 
+        yawAcc, rollAcc, pitchAcc, steerAcc, rearWheelAcc, frontWheelAcc, 
+        d1, d2, d3, rr, rf, s1, s3, guess=None):
+    """Returns the contact points acceleration for each wheel, with 
+    respect to the inertial frame N, expressed by the inertial frame N.
+
+    Paramters
+    ---------
+    frameAccX : float
+        The frame acceleration in body-fixed coordinates, C['1'].
+    frameAccY : float
+        The frame acceleration in body-fixed coordinates, C['2'].
+    frameAccZ : float 
+        The frame acceleration in body-fixed coordinates, C['3'].
+    yawAngle, yawRate, yawAcc : float
+        The yaw angle, angular rate, and angular acceleration, respectively.
+    rollAngle, rollRate, rollAcc : float
+        The roll angle, angular rate, and angular acceleration, respectively.
+    pitchAngle, pitchRate, pitchAcc : float
+        The pitch angle, angular rate, and angular acceleration, respectively.
+    steerAngle, steerRate, steerAcc : float 
+        The steer angle, angular rate, and angular acceleration, respectively.
+    rearWheelRate, rearWheelAcc : float
+        The rear wheel angular rate and acceleration, respectively.
+    frontWheelRate, frontWheelAcc : float
+        The front wheel angular rate and acceleration, respectively.
+    d1 : float
+        The distance from the rear wheel center to the steer axis.
+    d2 : float
+        The distance between the front and rear wheel centers along the steer
+        axis.
+    d3 : float
+        The distance from the front wheel center to the steer axis.
+    rr : float
+        The radius of the rear wheel.
+    rf : float
+        The radius of the front wheel.
+    s1: float
+        The distance in the c3> direction from the steer axis foot to 
+        the VN-100 position.
+    s3 : float
+        The distance in the c1> direction from the steer axis foot to 
+        the VN-100 position
+
+    Returns
+    -------
+    u7d : float
+        Rear wheel contact point acceleration in N['1'].
+    u8d : float
+        Rear wheel contact point acceleration in N['2'].
+    u11d : float
+        Rear wheel contact point acceleration in N['3'].
+    u9d : float
+        Front wheel contact point acceleration in N['1'].
+    u10d : float
+        Front wheel contact point acceleration in N['2'].
+    u12d : float
+        Front wheel contact point acceleration in N['3'].
+
+    """
+    vn1 = frameAccX
+    vn2 = frameAccY
+    vn3 = frameAccZ
+    q1 = yawAngle; u1 = yawRate; u1d = yawAcc
+    q2 = rollAngle; u2 = rollRate; u2d = rollAcc
+    u3 = pitchRate; u3d = pitchAcc
+    q4 = steerAngle; u4 = steerRate; u4d = steerAcc
+    u5 = rearWheelRate; u6 = frontWheelRate
+    u5d = rearWheelAcc; u6d = frontWheelAcc
+
+    q3 = pitch_from_roll_and_steer(q2, q4, rf, rr, d1, d2, d3, guess=guess)
+
+    u7d = (-rr*(u1*sin(q2) + u3 + u5)**2 - rr*u2**2)*sin(q1)*sin(q2) + \
+        (rr*(u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d) + 
+        rr*u1*u2*cos(q2))*cos(q1) + (-sin(q1)*sin(q2)*sin(q3) +
+        cos(q1)*cos(q3))*(d1*(u1*sin(q2) + u3)**2 - d2*(u1*u2*cos(q2) +
+        sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        s3*(u1*sin(q2) + u3)**2 - (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
+        d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + vn1) + (sin(q1)*sin(q2)*cos(q3) +
+        sin(q3)*cos(q1))*(d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        d2*(u1*sin(q2) + u3)**2 + s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
+        + sin(q2)*u1d + u3d) + (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
+        d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + vn3) - (rr*(u1*sin(q2) + u3 + u5)*u1*cos(q2) -
+        rr*((-u1*sin(q3)*cos(q2) + u2*cos(q3))*u5*sin(q3) -
+        (u1*cos(q2)*cos(q3) + u2*sin(q3))*u5*cos(q3) - u1*u3*cos(q2) +
+        u2d))*sin(q1)*cos(q2) - (-d1*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) - d1*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
+        u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
+        u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
+        u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
+        cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+        + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+        sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+        u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
+        u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
+        cos(q2)*cos(q3)*u1d) + vn2)*sin(q1)*cos(q2)
+
+    u8d = -(-rr*(u1*sin(q2) + u3 + u5)**2 - rr*u2**2)*sin(q2)*cos(q1) + \
+        (rr*(u1*u2*cos(q2) + sin(q2)*u1d + u3d + u5d) +
+        rr*u1*u2*cos(q2))*sin(q1) + (sin(q1)*sin(q3) -
+        sin(q2)*cos(q1)*cos(q3))*(d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        d2*(u1*sin(q2) + u3)**2 + s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
+        + sin(q2)*u1d + u3d) + (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
+        d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + vn3) + (sin(q1)*cos(q3) +
+        sin(q2)*sin(q3)*cos(q1))*(d1*(u1*sin(q2) + u3)**2 - d2*(u1*u2*cos(q2)
+        + sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        s3*(u1*sin(q2) + u3)**2 - (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) +
+        d2*(-u1*sin(q3)*cos(q2) + u2*cos(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + vn1) + (rr*(u1*sin(q2) + u3 + u5)*u1*cos(q2) -
+        rr*((-u1*sin(q3)*cos(q2) + u2*cos(q3))*u5*sin(q3) -
+        (u1*cos(q2)*cos(q3) + u2*sin(q3))*u5*cos(q3) - u1*u3*cos(q2) +
+        u2d))*cos(q1)*cos(q2) + (-d1*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) - d1*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
+        u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
+        u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
+        u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
+        cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+        + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+        sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+        u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
+        u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
+        cos(q2)*cos(q3)*u1d) + vn2)*cos(q1)*cos(q2)
+
+    u11d = (-rr*(u1*sin(q2) + u3 + u5)**2 - rr*u2**2)*cos(q2) + (rr*(u1*sin(q2)
+        + u3 + u5)*u1*cos(q2) - rr*((-u1*sin(q3)*cos(q2) +
+        u2*cos(q3))*u5*sin(q3) - (u1*cos(q2)*cos(q3) + u2*sin(q3))*u5*cos(q3)
+        - u1*u3*cos(q2) + u2d))*sin(q2) - (d1*(u1*sin(q2) + u3)**2 -
+        d2*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) - s1*(u1*u2*cos(q2) +
+        sin(q2)*u1d + u3d) + s3*(u1*sin(q2) + u3)**2 -
+        (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) -
+        (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + vn1)*sin(q3)*cos(q2)+\
+        (d1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) + d2*(u1*sin(q2) + u3)**2 +
+        s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        (-d1*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+        (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+        vn3)*cos(q2)*cos(q3) + (-d1*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) - d1*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
+        u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) - d2*(u1*sin(q2) +
+        u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + d2*(u1*u2*sin(q2)*sin(q3) -
+        u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
+        cos(q3)*u2d) - s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3))
+        + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) -
+        sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+        u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
+        u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
+        cos(q2)*cos(q3)*u1d) + vn2)*sin(q2)
+
+    u9d = (-(-sin(q1)*sin(q2)*sin(q3) + cos(q1)*cos(q3))*sin(q4) -
+        sin(q1)*cos(q2)*cos(q4))*(rf*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4)*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) -
+        rf*((u1*sin(q2) + u3)*u4*cos(q4) + (sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1d - (-u1*sin(q3)*cos(q2) +
+        u2*cos(q3))*u4*sin(q4) + (sin(q2)*sin(q3)*cos(q4) +
+        sin(q4)*cos(q2))*u1*u2 - (u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)*u6 -
+        u1*u3*cos(q2)*cos(q3)*cos(q4) - u2*u3*sin(q3)*cos(q4) + sin(q4)*u3d +
+        cos(q3)*cos(q4)*u2d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) + u6) + (d3 + rf*(sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) + u3*sin(q4))*u6 -
+        u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) +
+        sin(q3)*u2d + cos(q2)*cos(q3)*u1d + u4d)) + \
+        ((-sin(q1)*sin(q2)*sin(q3) + cos(q1)*cos(q3))*cos(q4) -
+        sin(q1)*sin(q4)*cos(q2))*(rf*(-(u1*sin(q2) + u3)*u4*sin(q4) +
+        (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d +
+        u6d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2 - (-rf*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*(u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)) + \
+        (-sin(q1)*sin(q2)*sin(q3) + cos(q1)*cos(q3))*(-s1*(u1*u2*cos(q2) +
+        sin(q2)*u1d + u3d) + s3*(u1*sin(q2) + u3)**2 -
+        (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)))*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + vn1) + \
+        (sin(q1)*sin(q2)*cos(q3) + sin(q3)*cos(q1))*(-rf*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2))*(-(u1*sin(q2)
+        + u3)*u4*sin(q4) + (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d + u6d) + (-rf*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) + u3*sin(q4))) + (sin(q1)*sin(q2)*cos(q3) +
+        sin(q3)*cos(q1))*(s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2) +
+        sin(q2)*u1d + u3d) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + vn3) - (-s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) -
+        u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+        u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
+        u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
+        cos(q2)*cos(q3)*u1d) + vn2)*sin(q1)*cos(q2)
+
+    u10d = (-(sin(q1)*cos(q3) + sin(q2)*sin(q3)*cos(q1))*sin(q4) +
+        cos(q1)*cos(q2)*cos(q4))*(rf*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4)*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) -
+        rf*((u1*sin(q2) + u3)*u4*cos(q4) + (sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1d - (-u1*sin(q3)*cos(q2) +
+        u2*cos(q3))*u4*sin(q4) + (sin(q2)*sin(q3)*cos(q4) +
+        sin(q4)*cos(q2))*u1*u2 - (u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)*u6 -
+        u1*u3*cos(q2)*cos(q3)*cos(q4) - u2*u3*sin(q3)*cos(q4) + sin(q4)*u3d +
+        cos(q3)*cos(q4)*u2d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) + u6) + (d3 + rf*(sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) + u3*sin(q4))*u6 -
+        u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) +
+        sin(q3)*u2d + cos(q2)*cos(q3)*u1d + u4d)) + ((sin(q1)*cos(q3) +
+        sin(q2)*sin(q3)*cos(q1))*cos(q4) +
+        sin(q4)*cos(q1)*cos(q2))*(rf*(-(u1*sin(q2) + u3)*u4*sin(q4) +
+        (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d +
+        u6d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2 - (-rf*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*(u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)) + (sin(q1)*sin(q3) -
+        sin(q2)*cos(q1)*cos(q3))*(-rf*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2))*(-(u1*sin(q2)
+        + u3)*u4*sin(q4) + (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d + u6d) + (-rf*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) + u3*sin(q4))) + (sin(q1)*sin(q3) -
+        sin(q2)*cos(q1)*cos(q3))*(s1*(u1*sin(q2) + u3)**2 + s3*(u1*u2*cos(q2)
+        + sin(q2)*u1d + u3d) + (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) + vn3) + (sin(q1)*cos(q3) +
+        sin(q2)*sin(q3)*cos(q1))*(-s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        s3*(u1*sin(q2) + u3)**2 - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + vn1) + (-s1*(u1*sin(q2) + u3)*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) - u1*u3*cos(q2)*cos(q3) -
+        u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d + cos(q3)*u2d) - s3*(u1*sin(q2) +
+        u3)*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) -
+        u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) + sin(q3)*u2d +
+        cos(q2)*cos(q3)*u1d) + vn2)*cos(q1)*cos(q2)
+
+    u12d = (sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*(rf*(-(u1*sin(q2) +
+        u3)*u4*sin(q4) + (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d +
+        u6d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2 - (-rf*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*(u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)) + (sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*(rf*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4)*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) -
+        rf*((u1*sin(q2) + u3)*u4*cos(q4) + (sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1d - (-u1*sin(q3)*cos(q2) +
+        u2*cos(q3))*u4*sin(q4) + (sin(q2)*sin(q3)*cos(q4) +
+        sin(q4)*cos(q2))*u1*u2 - (u1*cos(q2)*cos(q3) + u2*sin(q3) + u4)*u6 -
+        u1*u3*cos(q2)*cos(q3)*cos(q4) - u2*u3*sin(q3)*cos(q4) + sin(q4)*u3d +
+        cos(q3)*cos(q4)*u2d)*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*((sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1 -
+        u2*sin(q4)*cos(q3) + u3*cos(q4) + u6) + (d3 + rf*(sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) + u3*sin(q4))*u6 -
+        u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) + u2*u3*cos(q3) +
+        sin(q3)*u2d + cos(q2)*cos(q3)*u1d + u4d)) + (-rf*((sin(q2)*cos(q4) +
+        sin(q3)*sin(q4)*cos(q2))*u1 - u2*sin(q4)*cos(q3) + u3*cos(q4) +
+        u6)**2*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) - (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2))*(-(u1*sin(q2)
+        + u3)*u4*sin(q4) + (sin(q2)*cos(q4) + sin(q3)*sin(q4)*cos(q2))*u1d -
+        (-u1*sin(q3)*cos(q2) + u2*cos(q3))*u4*cos(q4) +
+        (-sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q4))*u1*u2 +
+        u1*u3*sin(q4)*cos(q2)*cos(q3) + u2*u3*sin(q3)*sin(q4) -
+        sin(q4)*cos(q3)*u2d + cos(q4)*u3d + u6d) + (-rf*((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))*u1 + u2*cos(q3)*cos(q4) +
+        u3*sin(q4))*cos(q2)*cos(q3)/sqrt((sin(q2)*sin(q4) -
+        sin(q3)*cos(q2)*cos(q4))**2 + cos(q2)**2*cos(q3)**2) + (d3 +
+        rf*(sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))/sqrt((sin(q2)*sin(q4)
+        - sin(q3)*cos(q2)*cos(q4))**2 +
+        cos(q2)**2*cos(q3)**2))*(u1*cos(q2)*cos(q3) + u2*sin(q3) +
+        u4))*((sin(q2)*sin(q4) - sin(q3)*cos(q2)*cos(q4))*u1 +
+        u2*cos(q3)*cos(q4) + u3*sin(q4)))*cos(q2)*cos(q3) + (s1*(u1*sin(q2) +
+        u3)**2 + s3*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) - s3*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)))*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) +
+        vn3)*cos(q2)*cos(q3) - (-s1*(u1*u2*cos(q2) + sin(q2)*u1d + u3d) +
+        s3*(u1*sin(q2) + u3)**2 - (s1*(-u1*sin(q3)*cos(q2) + u2*cos(q3)) -
+        s3*(u1*cos(q2)*cos(q3) + u2*sin(q3)))*(u1*cos(q2)*cos(q3) +
+        u2*sin(q3)) + vn1)*sin(q3)*cos(q2) + (-s1*(u1*sin(q2) +
+        u3)*(u1*cos(q2)*cos(q3) + u2*sin(q3)) + s1*(u1*u2*sin(q2)*sin(q3) -
+        u1*u3*cos(q2)*cos(q3) - u2*u3*sin(q3) - sin(q3)*cos(q2)*u1d +
+        cos(q3)*u2d) - s3*(u1*sin(q2) + u3)*(-u1*sin(q3)*cos(q2) +
+        u2*cos(q3)) - s3*(-u1*u2*sin(q2)*cos(q3) - u1*u3*sin(q3)*cos(q2) +
+        u2*u3*cos(q3) + sin(q3)*u2d + cos(q2)*cos(q3)*u1d) + vn2)*sin(q2)
+
+    return u7d, u8d, u11d, u9d, u10d, u12d
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
     width = 4.0 # inches
@@ -446,7 +2109,7 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     ----------
     q4 : float
         Roll angle.
-    q5 : float
+    q7 : float
         Steer angle.
     rF : float
         Front wheel radius.
@@ -636,7 +2299,7 @@ def lambda_from_abc(rF, rR, a, b, c):
     def lam_equality(lam, rF, rR, a, b, c):
         return sin(lam) - (rF - rR + c * cos(lam)) / (a + b)
 
-    guess = atan(c / (a + b)) # guess based on equal wheel radii
+    guess = arctan(c / (a + b)) # guess based on equal wheel radii
 
     args = (rF, rR, a, b, c)
 
