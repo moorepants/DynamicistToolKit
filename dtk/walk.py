@@ -58,9 +58,7 @@ def find_constant_speed(time, speed, plot=False):
     return len(time) - (new_indice), time[len(time) - new_indice]
 
 
-def gait_landmarks_from_grf(mot_file,
-                            right_grfy_column_name='ground_force_vy',
-                            left_grfy_column_name='1_ground_force_vy',
+def gait_landmarks_from_grf(time, right_grfy, left_grfy,
                             threshold=1e-5, do_plot=False, min_time=None,
                             max_time=None):
     """
@@ -69,12 +67,12 @@ def gait_landmarks_from_grf(mot_file,
 
     Parameters
     ----------
-    mot_file : str
-        Name of *.mot (OpenSim Storage) file containing GRF data.
-    right_grfy_column_name : str, optional
+    time : array_like, shape(n,)
+        A monotonically increasing time array.
+    right_grfy : array_like, shape(n,)
         Name of column in `mot_file` containing the y (vertical) component
         of GRF data for the right leg.
-    left_grfy_column_name : str, optional
+    left_grfy : str, shape(n,)
         Same as above, but for the left leg.
     threshold : float, optional
         Below this value, the force is considered to be zero (and the
@@ -107,21 +105,6 @@ def gait_landmarks_from_grf(mot_file,
     https://github.com/fitze/epimysium/blob/master/epimysium/postprocessing.py
 
     """
-    data = dataman.storage2numpy(mot_file)
-
-    time = data['time']
-    right_grfy = data[right_grfy_column_name]
-    left_grfy = data[left_grfy_column_name]
-
-    # Time range to consider.
-    if max_time == None: max_idx = len(time)
-    else: max_idx = nearest_index(time, max_time)
-
-    if min_time == None: min_idx = 1
-    else: min_idx = max(1, nearest_index(time, min_time))
-
-    index_range = range(min_idx, max_idx)
-
     # Helper functions
     # ----------------
     def zero(number):
@@ -143,6 +126,22 @@ def gait_landmarks_from_grf(mot_file,
                 deaths.append(time[i])
         return np.array(deaths)
 
+    def nearest_index(array, val):
+            return np.abs(array - val).argmin()
+
+    # Time range to consider.
+    if max_time is None:
+        max_idx = len(time)
+    else:
+        max_idx = nearest_index(time, max_time)
+
+    if min_time is None:
+        min_idx = 1
+    else:
+        min_idx = max(1, nearest_index(time, min_time))
+
+    index_range = range(min_idx, max_idx)
+
     right_foot_strikes = birth_times(right_grfy)
     left_foot_strikes = birth_times(left_grfy)
     right_toe_offs = death_times(right_grfy)
@@ -150,7 +149,7 @@ def gait_landmarks_from_grf(mot_file,
 
     if do_plot:
 
-        #pl.figure(figsize=(4, 8))
+        plt.figure(figsize=(10, 8))
         ones = np.array([1, 1])
 
         def myplot(index, label, ordinate, foot_strikes, toe_offs):
@@ -161,15 +160,18 @@ def gait_landmarks_from_grf(mot_file,
                 label, len(foot_strikes), len(toe_offs)))
 
             for i, strike in enumerate(foot_strikes):
-                if i == 0: kwargs = {'label': 'foot strikes'}
-                else: kwargs = dict()
+                if i == 0:
+                    kwargs = {'label': 'foot strikes'}
+                else:
+                    kwargs = dict()
                 plt.plot(strike * ones, ax.get_ylim(), 'r', **kwargs)
 
             for i, off in enumerate(toe_offs):
-                if i == 0: kwargs = {'label': 'toe-offs'}
-                else: kwargs = dict()
+                if i == 0:
+                    kwargs = {'label': 'toe-offs'}
+                else:
+                    kwargs = dict()
                 plt.plot(off * ones, ax.get_ylim(), 'b', **kwargs)
-
 
         myplot(1, 'left foot', left_grfy, left_foot_strikes, left_toe_offs)
         plt.legend(loc='best')
