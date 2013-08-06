@@ -1,6 +1,6 @@
-=================
-DynamicistToolKit
-=================
+============
+DynamicistTK
+============
 
 This is a collection of python modules and tools that are helpful for a
 dynamicist. Basically a place to throw things general tools that I use in the
@@ -21,3 +21,6 @@ bicycle
 -------
 Generic tools for basic bicycle dynamics analysis. (These are not in a stable
 state yet).
+
+walk
+----
