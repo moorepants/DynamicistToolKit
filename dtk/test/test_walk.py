@@ -20,3 +20,5 @@ def test_find_constant_speed():
     print constant_speed_time
 
     assert 6.5 < constant_speed_time < 7.5
+
+#TODO test gfr

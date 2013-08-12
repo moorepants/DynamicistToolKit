@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import numpy as np
 from numpy.fft import fft, fftfreq
@@ -6,6 +7,74 @@ from scipy.integrate import trapz, cumtrapz
 from scipy.interpolate import UnivariateSpline
 from scipy.signal import butter, filtfilt
 from scipy.stats import nanmean
+import matplotlib.pyplot as plt
+
+
+def sync_error(tau, signal1, signal2, time, plot=False):
+    '''Returns the error between two signal time histories given a time
+    shift, tau.
+
+    Parameters
+    ----------
+    tau : float
+        The time shift.
+    signal1 : ndarray, shape(n,)
+        The signal that will be interpolated. This signal is
+        typically "cleaner" that signal2 and/or has a higher sample rate.
+    signal2 : ndarray, shape(n,)
+        The signal that will be shifted to syncronize with signal 1.
+    time : ndarray, shape(n,)
+        The time vector for the two signals
+    plot : boolean, optional, default=False
+        If true a plot will be shown of the resulting signals.
+
+    Returns
+    -------
+    error : float
+        Error between the two signals for the given tau.
+
+    '''
+    # make sure tau isn't too large
+    if np.abs(tau) >= time[-1]:
+        raise ValueError(('abs(tau), {0}, must be less than or equal to ' +
+                         '{1}').format(str(np.abs(tau)), str(time[-1])))
+
+    # this is the time for the second signal which is assumed to lag the first
+    # signal
+    shiftedTime = time + tau
+
+    # create time vector where the two signals overlap
+    if tau > 0:
+        intervalTime = shiftedTime[np.nonzero(shiftedTime < time[-1])]
+    else:
+        intervalTime = shiftedTime[np.nonzero(shiftedTime > time[0])]
+
+    # interpolate between signal 1 samples to find points that correspond in
+    # time to signal 2 on the shifted time
+    sig1OnInterval = np.interp(intervalTime, time, signal1)
+
+    # truncate signal 2 to the time interval
+    if tau > 0:
+        sig2OnInterval = signal2[np.nonzero(shiftedTime <= intervalTime[-1])]
+    else:
+        sig2OnInterval = signal2[np.nonzero(shiftedTime >= intervalTime[0])]
+
+    if plot is True:
+        fig, axes = plt.subplots(2, 1)
+        axes[0].plot(time, signal1, time, signal2)
+        axes[0].legend(('Signal 1', 'Signal 2'))
+        axes[0].set_title("Before shifting.")
+        axes[1].plot(intervalTime, sig1OnInterval, intervalTime,
+                     sig2OnInterval)
+        axes[1].set_title("After shifting.")
+        axes[1].legend(('Signal 1', 'Signal 2'))
+        plt.show()
+
+    # calculate the error between the two signals
+    error = np.linalg.norm(sig1OnInterval - sig2OnInterval)
+
+    return error
+
 
 def fit_goodness(ym, yp):
     '''
