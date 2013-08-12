@@ -5,6 +5,7 @@ import numpy as np
 from numpy.fft import fft, fftfreq
 from scipy.integrate import trapz, cumtrapz
 from scipy.interpolate import UnivariateSpline
+from scipy.optimize import fmin
 from scipy.signal import butter, filtfilt
 from scipy.stats import nanmean
 import matplotlib.pyplot as plt
@@ -74,6 +75,72 @@ def sync_error(tau, signal1, signal2, time, plot=False):
     error = np.linalg.norm(sig1OnInterval - sig2OnInterval)
 
     return error
+
+
+def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
+    '''Returns the timeshift, tau, of the second signal relative to the
+    first signal.
+
+    Parameters
+    ----------
+    signal1 : array_like, shape(n, )
+        The base signal.
+    signal2 : array_like, shape(n, )
+        A signal shifted relative to the first signal. The second signal
+        should be leading the first signal.
+    sample_rate : integer or float
+        Sample rate of the signals. This should be the same for each signal.
+    guess : float, optional, default=None
+        If you've got a good guess for the time shift then supply it here.
+    plot : boolean, optional, defaul=False
+        If true, a plot of the error landscape will be shown.
+
+    Returns
+    -------
+    tau : float
+        The timeshift between the two signals.
+
+    '''
+    # raise an error if the signals are not the same length
+    if len(signal1) != len(signal2):
+        raise ValueError('Signals are not the same length!')
+
+    # subtract the mean and normalize both signals
+    signal1 = normalize(subtract_mean(signal1))
+    signal2 = normalize(subtract_mean(signal2))
+
+    time = time_vector(len(signal1), sample_rate)
+
+    if guess is None:
+        # set up the error landscape, error vs tau
+        # We assume the time shift is
+        tau_range = np.linspace(-time[len(time) / 4], time[len(time) / 4],
+                                num=len(time) / 10)
+
+        # TODO : Can I vectorize this?
+        error = np.zeros_like(tau_range)
+        for i, val in enumerate(tau_range):
+            error[i] = sync_error(val, signal1, signal2, time)
+
+        if plot is True:
+            plt.figure()
+            plt.plot(tau_range, error)
+            plt.xlabel('tau')
+            plt.ylabel('error')
+            plt.show()
+
+        # find initial condition from landscape
+        tau0 = tau_range[np.argmin(error)]
+    else:
+        tau0 = guess
+
+
+    print "The minimun of the error landscape is {}.".format(tau0)
+
+    tau, fval = fmin(sync_error, tau0, args=(signal1, signal2, time),
+                     full_output=True, disp=True)[0:2]
+
+    return tau
 
 
 def fit_goodness(ym, yp):
@@ -320,6 +387,8 @@ def normalize(sig, hasNans=False):
         The signal normalized with respect to the maximum value.
 
     '''
+    # TODO : This could be a try/except statement instead of an optional
+    # argument.
     if hasNans:
         normSig = sig / np.nanmax(sig)
     else:

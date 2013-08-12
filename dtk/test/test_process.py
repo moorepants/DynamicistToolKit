@@ -23,39 +23,90 @@ def test_spline_over_nan():
     #plt.show()
 
 
-def test_sync_error(plot=False):
-    sample_rate = 300  # hz
-    time = np.linspace(0.0, 100.0, sample_rate * 100 + 1)
-    tau = -5.0
+class TestTimeShift():
 
-    def normal_distribution(x):
-        sigma = 20.0
-        mu = 50.0
-        return 1.0 / (sigma * np.sqrt(2 * np.pi)) * \
-            np.e ** (-((x - mu) ** 2) / (2 * sigma ** 2))
+    def setup(self):
 
-    base_signal = normal_distribution(time)
-    shifted_signal = normal_distribution(time + tau)
+        self.sample_rate = 300  # hz
+        self.time = np.linspace(0.0, 100.0, self.sample_rate * 100 + 1)
+        self.tau = -5.0
 
-    error = process.sync_error(tau, base_signal, shifted_signal, time,
-                               plot=plot)
-    testing.assert_allclose(error, 0.0, atol=1e-8)
+        def normal_distribution(x):
+            sigma = 20.0
+            mu = 50.0
+            return 1.0 / (sigma * np.sqrt(2 * np.pi)) * \
+                np.e ** (-((x - mu) ** 2) / (2 * sigma ** 2))
 
-    grf_array = np.loadtxt(os.path.join(os.path.dirname(__file__),
-                                        'data/example_vertical_grf.csv'),
-                           delimiter=',')
+        self.base_signal = normal_distribution(self.time)
+        self.shifted_signal = normal_distribution(self.time + self.tau)
 
-    tau = -0.1
-    start = 4.0 * sample_rate
-    stop = 5.0 * sample_rate
-    original_time = grf_array.T[0, start:stop]
-    vertical_grf = grf_array.T[1, start:stop]
-    sample_rate = int(np.mean(1.0 / np.diff(original_time)))
+    def test_sync_error(self):
 
-    base_signal = vertical_grf[abs(tau) * sample_rate:]
-    shifted_signal = vertical_grf[:-abs(tau) * sample_rate]
-    truncated_time = original_time[:len(base_signal)]
+        error = process.sync_error(self.tau, self.base_signal,
+                                   self.shifted_signal, self.time,
+                                   plot=True)
+        testing.assert_allclose(error, 0.0, atol=1e-8)
 
-    error = process.sync_error(tau, base_signal, shifted_signal,
-                               truncated_time, plot=plot)
-    testing.assert_allclose(error, 0.0, atol=13.0)
+    def test_find_time_shift(self):
+
+        estimated_tau = process.find_timeshift(self.base_signal,
+                                               self.shifted_signal,
+                                               self.sample_rate,
+                                               #guess=self.tau,
+                                               plot=True)
+        testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
+
+        estimated_tau = process.find_timeshift(self.base_signal,
+                                               self.shifted_signal,
+                                               self.sample_rate,
+                                               guess=self.tau,
+                                               plot=True)
+        testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
+
+
+class TestTimeShiftRealData():
+
+    def setup(self):
+
+        self.grf_array = np.loadtxt(
+            os.path.join(os.path.dirname(__file__),
+                         'data/example_vertical_grf.csv'), delimiter=',')
+
+        self.original_time = self.grf_array[:, 0]
+        self.original_vgrf = self.grf_array[:, 1]
+
+        self.sample_rate = int(np.mean(1.0 /
+                                       np.diff(self.original_time)))
+
+        start = 1.0 * self.sample_rate
+        stop = 5.0 * self.sample_rate
+        test_time = self.grf_array.T[0, start:stop]
+        vertical_grf = self.grf_array.T[1, start:stop]
+        #self.sample_rate = int(np.mean(1.0 / np.diff(original_time)))
+
+        self.tau = -0.1
+        self.base_signal = vertical_grf[abs(self.tau) * self.sample_rate:]
+        self.shifted_signal = vertical_grf[:-abs(self.tau) * self.sample_rate]
+        self.truncated_time = test_time[:len(self.base_signal)]
+
+    def test_sync_error(self):
+
+        error = process.sync_error(self.tau, self.base_signal,
+                                   self.shifted_signal, self.truncated_time,
+                                   plot=True)
+        testing.assert_allclose(error, 0.0, atol=17.0)
+
+    def test_find_time_shift(self):
+
+        estimated_tau = process.find_timeshift(self.base_signal,
+                                               self.shifted_signal,
+                                               self.sample_rate,
+                                               plot=True)
+        testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
+
+        estimated_tau = process.find_timeshift(self.base_signal,
+                                               self.shifted_signal,
+                                               self.sample_rate,
+                                               guess=self.tau,
+                                               plot=True)
+        testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
