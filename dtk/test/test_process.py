@@ -52,7 +52,6 @@ class TestTimeShift():
         estimated_tau = process.find_timeshift(self.base_signal,
                                                self.shifted_signal,
                                                self.sample_rate,
-                                               #guess=self.tau,
                                                plot=True)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
 
@@ -62,6 +61,14 @@ class TestTimeShift():
                                                guess=self.tau,
                                                plot=True)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
+
+    def test_truncate_data(self):
+
+        truncated_signal1, truncated_signal2 = \
+            process.truncate_data(self.tau, self.base_signal,
+                                  self.shifted_signal, self.sample_rate)
+        assert len(truncated_signal1) == len(truncated_signal2) == \
+            len(self.time)
 
 
 class TestTimeShiftRealData():
@@ -110,3 +117,11 @@ class TestTimeShiftRealData():
                                                guess=self.tau,
                                                plot=True)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
+
+    def test_truncate_data(self):
+
+        truncated_signal1, truncated_signal2 = \
+            process.truncate_data(self.tau, self.base_signal,
+                                  self.shifted_signal, self.sample_rate)
+        assert len(truncated_signal1) == len(truncated_signal2) == \
+            len(self.truncated_time)

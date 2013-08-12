@@ -143,6 +143,45 @@ def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
     return tau
 
 
+def truncate_data(tau, signal1, signal2, sample_rate):
+    '''Returns the truncated vectors with respect to the time shift tau. It
+    assume you've found the time shift between two signals with
+    find_time_shift or something similar.
+
+    Parameters
+    ---------
+    tau : float
+        The time shift.
+    signal1 : array_like, shape(n, )
+        A time series.
+    signal2 : array_like, shape(n, )
+        A time series.
+    sample_rate : integer
+        The sample rate of the two signals.
+
+    Returns
+    -------
+    truncated1 : ndarray, shape(m, )
+        The truncated time series.
+    truncated2 : ndarray, shape(m, )
+        The truncated time series.
+
+    '''
+    t = time_vector(len(signal1), sample_rate)
+
+    # shift the first signal
+    t1 = t - tau
+    t2 = t
+
+    # make the common time interval
+    common_interval = t2[np.nonzero(t2 < t1[-1])]
+
+    truncated1 = np.interp(common_interval, t1, signal1)
+    truncated2 = signal2[np.nonzero(t2 <= common_interval[-1])]
+
+    return truncated1, truncated2
+
+
 def fit_goodness(ym, yp):
     '''
     Calculate the goodness of fit.
