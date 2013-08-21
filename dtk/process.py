@@ -182,6 +182,39 @@ def truncate_data(tau, signal1, signal2, sample_rate):
     return truncated1, truncated2
 
 
+def least_squares_variance(A, sum_of_residuals):
+    """Returns the variance in the ordinary least squares fit and the
+    covariance matrix of the estimated parameters.
+
+    Parameters
+    ----------
+    A : ndarray, shape(n,d)
+        The left hand side matrix in Ax=B.
+    sum_of_residuals : float
+        The sum of the residuals (residual sum of squares).
+
+    Returns
+    -------
+    variance : float
+        The variance of the fit.
+    covariance : ndarray, shape(d,d)
+        The covariance of x in Ax = b.
+
+    """
+    # I am pretty sure that the residuals from numpy.linalg.lstsq is the SSE
+    # (the residual sum of squares).
+
+    degrees_of_freedom = (A.shape[0] - A.shape[1])
+    variance = sum_of_residuals / degrees_of_freedom
+
+    # There may be a way to use the pinv here for more efficient
+    # computations. (A^T A)^-1 A^T = np.linalg.pinv(A) so np.linalg.pinv(A)
+    # (A^T)^-1 ... or maybe not.
+    covariance = variance * np.linalg.inv(np.dot(A.T, A))
+
+    return variance, covariance
+
+
 def fit_goodness(ym, yp):
     '''
     Calculate the goodness of fit.
@@ -210,6 +243,7 @@ def fit_goodness(ym, yp):
     SSE = SST - SSR
     rsq = SSR / SST
     return rsq, SSE, SST, SSR
+
 
 def spline_over_nan(x, y):
     """

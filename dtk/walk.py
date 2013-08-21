@@ -1,10 +1,251 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# external
 import numpy as np
 import matplotlib.pyplot as plt
 
+# local
 from dtk import process
+
+
+class SimpleControlSolver(object):
+    """This assumes a simple linear control structure at each time instance
+    in a step.
+
+    m(t) = K(t) [sc(t) - s(t)] = mc(t) - K(t) s(t)
+
+    This class solves for the time dependent gains and the "commanded"
+    controls using a simple linear least squares.
+
+    """
+
+    def __init__(self, data_panel):
+        """Initializes the solver.
+
+        Parameters
+        ==========
+        data_panel : pandas.Panel, shape(m, n, u)
+            A panel in which each item is a data frame of the time series of
+            various measured sensors with time as the index. This should not
+            have any missing values.
+
+        """
+        self.data_panel = data_panel
+
+    def solve(self, sensors, controls):
+        """Returns the estimated gains and sensor limit cycles along with
+        their variance.
+
+        Parameters
+        ==========
+        sensors : sequence of strings
+            A sequence of p strings which match column names in the data
+            panel for the sensors.
+        controls : sequence of strings
+            A sequence of q strings which match column names in the data
+            panel for the controls.
+
+        Returns
+        =======
+        gain_matrix : ndarray, shape(n, q, p)
+            The estimated gain matrices for each time step.
+        sensor_limit_cycle : ndarray, shape(n, q)
+            The estimated commanded sensor values.
+
+        """
+        self.sensors = sensors
+        self.controls = controls
+
+        self.lengths()
+
+        A, b = self.form_a_b()
+
+        x, variance, covariance = self.least_squares(A, b)
+
+        gains, controls, sensors = self.deconstruct_solution(x)
+
+        # TODO : output variances
+        #gain_variance : ndarray, shape(n, q, p)
+            #The variance in the estimated gain given the quality of fit.
+        #sensor_limit_cycle_variance : ndarray(n, q)
+            #The variance in the estimated sensor limit cycle with respect to
+            #the quality of fit.
+
+        return gains, sensors
+
+    def deconstruct_solution(self, x):
+        """Returns the gain matrices, command controls, and commanded
+        sensors for each time step.
+
+        m(t) = K(t) [sc(t) - s(t)] = mc(t) - K(t) s(t)
+
+        Returns
+        =======
+        gain_matrices : ndarray,  shape(n, q, p)
+            The gain matrices at each time step, K(t).
+        control_star_vectors : ndarray, shape(n, q)
+            The commanded controls, mc(t).
+        sensor_star_vectors : shape(n, p)
+            The commanded sensors, sc(t).
+
+        """
+
+        gain_matrices = np.zeros((self.n, self.q, self.p))
+        control_star_vectors = np.zeros((self.n, self.q))
+        sensor_star_vectors = np.zeros((self.n, self.p))
+
+        # TODO : I'm not dealing with the steps/cycles correctly here. The
+        # sensor star vectors are different for every cycle.
+        control_vectors = self.form_control_vectors()[0]
+        sensor_vectors = self.form_sensor_vectors()[0]
+
+        for i in range(self.n):
+            k_start = i * self.q * (self.p + 1)
+            k_end = self.q * ((i + 1) * self.p + i)
+            m_end = (i + 1) * self.q * (self.p + 1)
+            gain_matrices[i] = x[k_start:k_end].reshape(self.q, self.p)
+            control_star_vectors[i] = x[k_end:m_end]
+            # m = m* - Ks > m = Ks* - Ks > m = K(s* - s) > K^-1 m + s = s*
+            # TODO : This isn't working
+            #b = control_vectors[i] + np.dot(gain_matrices[i], sensor_vectors[i])
+            #sensor_star_vectors[i] = np.linalg.solve(gain_matrices[i], b)
+        sensor_star_vectors = None
+
+        # TODO : deconstruct the covariance matrices
+
+        return gain_matrices, control_star_vectors, sensor_star_vectors
+
+    def least_squares(self, A, b):
+        """Returns the solution to the linear least squares and the
+        covariance matrix of the solution.
+
+        Parameters
+        ==========
+        A : array_like, shape(n, m)
+            The coefficient matrix of Ax = b.
+        b : array_like, shape(n,)
+            The right hand side of Ax = b.
+
+        Returns
+        =======
+        x : ndarray, shape(m,)
+            The best fit solution.
+        variance : float
+            The variance of the fit.
+        covariance : ndarray, shape(m, m)
+            The covariance of the solution.
+
+        """
+
+        num_equations, num_unknowns = A.shape
+        if num_equations < num_unknowns:
+            raise Exception('Please add some walking cycles. There is ' +
+                'not enough data to solve for the number of unknowns.')
+
+        x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
+
+        variance, covariance = process.least_squares_variance(A,
+                                                              sum_of_residuals)
+
+        return x, variance, covariance
+
+    def lengths(self):
+        """Returns the number of sensors, controls, steps cycles, and time
+        steps.
+
+        Returns
+        =======
+        n : integer
+            The number of time steps.
+        m : integer
+            The number of step cycles.
+        p : integer
+            The number of sensors.
+        q : integer
+            The number of controls.
+
+        """
+        self.n = self.data_panel.shape[1]
+        self.m = self.data_panel.shape[0]
+        self.p = len(self.sensors)
+        self.q = len(self.controls)
+
+        return self.n, self.m, self.p, self.q
+
+    def form_sensor_vectors(self):
+        """Returns an array of sensor vectors for each cycle and each time step.
+
+        Returns
+        =======
+        sensor_vectors : ndarray, shape(m, n, p)
+            The sensor vector form the i'th cycle and the j'th time step
+            will look like [sensor_0, ..., sensor_(p-1)].
+        """
+        sensor_vectors = np.zeros((self.m, self.n, self.p))
+        for i, (panel_name, data_frame) in enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in enumerate(data_frame[self.sensors].iterrows()):
+                sensor_vectors[i, j] = values.values
+
+        return sensor_vectors
+
+    def form_control_vectors(self):
+        """Returns an array of control vectors for each cycle and each time
+        step.
+
+        Returns
+        =======
+        control_vectors : ndarray, shape(m, n, q)
+            The sensor vector form the i'th cycle and the j'th time step
+            will look like [control_0, ..., control_(q-1)].
+
+        """
+        control_vectors = np.zeros((self.m, self.n, self.q))
+        for i, (panel_name, data_frame) in enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in enumerate(data_frame[self.controls].iterrows()):
+                control_vectors[i, j] = values.values
+
+        return control_vectors
+
+    def form_a_b(self):
+        """Returns the A matrix and the b vector for the linear least
+        squares fit.
+
+        Returns
+        =======
+        A : ndarray, shape(n * q, n * q * (p + 1))
+            The A matrix which is sparse and contains the sensor
+            measurements and ones.
+        b : ndarray, shape(n * q,)
+            The b vector which constaints the measured controls.
+
+        """
+        control_vectors = self.form_control_vectors()
+
+        b = np.zeros((self.m * self.n * self.q))
+
+        b = np.array([])
+        for cycle in control_vectors:
+            for time_step in cycle:
+                b = np.hstack((b, -time_step))
+
+        sensor_vectors = self.form_sensor_vectors()
+
+        A = np.zeros((self.m * self.n * self.q, self.n * self.q * (self.p + 1)))
+        for i in range(self.m):
+            Am = np.zeros((self.n * self.q, self.n * self.q * (self.p + 1)))
+            for j in range(self.n):
+                An = np.zeros((self.q, self.q * self.p))
+                for row in range(self.q):
+                    An[row, row * self.p:(row + 1) * self.p] = \
+                        sensor_vectors[i, j]
+                An = np.hstack((An, -np.eye(self.q)))
+                num_rows, num_cols = An.shape
+                Am[j * num_rows:(j + 1) * num_rows, j * num_cols:(j + 1) *
+                    num_cols] = An
+            A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
+
+        return A, b
 
 
 def find_constant_speed(time, speed, plot=False):
@@ -158,6 +399,7 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
             plt.ylabel('vertical ground reaction force (N)')
             plt.title('%s (%i foot strikes, %i toe-offs)' % (
                 label, len(foot_strikes), len(toe_offs)))
+            #ax.set_ylim((-50.0, 50.0))
 
             for i, strike in enumerate(foot_strikes):
                 if i == 0:

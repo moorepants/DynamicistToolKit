@@ -8,6 +8,17 @@ import numpy as np
 from numpy import testing
 
 
+def test_least_squares_variance():
+
+    A = np.random.rand(3, 2)
+    sum_of_residuals = 5.0
+    expected_variance = 5.0 / (3 - 2)
+    expected_covariance = expected_variance * np.linalg.inv(np.dot(A.T, A))
+    variance, covariance = process.least_squares_variance(A, sum_of_residuals)
+
+    assert expected_variance == variance
+    testing.assert_allclose(covariance, expected_covariance)
+
 def test_spline_over_nan():
     x = np.linspace(0., 50., num=300)
     y = np.sin(x) + np.random.rand(len(x))
@@ -44,7 +55,7 @@ class TestTimeShift():
 
         error = process.sync_error(self.tau, self.base_signal,
                                    self.shifted_signal, self.time,
-                                   plot=True)
+                                   plot=False)
         testing.assert_allclose(error, 0.0, atol=1e-8)
 
     def test_find_time_shift(self):
@@ -52,14 +63,14 @@ class TestTimeShift():
         estimated_tau = process.find_timeshift(self.base_signal,
                                                self.shifted_signal,
                                                self.sample_rate,
-                                               plot=True)
+                                               plot=False)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
 
         estimated_tau = process.find_timeshift(self.base_signal,
                                                self.shifted_signal,
                                                self.sample_rate,
                                                guess=self.tau,
-                                               plot=True)
+                                               plot=False)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
 
     def test_truncate_data(self):
@@ -100,7 +111,7 @@ class TestTimeShiftRealData():
 
         error = process.sync_error(self.tau, self.base_signal,
                                    self.shifted_signal, self.truncated_time,
-                                   plot=True)
+                                   plot=False)
         testing.assert_allclose(error, 0.0, atol=17.0)
 
     def test_find_time_shift(self):
@@ -108,14 +119,14 @@ class TestTimeShiftRealData():
         estimated_tau = process.find_timeshift(self.base_signal,
                                                self.shifted_signal,
                                                self.sample_rate,
-                                               plot=True)
+                                               plot=False)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
 
         estimated_tau = process.find_timeshift(self.base_signal,
                                                self.shifted_signal,
                                                self.sample_rate,
                                                guess=self.tau,
-                                               plot=True)
+                                               plot=False)
         testing.assert_allclose(estimated_tau, self.tau, atol=0.1)
 
     def test_truncate_data(self):
