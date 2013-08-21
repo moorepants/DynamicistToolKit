@@ -33,30 +33,40 @@ class TestSimpleControlSolver():
         self.sensors = ['knee angle', 'ankle angle']
         self.controls = ['knee moment', 'ankle moment']
 
-        self.time = np.linspace(0.0, 0.2, num=3)
-
-        self.cycle = pandas.DataFrame(
-            {
-             'knee angle': np.sin(self.time),
-             'ankle angle': np.cos(self.time),
-             'knee moment': 5.0 + np.sin(self.time),
-             'ankle moment': 5.0 + np.sin(self.time),
-            }, index=self.time)
-
-        self.all_cycles = pandas.Panel({'cycle1': self.cycle,
-                                        'cycle2': self.cycle,
-                                        'cycle3': self.cycle,
-                                        'cycle4': self.cycle,
-                                        })
+        self.time = np.linspace(0.0, 5.0, num=100)
 
         self.n = len(self.time)
-        self.m = self.all_cycles.shape[0]
         self.p = len(self.sensors)
         self.q = len(self.controls)
+        self.m = 4
 
-        self.solver = SimpleControlSolver(self.all_cycles)
-        self.solver.solve(self.sensors, self.controls)
-        self.solver.lengths()
+        # pick m*, K and s, then generate m
+        # m(t) = m*(t) + K(t)s(t)
+
+        self.m_star = np.ones((self.n, self.q))
+        self.K = np.array([[np.sin(self.time), np.cos(self.time)],
+                           [self.time ** 2, self.time ** 3]]).T
+
+        s = np.zeros((self.m, self.n, self.p))
+        m = np.zeros((self.m, self.n, self.q))
+        cycles = {}
+        noise = 0.05 * np.random.randn(self.n, self.p)
+        for i in range(self.m):
+            s[i] = np.vstack(((i + 1) * np.sin(self.time),
+                              (i + 1) * np.cos(self.time))).T + noise
+            for j in range(self.n):
+                m[i, j] = self.m_star[j] + np.dot(self.K[j], s[i, j])
+            cycles['cycle {}'.format(i)] = \
+                pandas.DataFrame({self.sensors[0]: s[i, :, 0],
+                                  self.sensors[1]: s[i, :, 1],
+                                  self.controls[0]: m[i, :, 0],
+                                  self.controls[1]: m[i, :, 1],
+                                  }, index=self.time)
+
+        self.all_cycles = pandas.Panel(cycles)
+
+        self.solver = SimpleControlSolver(self.all_cycles, self.sensors,
+                self.controls)
 
     def test_init(self):
 
@@ -68,15 +78,15 @@ class TestSimpleControlSolver():
 
         n, m, p, q = self.solver.lengths()
 
-        assert self.solver.n == len(self.time)
-        assert self.solver.m == self.all_cycles.shape[0]
-        assert self.solver.p == len(self.sensors)
-        assert self.solver.q == len(self.controls)
+        assert self.solver.n == self.n
+        assert self.solver.m == self.m
+        assert self.solver.p == self.p
+        assert self.solver.q == self.q
 
-        assert n == len(self.time)
-        assert m == self.all_cycles.shape[0]
-        assert p == len(self.sensors)
-        assert q == len(self.controls)
+        assert n == self.n
+        assert m == self.m
+        assert p == self.p
+        assert q == self.q
 
     def test_form_sensor_vectors(self):
 
@@ -103,30 +113,31 @@ class TestSimpleControlSolver():
 
     def test_form_a_b(self):
 
-        #expected_b = np.array([])
-        #for cycle in self.all_cycles.keys():
-            #for t in self.time:
-                #controls_at_t = self.all_cycles[cycle][self.controls].ix[t]
-                #expected_b = np.hstack((expected_b, controls_at_t))
+        for cycle_key in sorted(self.all_cycles.keys()):
 
-        expected_b = np.zeros(len(self.time) * len(self.controls))
-        for i, t in enumerate(self.time):
-            expected_b[i * len(self.controls):i * len(self.controls) + 2] = \
-                -self.cycle[['knee moment',
-                             'ankle moment']].ix[t]
-        expected_b = np.hstack([expected_b for i in range(self.m)])
+            cycle = self.all_cycles[cycle_key]
 
-        A_cycle1 = np.zeros((self.n * self.q, self.n * self.q * (self.p + 1)))
+            A_cycle = np.zeros((self.n * self.q,
+                                self.n * self.q * (self.p + 1)))
 
-        for i in range(self.n):
-            A_cycle1[i * 2:i * 2 + 2, i * 6:i * 6 + 6] = \
-                np.array(
-                    [[self.cycle['knee angle'][i], self.cycle['ankle angle'][i], 0.0, 0.0, -1.0, 0.0],
-                     [0.0, 0.0, self.cycle['knee angle'][i], self.cycle['ankle angle'][i], 0.0, -1.0]])
+            for i, t in enumerate(self.time):
+                controls_at_t = -cycle[self.controls].ix[t]
+                try:
+                    expected_b = np.hstack((expected_b, controls_at_t))
+                except NameError:
+                    expected_b = controls_at_t
 
-        # the cycles just happen to be the same
-        cycles = [A_cycle1 for i in range(self.m)]
-        expected_A = np.vstack(cycles)
+                if self.p > 2:
+                    raise Exception("This test only works for having two sensors.")
+
+                A_cycle[i * 2:i * 2 + 2, i * 6:i * 6 + 6] = \
+                    np.array(
+                        [[cycle[self.sensors[0]][t], cycle[self.sensors[1]][t], 0.0, 0.0, -1.0, 0.0],
+                         [0.0, 0.0, cycle[self.sensors[0]][t], cycle[self.sensors[1]][t], 0.0, -1.0]])
+            try:
+                expected_A = np.vstack((expected_A, A_cycle))
+            except NameError:
+                expected_A = A_cycle
 
         A, b = self.solver.form_a_b()
 

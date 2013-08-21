@@ -20,7 +20,7 @@ class SimpleControlSolver(object):
 
     """
 
-    def __init__(self, data_panel):
+    def __init__(self, data_panel, sensors, controls):
         """Initializes the solver.
 
         Parameters
@@ -29,22 +29,22 @@ class SimpleControlSolver(object):
             A panel in which each item is a data frame of the time series of
             various measured sensors with time as the index. This should not
             have any missing values.
-
-        """
-        self.data_panel = data_panel
-
-    def solve(self, sensors, controls):
-        """Returns the estimated gains and sensor limit cycles along with
-        their variance.
-
-        Parameters
-        ==========
         sensors : sequence of strings
             A sequence of p strings which match column names in the data
             panel for the sensors.
         controls : sequence of strings
             A sequence of q strings which match column names in the data
             panel for the controls.
+
+        """
+        self.data_panel = data_panel
+        self.sensors = sensors
+        self.controls = controls
+        self.lengths()
+
+    def solve(self):
+        """Returns the estimated gains and sensor limit cycles along with
+        their variance.
 
         Returns
         =======
@@ -54,10 +54,6 @@ class SimpleControlSolver(object):
             The estimated commanded sensor values.
 
         """
-        self.sensors = sensors
-        self.controls = controls
-
-        self.lengths()
 
         A, b = self.form_a_b()
 
@@ -221,8 +217,6 @@ class SimpleControlSolver(object):
 
         """
         control_vectors = self.form_control_vectors()
-
-        b = np.zeros((self.m * self.n * self.q))
 
         b = np.array([])
         for cycle in control_vectors:
