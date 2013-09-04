@@ -149,7 +149,7 @@ def truncate_data(tau, signal1, signal2, sample_rate):
     find_time_shift or something similar.
 
     Parameters
-    ---------
+    ----------
     tau : float
         The time shift.
     signal1 : array_like, shape(n, )
@@ -470,8 +470,7 @@ def normalize(sig, hasNans=False):
     return normSig
 
 def derivative(x, y, method='forward'):
-    '''
-    Returns the derivative of y with respect to x.
+    '''Returns the derivative of y with respect to x.
 
     Parameters
     ----------
