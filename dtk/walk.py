@@ -30,13 +30,13 @@ class WalkingData(object):
 
         self.raw_data = data_frame
 
-    def time_derivative(self, *col_names, new_col_names=None):
+    def time_derivative(self, col_names, new_col_names=None):
         """Numerically differentiates the specified columns with respect to
         the time index and adds the new columns to `self.raw_data`.
 
         Parameters
         ==========
-        col_names : 1 or more strings
+        col_names : list of strings
             The column names for the time series which should be numerically
             time differentiated.
         new_col_names : list of strings, optional
