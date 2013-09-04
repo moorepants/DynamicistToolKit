@@ -4,16 +4,238 @@
 # external
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas
 
 # local
 from dtk import process
+
+
+class WalkingData(object):
+    """A class to store typical walking data."""
+
+    def __init__(self, data_frame):
+        """Initializes the data structure.
+
+        Parameters
+        ==========
+        data_frame : pandas.DataFrame
+            A data frame with an index of time and columns for each variable
+            measured during a walking run.
+
+        """
+        # Could have a real time index:
+        # new_index = [pandas.Timestamp(x, unit='s') for x in data.index]
+        # data_frame.index = new_index
+        # data.index.values.astype(float)*1e-9
+
+        self.raw_data = data_frame
+
+    def grf_landmarks(self, right_vertical_grf_col_name,
+                      left_vertical_grf_col_name, **kwargs):
+        """Returns the times at which heel strikes and toe offs happen in
+        the raw data.
+
+        Parameters
+        ==========
+        right_vertical_grf_column_name : string
+            The name of the column in the raw data frame which corresponds
+            to the right foot vertical ground reaction force.
+        left_vertical_grf_column_name : string
+            The name of the column in the raw data frame which corresponds
+            to the left foot vertical ground reaction force.
+
+        Returns
+        =======
+        right_strikes : np.array
+            All times at which right_grfy is non-zero and it was 0 at the
+            preceding time index.
+        left_strikes : np.array
+            Same as above, but for the left foot.
+        right_offs : np.array
+            All times at which left_grfy is 0 and it was non-zero at the
+            preceding time index.
+        left_offs : np.array
+            Same as above, but for the left foot.
+
+        Notes
+        =====
+        This is a simple wrapper to gait_landmarks_from_grf and supports all
+        the optional keyword arguments that it does.
+
+        """
+
+        right_strikes, left_strikes, right_offs, left_offs = \
+            gait_landmarks_from_grf(self.raw_data.index.values.astype(float),
+                                    self.raw_data[right_vertical_grf_col_name].values,
+                                    self.raw_data[left_vertical_grf_col_name].values,
+                                    **kwargs)
+
+        self.strikes = {}
+        self.offs = {}
+
+        self.strikes['right'] = right_strikes
+        self.strikes['left'] = left_strikes
+        self.offs['right'] = right_offs
+        self.offs['left'] = left_offs
+
+        return right_strikes, left_strikes, right_offs, left_offs
+
+    @staticmethod
+    def interpolate(data_frame, time):
+        """Returns a data frame with a index based on the provided time
+        array and linear interpolation.
+
+        Parameters
+        ==========
+        data_frame : pandas.DataFrame
+            A data frame with time series columns. The index should be in
+            seconds.
+        time : array_like, shape(n,)
+            A monotonically increasing array of time in seconds at which the
+            data frame should be interpolated at.
+
+        Returns
+        =======
+        interpolated_data_frame : pandas.DataFrame
+            The data frame with an index matching `time_vector` and
+            interpolated values based on `data_frame`.
+
+        """
+
+        total_index = np.sort(np.hstack((data_frame.index.values,
+                                         time)))
+        reindexed_data_frame = data_frame.reindex(total_index)
+        interpolated_data_frame = \
+            reindexed_data_frame.apply(pandas.Series.interpolate,
+                                       method='values').loc[time]
+
+        # Because the time vector may have matching indices as the original
+        # index (i.e. always the zero indice), drop any duplicates so the
+        # len() stays consistent
+        return interpolated_data_frame.drop_duplicates()
+
+    def split_at(self, side, section='both', num_samples=None):
+        """Forms a pandas.Panel which has an item for each step. The index
+        will be a new time vector starting at zero.
+
+        Parameters
+        ==========
+        side : string {right|left}
+            Split with respect to the right or left side heel strikes and/or
+            toe-offs.
+        section : string {both|stance|swing}
+            Whether to split around the stance phase, swing phase, or both.
+        num_samples : integer
+            If provided the time series in each step will be interpolated at
+            values evenly spaced in time across the step.
+
+        Returns
+        =======
+        steps : pandas.Panel
+
+        """
+
+        if section == 'stance':
+            lead = self.strikes[side]
+            trail = self.offs[side]
+        elif section == 'swing':
+            lead = self.offs[side]
+            trail = self.strikes[side]
+        elif section == 'both':
+            lead = self.strikes[side]
+            trail = self.strikes[side][1:]
+        else:
+            raise ValueError('{} is not a valid section name'.format(section))
+
+        if lead[0] > trail[0]:
+            trail = trail[1:]
+
+        samples = []
+        max_times = []
+        for i, lead_val in enumerate(lead):
+            try:
+                step_slice = self.raw_data[lead_val:trail[i]]
+            except IndexError:
+                pass
+            else:
+                samples.append(len(step_slice))
+                max_times.append(float(step_slice.index[-1]) -
+                                 float(step_slice.index[0]))
+
+        max_num_samples = min(samples)
+        max_time = min(max_times)
+
+        steps = {}
+        for i, lead_val in enumerate(lead):
+            try:
+                # get the step and truncate it to the max value
+                data_frame = \
+                    self.raw_data[lead_val:trail[i]].iloc[:max_num_samples]
+            except IndexError:
+                pass
+            else:
+                # make a new index starting from zero for each step
+                new_index = data_frame.index.values.astype(float) - \
+                    data_frame.index[0]
+                # this rounding is a hack because the index seems to treat
+                # floats that are slightly different as different indexes,
+                # could be better to convert the time to an integer value
+                # based on the number of decimals in the original file
+                #data_frame.index = np.round(new_index, 2)
+                data_frame.index = new_index
+                if num_samples is None:
+                    num_samples = max_num_samples
+                # create a time vector index which has a specific number
+                # of samples over the period of time, the max time needs
+                sub_sample_index = np.linspace(0.0, max_time,
+                                               num=num_samples)
+                interpolated_data_frame = self.interpolate(data_frame,
+                                                           sub_sample_index)
+                steps[i] = interpolated_data_frame
+
+        self.steps = pandas.Panel(steps)
+
+        return self.steps
+
+    def plot_steps(self, *col_names, **kwargs):
+        """Plots the steps.
+
+        Parameters
+        ==========
+        col_names : string
+            A variable number of strings naming the columns to plot.
+        kwargs : key value pairs
+            Any extra kwargs to pass to the matplotlib plot command.
+
+        """
+
+        if len(col_names) == 0:
+            raise ValueError('Please supply some column names to plot.')
+
+        fig, axes = plt.subplots(len(col_names), sharex=True)
+
+        for key, value in self.steps.iteritems():
+            for i, col_name in enumerate(col_names):
+                try:
+                    ax = axes[i]
+                except TypeError:
+                    ax = axes
+                ax.plot(value[col_name].index, value[col_name], **kwargs)
+                ax.set_ylabel(col_name)
+                ax.set_xlabel('Time [s]')
+
+        return axes
 
 
 class SimpleControlSolver(object):
     """This assumes a simple linear control structure at each time instance
     in a step.
 
-    m(t) = K(t) [sc(t) - s(t)] = mc(t) - K(t) s(t)
+    The measured joint torques equal some limit cycle joint torque plus a
+    matrix of gains multiplied by the error in the sensors and the nominal
+    value of the sensors.
+
+    m_measured(t) = m_nominal + K(t) [s_nominal(t) - s(t)] = mc(t) - K(t) s(t)
 
     This class solves for the time dependent gains and the "commanded"
     controls using a simple linear least squares.
@@ -37,9 +259,42 @@ class SimpleControlSolver(object):
             panel for the controls.
 
         """
+        # These are just dummy values so that self.lengths() computes
+        # something with the actual values are assigned. Should be a better
+        # way to handle this.
+        self._data_panel = np.ones((2, 2))
+        self._controls = []
+        self._sensors = []
+
         self.data_panel = data_panel
         self.sensors = sensors
         self.controls = controls
+
+    @property
+    def data_panel(self):
+        return self._data_panel
+
+    @data_panel.setter
+    def data_panel(self, value):
+        self._data_panel = value
+        self.lengths()
+
+    @property
+    def controls(self):
+        return self._controls
+
+    @controls.setter
+    def controls(self, value):
+        self._controls = value
+        self.lengths()
+
+    @property
+    def sensors(self):
+        return self._sensors
+
+    @sensors.setter
+    def sensors(self, value):
+        self._sensors = value
         self.lengths()
 
     def solve(self):
@@ -138,6 +393,13 @@ class SimpleControlSolver(object):
         if num_equations < num_unknowns:
             raise Exception('Please add some walking cycles. There is ' +
                 'not enough data to solve for the number of unknowns.')
+
+        # scipy.sparse.linalg.lsmr is an iterative solver for a sparse A
+        # matrix. # should convert A matrix to a scipy sparse matrix first
+
+        # Also this is potentially a faster implementation:
+        # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
+
 
         x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
 
@@ -293,7 +555,7 @@ def find_constant_speed(time, speed, plot=False):
     return len(time) - (new_indice), time[len(time) - new_indice]
 
 
-def gait_landmarks_from_grf(time, right_grfy, left_grfy,
+def gait_landmarks_from_grf(time, right_grf, left_grf,
                             threshold=1e-5, do_plot=False, min_time=None,
                             max_time=None):
     """
@@ -304,10 +566,9 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
     ----------
     time : array_like, shape(n,)
         A monotonically increasing time array.
-    right_grfy : array_like, shape(n,)
-        Name of column in `mot_file` containing the y (vertical) component
-        of GRF data for the right leg.
-    left_grfy : str, shape(n,)
+    right_grf : array_like, shape(n,)
+        The vertical component of GRF data for the right leg.
+    left_grf : str, shape(n,)
         Same as above, but for the left leg.
     threshold : float, optional
         Below this value, the force is considered to be zero (and the
@@ -340,6 +601,9 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
     https://github.com/fitze/epimysium/blob/master/epimysium/postprocessing.py
 
     """
+    # TODO : Have an option to low pass filter the grf signals first so that
+    # there is less noise in the swing phase.
+
     # Helper functions
     # ----------------
     def zero(number):
@@ -362,7 +626,7 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
         return np.array(deaths)
 
     def nearest_index(array, val):
-            return np.abs(array - val).argmin()
+        return np.abs(array - val).argmin()
 
     # Time range to consider.
     if max_time is None:
@@ -377,10 +641,10 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
 
     index_range = range(min_idx, max_idx)
 
-    right_foot_strikes = birth_times(right_grfy)
-    left_foot_strikes = birth_times(left_grfy)
-    right_toe_offs = death_times(right_grfy)
-    left_toe_offs = death_times(left_grfy)
+    right_foot_strikes = birth_times(right_grf)
+    left_foot_strikes = birth_times(left_grf)
+    right_toe_offs = death_times(right_grf)
+    left_toe_offs = death_times(left_grf)
 
     if do_plot:
 
@@ -389,11 +653,10 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
 
         def myplot(index, label, ordinate, foot_strikes, toe_offs):
             ax = plt.subplot(2, 1, index)
-            plt.plot(time[min_idx:max_idx], ordinate[min_idx:max_idx], 'k')
+            plt.plot(time[min_idx:max_idx], ordinate[min_idx:max_idx], '.k')
             plt.ylabel('vertical ground reaction force (N)')
             plt.title('%s (%i foot strikes, %i toe-offs)' % (
                 label, len(foot_strikes), len(toe_offs)))
-            #ax.set_ylim((-50.0, 50.0))
 
             for i, strike in enumerate(foot_strikes):
                 if i == 0:
@@ -409,11 +672,12 @@ def gait_landmarks_from_grf(time, right_grfy, left_grfy,
                     kwargs = dict()
                 plt.plot(off * ones, ax.get_ylim(), 'b', **kwargs)
 
-        myplot(1, 'left foot', left_grfy, left_foot_strikes, left_toe_offs)
+        myplot(1, 'left foot', left_grf, left_foot_strikes, left_toe_offs)
         plt.legend(loc='best')
 
-        myplot(2, 'right foot', right_grfy, right_foot_strikes, right_toe_offs)
+        myplot(2, 'right foot', right_grf, right_foot_strikes, right_toe_offs)
 
         plt.xlabel('time (s)')
+        plt.show()
 
     return right_foot_strikes, left_foot_strikes, right_toe_offs, left_toe_offs
