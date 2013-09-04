@@ -30,6 +30,32 @@ class WalkingData(object):
 
         self.raw_data = data_frame
 
+    def time_derivative(self, *col_names, new_col_names=None):
+        """Numerically differentiates the specified columns with respect to
+        the time index and adds the new columns to `self.raw_data`.
+
+        Parameters
+        ==========
+        col_names : 1 or more strings
+            The column names for the time series which should be numerically
+            time differentiated.
+        new_col_names : list of strings, optional
+            The desired new column name(s) for the time differentiated
+            series. If None, then a default name of `Time derivative of
+            <origin column name>` will be used.
+
+        """
+
+        if new_col_names is None:
+            new_col_names = ['Time derivative of {}'.format(c) for c in
+                             col_names]
+
+        for col_name, new_col_name in zip(col_names, new_col_names):
+            self.raw_data[new_col_name] = \
+                process.derivative(self.raw_data.index.values.astype(float),
+                                   self.raw_data[col_name],
+                                   method='combination')
+
     def grf_landmarks(self, right_vertical_grf_col_name,
                       left_vertical_grf_col_name, **kwargs):
         """Returns the times at which heel strikes and toe offs happen in
