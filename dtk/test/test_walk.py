@@ -93,10 +93,10 @@ class TestWalkingData():
         testing.assert_allclose(expected_left_strikes, left_strikes)
 
     def test_interpolate(self):
-        df = pandas.DataFrame({'a': [1.0, 3.0, 5.0, 7.0],
-                               'b': [5.0, 7.0, 9.0, 11.0],
+        df = pandas.DataFrame({'a': [np.nan, 3.0, 5.0, 7.0],
+                               'b': [5.0, np.nan, 9.0, 11.0],
                                'c': [2.0, 4.0, 6.0, 8.0],
-                               'd': [0.5, 1.0, 1.5, 2.0]},
+                               'd': [0.5, 1.0, 1.5, np.nan]},
                               index=[0.0, 2.0, 4.0, 6.0])
 
         time = [0.0, 1.0, 3.0, 5.0]
@@ -106,11 +106,13 @@ class TestWalkingData():
         # NOTE : pandas.Series.interpolate does not extrapolate (because
         # np.interp doesn't.
 
-        df_expected = pandas.DataFrame({'a': [1.0, 2.0, 4.0, 6.0],
+        df_expected = pandas.DataFrame({'a': [4.0, 4.0, 4.0, 6.0],
                                         'b': [5.0, 6.0, 8.0, 10.0],
                                         'c': [2.0, 3.0, 5.0, 7.0],
-                                        'd': [0.5, 0.75, 1.25, 1.75]},
+                                        'd': [0.5, 0.75, 1.25, 1.5]},
                                        index=time)
+
+        assert interpolated == df_expected
 
         testing.assert_allclose(interpolated.values, df_expected.values)
         testing.assert_allclose(interpolated.index.values.astype(float),

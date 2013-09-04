@@ -109,6 +109,11 @@ class WalkingData(object):
             reindexed_data_frame.apply(pandas.Series.interpolate,
                                        method='values').loc[time]
 
+        # If the first or last value of a series is NA then the interpolate
+        # function leaves it as an NA value, so use backfill to take care of
+        # those.
+        interpolated_data_frame = \
+            interpolated_data_frame.fillna(method='backfill')
         # Because the time vector may have matching indices as the original
         # index (i.e. always the zero indice), drop any duplicates so the
         # len() stays consistent
