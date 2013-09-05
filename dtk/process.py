@@ -8,6 +8,7 @@ from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fmin
 from scipy.signal import butter, filtfilt
 from scipy.stats import nanmean
+from scipy import sparse
 import matplotlib.pyplot as plt
 
 
@@ -210,7 +211,14 @@ def least_squares_variance(A, sum_of_residuals):
     # There may be a way to use the pinv here for more efficient
     # computations. (A^T A)^-1 A^T = np.linalg.pinv(A) so np.linalg.pinv(A)
     # (A^T)^-1 ... or maybe not.
-    covariance = variance * np.linalg.inv(np.dot(A.T, A))
+    if sparse.issparse(A):
+        inv = sparse.linalg.inv
+        prod = A.T * A
+    else:
+        inv = np.linalg.inv
+        prod = np.dot(A.T, A)
+
+    covariance = variance * inv(prod)
 
     return variance, covariance
 

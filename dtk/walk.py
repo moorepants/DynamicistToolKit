@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import pandas
+from scipy import sparse
 
 # local
 from dtk import process
@@ -329,7 +330,7 @@ class SimpleControlSolver(object):
         self._sensors = value
         self.lengths()
 
-    def solve(self):
+    def solve(self, sparse_a=False):
         """Returns the estimated gains and sensor limit cycles along with
         their variance.
 
@@ -342,7 +343,7 @@ class SimpleControlSolver(object):
 
         """
 
-        A, b = self.form_a_b()
+        A, b = self.form_a_b(sparse_a=sparse_a)
 
         x, variance, covariance = self.least_squares(A, b)
 
@@ -399,7 +400,7 @@ class SimpleControlSolver(object):
 
         return gain_matrices, control_star_vectors, sensor_star_vectors
 
-    def least_squares(self, A, b):
+    def least_squares(self, A, b, sparse_a=False):
         """Returns the solution to the linear least squares and the
         covariance matrix of the solution.
 
@@ -422,21 +423,23 @@ class SimpleControlSolver(object):
         """
 
         num_equations, num_unknowns = A.shape
+
         if num_equations < num_unknowns:
             raise Exception('Please add some walking cycles. There is ' +
                 'not enough data to solve for the number of unknowns.')
 
-        # scipy.sparse.linalg.lsmr is an iterative solver for a sparse A
-        # matrix. # should convert A matrix to a scipy sparse matrix first
+        if sparse.issparse(A):
+            x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
+                sparse.linalg.lsqr(A, b)
+            # scipy.sparse.linalg.lsmr is also an option
+            sum_of_residuals = r1norm
+        else:
+            x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
+            # Also this is potentially a faster implementation:
+            # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
 
-        # Also this is potentially a faster implementation:
-        # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
-
-
-        x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
-
-        variance, covariance = process.least_squares_variance(A,
-                                                              sum_of_residuals)
+        variance, covariance = \
+            process.least_squares_variance(A, sum_of_residuals)
 
         return x, variance, covariance
 
@@ -497,7 +500,7 @@ class SimpleControlSolver(object):
 
         return control_vectors
 
-    def form_a_b(self):
+    def form_a_b(self, sparse_a=False):
         """Returns the A matrix and the b vector for the linear least
         squares fit.
 
@@ -519,19 +522,35 @@ class SimpleControlSolver(object):
 
         sensor_vectors = self.form_sensor_vectors()
 
-        A = np.zeros((self.m * self.n * self.q, self.n * self.q * (self.p + 1)))
+        A = np.zeros((self.m * self.n * self.q,
+                      self.n * self.q * (self.p + 1)))
+
         for i in range(self.m):
-            Am = np.zeros((self.n * self.q, self.n * self.q * (self.p + 1)))
+
+            Am = np.zeros((self.n * self.q,
+                           self.n * self.q * (self.p + 1)))
+
             for j in range(self.n):
+
                 An = np.zeros((self.q, self.q * self.p))
+
                 for row in range(self.q):
+
                     An[row, row * self.p:(row + 1) * self.p] = \
                         sensor_vectors[i, j]
+
                 An = np.hstack((An, -np.eye(self.q)))
+
                 num_rows, num_cols = An.shape
+
                 Am[j * num_rows:(j + 1) * num_rows, j * num_cols:(j + 1) *
                     num_cols] = An
+
             A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
+
+        if sparse_a is True:
+            A = sparse.csr_matrix(A)
+            A = A.tocsr()
 
         return A, b
 
