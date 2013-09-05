@@ -334,6 +334,12 @@ class SimpleControlSolver(object):
         """Returns the estimated gains and sensor limit cycles along with
         their variance.
 
+        Parameters
+        ==========
+        sparse_a : boolean, optional, default=False
+            If true a sparse A matrix will be used along with a sparse
+            linear least squares solver.
+
         Returns
         =======
         gain_matrix : ndarray, shape(n, q, p)
@@ -343,7 +349,14 @@ class SimpleControlSolver(object):
 
         """
 
-        A, b = self.form_a_b(sparse_a=sparse_a)
+        A, b = self.form_a_b()
+
+        # TODO : To actually get some memory reduction I should construct
+        # the A matrix with a scipy.sparse.lil_matrix in form_a_b instead of
+        # simply converting the dense matrix after I build it.
+
+        if sparse_a is True:
+            A = sparse.csr_matrix(A)
 
         x, variance, covariance = self.least_squares(A, b)
 
@@ -400,7 +413,7 @@ class SimpleControlSolver(object):
 
         return gain_matrices, control_star_vectors, sensor_star_vectors
 
-    def least_squares(self, A, b, sparse_a=False):
+    def least_squares(self, A, b):
         """Returns the solution to the linear least squares and the
         covariance matrix of the solution.
 
@@ -547,10 +560,6 @@ class SimpleControlSolver(object):
                     num_cols] = An
 
             A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
-
-        if sparse_a is True:
-            A = sparse.csr_matrix(A)
-            A = A.tocsr()
 
         return A, b
 
