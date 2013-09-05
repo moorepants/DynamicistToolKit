@@ -4,6 +4,7 @@
 # external
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import pandas
 
 # local
@@ -533,6 +534,58 @@ class SimpleControlSolver(object):
             A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
 
         return A, b
+
+    def plot_gains(self, gains):
+        """Plots the identified gains versus percentage of the gait cycle.
+
+        Parameters
+        ==========
+        gain_matrix : ndarray, shape(n, q, p)
+            The estimated gain matrices for each time step.
+
+        Returns
+        =======
+        axes : ndarray of matplotlib.axis, shape(q, p)
+
+        """
+
+        def to_percent(y, position):
+            s = str(100 * y)
+            if plt.rcParams['text.usetex'] is True:
+                return s + r'$\%$'
+            else:
+                return s + '%'
+
+        formatter = FuncFormatter(to_percent)
+
+        n, q, p = gains.shape
+
+        fig, axes = plt.subplots(q, p, sharex=True)
+
+        percent_of_gait_cycle = np.linspace(0.0, 1.0, num=gains.shape[0])
+
+        for i in range(q):
+            for j in range(p):
+                try:
+                    ax = axes[i, j]
+                except TypeError:
+                    ax = axes
+
+                ax.plot(percent_of_gait_cycle, gains[:, i, j], marker='o')
+                ax.set_title('Input: {}\nOutput: {}'.format(
+                    self.sensors[j], self.controls[i]), fontsize=8)
+                ax.xaxis.set_major_formatter(formatter)
+
+                for tick in ax.xaxis.get_major_ticks():
+                    tick.label.set_fontsize(6)
+                if j == 0:
+                    ax.set_ylabel('Gain', fontsize=10)
+                if i == q - 1:
+                    ax.set_xlabel('Percent of gait cycle', fontsize=10)
+
+        plt.tight_layout()
+
+        return axes
 
 
 def find_constant_speed(time, speed, plot=False):
