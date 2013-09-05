@@ -292,4 +292,13 @@ class TestSimpleControlSolver():
         testing.assert_allclose(expected_b, b)
         testing.assert_allclose(expected_A, A)
 
+    def test_least_squares(self):
+        pass
+
+    def test_deconstruct_solution(self):
+        pass
+
+    def test_solve(self):
+        pass
+
 #TODO: Write a test for the gfr function.
