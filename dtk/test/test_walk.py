@@ -301,4 +301,7 @@ class TestSimpleControlSolver():
     def test_solve(self):
         pass
 
+    def test_compute_estimated_controls(self):
+        pass
+
 #TODO: Write a test for the gfr function.

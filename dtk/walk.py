@@ -210,11 +210,6 @@ class WalkingData(object):
                 # make a new index starting from zero for each step
                 new_index = data_frame.index.values.astype(float) - \
                     data_frame.index[0]
-                # this rounding is a hack because the index seems to treat
-                # floats that are slightly different as different indexes,
-                # could be better to convert the time to an integer value
-                # based on the number of decimals in the original file
-                #data_frame.index = np.round(new_index, 2)
                 data_frame.index = new_index
                 if num_samples is None:
                     num_samples = max_num_samples
@@ -342,10 +337,19 @@ class SimpleControlSolver(object):
 
         Returns
         =======
-        gain_matrix : ndarray, shape(n, q, p)
+        gain_matrices : ndarray, shape(n, q, p)
             The estimated gain matrices for each time step.
-        sensor_limit_cycle : ndarray, shape(n, q)
-            The estimated commanded sensor values.
+        control_vectors : ndarray, shape(n, q)
+            The nominal control vector plus the gains multiplied by the
+            reference sensors at each time step.
+        variance : float
+            The variance in the fitted curve.
+        gain_matrices_variance : ndarray, shape(n, q, p)
+            The variance of the found gains (covariance is neglected).
+        control_vectors_variance : ndarray, shape(n, q)
+            The variance of the found commanded controls (covariance is
+            neglected).
+        estimated_controls :
 
         """
 
@@ -360,58 +364,128 @@ class SimpleControlSolver(object):
 
         x, variance, covariance = self.least_squares(A, b)
 
-        gains, controls, sensors = self.deconstruct_solution(x)
+        # TODO : I need a better name for the m_nom + Ks_nom,
+        # control_vectors is already taken.
 
-        # TODO : output variances
-        #gain_variance : ndarray, shape(n, q, p)
-            #The variance in the estimated gain given the quality of fit.
-        #sensor_limit_cycle_variance : ndarray(n, q)
-            #The variance in the estimated sensor limit cycle with respect to
-            #the quality of fit.
+        (gain_matrices, control_vectors, gain_matrices_variance,
+         control_vectors_variance) = \
+            self.deconstruct_solution(x, covariance)
 
-        return gains, sensors
+        estimated_controls = self.compute_estimated_controls(A, x)
 
-    def deconstruct_solution(self, x):
-        """Returns the gain matrices, command controls, and commanded
-        sensors for each time step.
+        return (gain_matrices, control_vectors, variance,
+                gain_matrices_variance, control_vectors_variance,
+                estimated_controls)
 
-        m(t) = K(t) [sc(t) - s(t)] = mc(t) - K(t) s(t)
+    def compute_estimated_controls(self, A, x):
+        """Returns a panel of data frames, one for each step, that has the
+        estimated control values at each time the gains were computed.
+
+        Parameters
+        ==========
+        A : array_like, shape(n, m)
+            The coefficient matrix of Ax = b.
+        x : array_like, shape(n * q * (p + 1),)
+            The solution matrix containing the gains and the commanded
+            controls.
+
+        Returns
+        =======
+        panel : pandas.Panel, shape(m, n, q)
+            There is one data frame to correspond to each step and the steps
+            in self.data_panel.
+
+        """
+        estimated_b = -np.dot(A, x)
+
+        panel = {}
+        for i, df in self.data_panel.iteritems():
+            estimated = df[self.controls].copy()
+            for j in range(self.n):
+                estimated.loc[j, :] = \
+                    estimated_b[j * self.q:j * self.q + self.q]
+            panel[i] = estimated
+
+        return pandas.Panel(panel)
+
+    def plot_estimated_vs_measure_controls(self, estimated_panel, variance):
+        """Plots a figure for each control where the measured control is
+        shown compared to the estimated."""
+
+        # TODO : Contruct the original time vector for the index.
+
+        estimated_walking = pandas.concat([df for k, df in
+                                           estimated_panel.iteritems()],
+                                          ignore_index=True)
+        actual_walking = pandas.concat([df for k, df in
+                                        self.data_panel.iteritems()],
+                                       ignore_index=True)
+
+        fig, axes = plt.subplots(self.q, sharex=True)
+        for i, control in enumerate(self.controls):
+            axes[i].plot(actual_walking.index.values,
+                         actual_walking[control].values)
+            axes[i].errorbar(estimated_walking.index.values,
+                             estimated_walking[control].values,
+                             yerr=np.sqrt(variance) *
+                             np.ones(len(estimated_walking)),
+                             fmt='o')
+            axes[i].set_title(control)
+            axes[i].set_xlabel('Point at which a gain was computed.')
+            axes[i].set_ylabel(control)
+            axes[i].legend(('Measured Control', 'Estimated Control'))
+
+    def deconstruct_solution(self, x, covariance):
+        """Returns the gain matrices and mc(t) for each time step.
+
+        m(t) = mc(t) - K(t) s(t)
+
+        Parameters
+        ==========
+        x : array_like, shape(n * q * (p + 1),)
+            The solution matrix containing the gains and the commanded
+            controls.
+        covariance : array_like, shape(n * q * (p + 1), n * q * (p + 1))
+            The covariance of x with respect to the variance in the fit.
 
         Returns
         =======
         gain_matrices : ndarray,  shape(n, q, p)
             The gain matrices at each time step, K(t).
-        control_star_vectors : ndarray, shape(n, q)
-            The commanded controls, mc(t).
-        sensor_star_vectors : shape(n, p)
-            The commanded sensors, sc(t).
+        control_vectors : ndarray, shape(n, q)
+            The nominal control vector plus the gains multiplied by the
+            reference sensors at each time step.
+        gain_matrices_variance : ndarray, shape(n, q, p)
+            The variance of the found gains (covariance is neglected).
+        control_vectors_variance : ndarray, shape(n, q)
+            The variance of the found commanded controls (covariance is
+            neglected).
 
         """
 
         gain_matrices = np.zeros((self.n, self.q, self.p))
-        control_star_vectors = np.zeros((self.n, self.q))
-        sensor_star_vectors = np.zeros((self.n, self.p))
+        control_vectors = np.zeros((self.n, self.q))
 
-        # TODO : I'm not dealing with the steps/cycles correctly here. The
-        # sensor star vectors are different for every cycle.
-        control_vectors = self.form_control_vectors()[0]
-        sensor_vectors = self.form_sensor_vectors()[0]
+        gain_matrices_variance = np.zeros((self.n, self.q, self.p))
+        control_vectors_variance = np.zeros((self.n, self.q))
+
+        parameter_variance = np.diag(covariance)
 
         for i in range(self.n):
+
             k_start = i * self.q * (self.p + 1)
             k_end = self.q * ((i + 1) * self.p + i)
             m_end = (i + 1) * self.q * (self.p + 1)
+
             gain_matrices[i] = x[k_start:k_end].reshape(self.q, self.p)
-            control_star_vectors[i] = x[k_end:m_end]
-            # m = m* - Ks > m = Ks* - Ks > m = K(s* - s) > K^-1 m + s = s*
-            # TODO : This isn't working
-            #b = control_vectors[i] + np.dot(gain_matrices[i], sensor_vectors[i])
-            #sensor_star_vectors[i] = np.linalg.solve(gain_matrices[i], b)
-        sensor_star_vectors = None
+            control_vectors[i] = x[k_end:m_end]
 
-        # TODO : deconstruct the covariance matrices
+            gain_matrices_variance[i] = \
+                parameter_variance[k_start:k_end].reshape(self.q, self.p)
+            control_vectors_variance[i] = parameter_variance[k_end:m_end]
 
-        return gain_matrices, control_star_vectors, sensor_star_vectors
+        return (gain_matrices, control_vectors, gain_matrices_variance,
+                control_vectors_variance)
 
     def least_squares(self, A, b):
         """Returns the solution to the linear least squares and the
@@ -563,13 +637,15 @@ class SimpleControlSolver(object):
 
         return A, b
 
-    def plot_gains(self, gains):
+    def plot_gains(self, gains, gain_variance):
         """Plots the identified gains versus percentage of the gait cycle.
 
         Parameters
         ==========
         gain_matrix : ndarray, shape(n, q, p)
             The estimated gain matrices for each time step.
+        gain_variance : ndarray, shape(n, q, p)
+            The variance of the estimated gain matrices for each time step.
 
         Returns
         =======
@@ -598,7 +674,11 @@ class SimpleControlSolver(object):
                     ax = axes[i, j]
                 except TypeError:
                     ax = axes
-
+                sigma = np.sqrt(gain_variance[:, i, j])
+                ax.fill_between(percent_of_gait_cycle,
+                                gains[:, i, j] - sigma,
+                                gains[:, i, j] + sigma,
+                                alpha=0.5)
                 ax.plot(percent_of_gait_cycle, gains[:, i, j], marker='o')
                 ax.set_title('Input: {}\nOutput: {}'.format(
                     self.sensors[j], self.controls[i]), fontsize=8)
