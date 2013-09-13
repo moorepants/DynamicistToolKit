@@ -653,6 +653,9 @@ class SimpleControlSolver(object):
 
         """
 
+        # TODO : Make plots have the same scale if they share the same units
+        # or figure out how to normalize these.
+
         def to_percent(y, position):
             s = str(100 * y)
             if plt.rcParams['text.usetex'] is True:
@@ -664,7 +667,7 @@ class SimpleControlSolver(object):
 
         n, q, p = gains.shape
 
-        fig, axes = plt.subplots(q, p, sharex=True)
+        fig, axes = plt.subplots(q, p, sharex=True, sharey=True)
 
         percent_of_gait_cycle = np.linspace(0.0, 1.0, num=gains.shape[0])
 
