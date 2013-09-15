@@ -723,13 +723,16 @@ class SimpleControlSolver(object):
 
         n, q, p = gains.shape
 
-        fig, axes = plt.subplots(q, p, sharex=True, sharey=True)
+        fig, axes = plt.subplots(q, p, sharex=True)
 
         xlim = (0.0, 1.0)
         percent_of_gait_cycle = np.linspace(xlim[0], xlim[1],
                                             num=gains.shape[0])
 
         for i in range(q):
+
+            ylim = (np.nanmax(gains[:, i, :]), np.nanmin(gains[:, i, :]))
+
             for j in range(p):
                 try:
                     ax = axes[i, j]
@@ -743,6 +746,7 @@ class SimpleControlSolver(object):
                 ax.plot(percent_of_gait_cycle, gains[:, i, j], marker='o')
                 ax.xaxis.set_major_formatter(formatter)
                 ax.set_xlim(xlim)
+                ax.set_ylim(ylim)
 
                 for tick in ax.xaxis.get_major_ticks():
                     tick.label.set_fontsize(6)
