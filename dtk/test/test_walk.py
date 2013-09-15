@@ -186,20 +186,26 @@ class TestSimpleControlSolver():
         self.n = len(self.time)
         self.p = len(self.sensors)
         self.q = len(self.controls)
-        self.m = 4
+        self.m = 10
+
+        self.gain_omission_matrix = np.array(self.q * [self.p * [True]])
+        self.gain_omission_matrix[0, 1] = False
+        self.gain_omission_matrix[1, 0] = False
 
         # pick m*, K and s, then generate m
         # m(t) = m*(t) + K(t)s(t)
 
-        self.m_star = np.ones((self.n, self.q))
+        self.m_star = 100.0 * np.array([np.cos(self.time),
+                                        np.sin(self.time)]).T
         self.K = np.array([[np.sin(self.time), np.cos(self.time)],
-                           [self.time ** 2, self.time ** 3]]).T
+                           [np.sin(2.0 * self.time),
+                            np.cos(3.0 * self.time)]]).T
 
         s = np.zeros((self.m, self.n, self.p))
         m = np.zeros((self.m, self.n, self.q))
         cycles = {}
-        noise = 0.05 * np.random.randn(self.n, self.p)
         for i in range(self.m):
+            noise = 0.25 * np.random.randn(self.n, self.p)
             s[i] = np.vstack(((i + 1) * np.sin(self.time),
                               (i + 1) * np.cos(self.time))).T + noise
             for j in range(self.n):
@@ -214,13 +220,13 @@ class TestSimpleControlSolver():
         self.all_cycles = pandas.Panel(cycles)
 
         self.solver = SimpleControlSolver(self.all_cycles, self.sensors,
-                self.controls)
+                                          self.controls)
 
     def test_init(self):
 
         assert self.all_cycles is self.solver.data_panel
-        assert self.sensors == self.solver.sensors
-        assert self.controls == self.solver.controls
+        assert self.sensors is self.solver.sensors
+        assert self.controls is self.solver.controls
 
     def test_lengths(self):
 
@@ -292,14 +298,82 @@ class TestSimpleControlSolver():
         testing.assert_allclose(expected_b, b)
         testing.assert_allclose(expected_A, A)
 
+        # Now test to see if the gain omission works.
+        self.solver.gain_omission_matrix = self.gain_omission_matrix
+
+        A, b = self.solver.form_a_b()
+
+        # TODO : This is the extact code in the source, not sure it is a
+        # useful test then... It would be more useful if it was a different
+        # implmentation or something.
+        # form a x vector from the gain_omission_matrix
+        x1 = self.gain_omission_matrix.reshape(self.q * self.p)
+        x2 = np.array(self.q * [True])
+        for i in range(self.n):
+            try:
+                x_total = np.hstack((x_total, x1, x2))
+            except NameError:
+                x_total = np.hstack((x1, x2))
+        # x has nans that correspond to the columns in A
+        expected_A = expected_A[:, x_total]
+
+        testing.assert_allclose(expected_A, A)
+
     def test_least_squares(self):
-        pass
+
+        A, b = self.solver.form_a_b()
+        x, variance, covariance = self.solver.least_squares(A, b)
+        # TODO : Figure out why I need a negative sign on the Ks in the
+        # expected_x!
+        for i in range(self.n):
+            try:
+                expected_x = np.hstack((expected_x, -self.K[i].flatten(),
+                                        self.m_star[i]))
+            except NameError:
+                expected_x = np.hstack((-self.K[i].flatten(), self.m_star[i]))
+        testing.assert_allclose(x, expected_x, atol=1e-10)
+
+        self.solver.gain_omission_matrix = self.gain_omission_matrix
+        A, b = self.solver.form_a_b()
+        x, variance, covariance = self.solver.least_squares(A, b)
+
+        expected_normal_x_length = self.q * (1 + self.p) * self.n
+        removed_parameters = self.n * self.gain_omission_matrix.sum()
+
+        assert len(x) == expected_normal_x_length - removed_parameters
 
     def test_deconstruct_solution(self):
-        pass
+        A, b = self.solver.form_a_b()
+        x, variance, covariance = self.solver.least_squares(A, b)
+        (gain_matrices, control_vectors, gain_matrices_covariance,
+         control_vectors_variance) = \
+            self.solver.deconstruct_solution(x, covariance)
+
+        testing.assert_allclose(gain_matrices, -self.K, atol=1e-12)
+        testing.assert_allclose(control_vectors, self.m_star, atol=1e-12)
+
+        # TODO : Make sure covariance matrices are decontructed properly.
+        self.solver.gain_omission_matrix = self.gain_omission_matrix
+        A, b = self.solver.form_a_b()
+        x, variance, covariance = self.solver.least_squares(A, b)
+        (gain_matrices, control_vectors, gain_matrices_covariance,
+         control_vectors_variance) = \
+            self.solver.deconstruct_solution(x, covariance)
+
+        for i in range(self.n):
+            testing.assert_equal(~np.isnan(gain_matrices[i]),
+                                 self.gain_omission_matrix)
 
     def test_solve(self):
-        pass
+
+        self.solver.solve()
+        assert self.solver.gain_omission_matrix is None
+
+        self.solver.solve(gain_omission_matrix=self.gain_omission_matrix)
+        testing.assert_equal(self.solver.gain_omission_matrix,
+                             self.gain_omission_matrix)
+
+        # TODO : check everything else in solve!
 
     def test_compute_estimated_controls(self):
         pass

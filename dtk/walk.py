@@ -293,6 +293,7 @@ class SimpleControlSolver(object):
         self._data_panel = np.ones((2, 2))
         self._controls = []
         self._sensors = []
+        self._gain_omission_matrix = None
 
         self.data_panel = data_panel
         self.sensors = sensors
@@ -325,7 +326,18 @@ class SimpleControlSolver(object):
         self._sensors = value
         self.lengths()
 
-    def solve(self, sparse_a=False):
+    @property
+    def gain_omission_matrix(self):
+        return self._gain_omission_matrix
+
+    @gain_omission_matrix.setter
+    def gain_omission_matrix(self, value):
+        if value is not None:
+            if value.shape != (self.q, self.p):
+                raise ValueError('The gain omission matrix should be of shape({}, {})'.format(self.q, self.p))
+        self._gain_omission_matrix = value
+
+    def solve(self, sparse_a=False, gain_omission_matrix=None):
         """Returns the estimated gains and sensor limit cycles along with
         their variance.
 
@@ -334,6 +346,10 @@ class SimpleControlSolver(object):
         sparse_a : boolean, optional, default=False
             If true a sparse A matrix will be used along with a sparse
             linear least squares solver.
+        gain_omission_matrix : boolean array_like, shape(q, p)
+            A matrix which is the same shape as the identified gain matrices
+            which has False in place of gains that should be assumed to be
+            zero and True for gains that should be identified.
 
         Returns
         =======
@@ -352,12 +368,13 @@ class SimpleControlSolver(object):
         estimated_controls :
 
         """
+        self.gain_omission_matrix = gain_omission_matrix
 
         A, b = self.form_a_b()
 
         # TODO : To actually get some memory reduction I should construct
-        # the A matrix with a scipy.sparse.lil_matrix in form_a_b instead of
-        # simply converting the dense matrix after I build it.
+        # the A matrix with a scipy.sparse.lil_matrix in self.form_a_b
+        # instead of simply converting the dense matrix after I build it.
 
         if sparse_a is True:
             A = sparse.csr_matrix(A)
@@ -412,7 +429,7 @@ class SimpleControlSolver(object):
         """Plots a figure for each control where the measured control is
         shown compared to the estimated."""
 
-        # TODO : Contruct the original time vector for the index.
+        # TODO : Construct the original time vector for the index.
 
         estimated_walking = pandas.concat([df for k, df in
                                            estimated_panel.iteritems()],
@@ -462,6 +479,22 @@ class SimpleControlSolver(object):
             neglected).
 
         """
+        if self.gain_omission_matrix is not None:
+            x1 = self.gain_omission_matrix.flatten()
+            x2 = np.array(self.q * [True])
+            for i in range(self.n):
+                try:
+                    x_total = np.hstack((x_total, x1, x2))
+                except NameError:
+                    x_total = np.hstack((x1, x2))
+            x_total = x_total.astype(object)
+            x_total[x_total == True] = x
+            x_total[x_total == False] = np.nan
+            x = x_total.astype(float)
+
+            cov_total = np.nan * np.ones((len(x_total), len(x_total)))
+            cov_total[~np.isnan(x)][:, ~np.isnan(x)] = covariance
+            covariance = cov_total
 
         gain_matrices = np.zeros((self.n, self.q, self.p))
         control_vectors = np.zeros((self.n, self.q))
@@ -516,17 +549,26 @@ class SimpleControlSolver(object):
                 'not enough data to solve for the number of unknowns.')
 
         if sparse.issparse(A):
+            # scipy.sparse.linalg.lsmr is also an option
             x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
                 sparse.linalg.lsqr(A, b)
-            # scipy.sparse.linalg.lsmr is also an option
-            sum_of_residuals = r1norm
+            sum_of_residuals = r1norm # this may should be the r2norm
         else:
             x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
             # Also this is potentially a faster implementation:
             # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
 
-        variance, covariance = \
-            process.least_squares_variance(A, sum_of_residuals)
+        # lstsq returns an empty array for the sum of the residuals if it is
+        # rank deficient. I'm not sure what the rank deficiency means for
+        # computing the follow values, so I have this ignorant solution.
+        # Right now this is jsut to get the tests to pass for this function.
+        # Maybe I only need ot have a better formulated test case.
+        if sum_of_residuals.size == 0:
+            variance = np.nan
+            covariance = np.nan * np.ones((len(x), len(x)))
+        else:
+            variance, covariance = \
+                process.least_squares_variance(A, sum_of_residuals)
 
         return x, variance, covariance
 
@@ -587,7 +629,7 @@ class SimpleControlSolver(object):
 
         return control_vectors
 
-    def form_a_b(self, sparse_a=False):
+    def form_a_b(self):
         """Returns the A matrix and the b vector for the linear least
         squares fit.
 
@@ -635,6 +677,20 @@ class SimpleControlSolver(object):
 
             A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
 
+        # If there are nans in the gain omission matrix, then delete the
+        # columns in A associated with gains that are set to zero.
+        # TODO : Turn this into a method because I use it at least twice.
+        if self.gain_omission_matrix is not None:
+            x1 = self.gain_omission_matrix.flatten()
+            x2 = np.array(self.q * [True])
+            for i in range(self.n):
+                try:
+                    x_total = np.hstack((x_total, x1, x2))
+                except NameError:
+                    x_total = np.hstack((x1, x2))
+
+            A = A[:, x_total]
+
         return A, b
 
     def plot_gains(self, gains, gain_variance):
@@ -669,7 +725,9 @@ class SimpleControlSolver(object):
 
         fig, axes = plt.subplots(q, p, sharex=True, sharey=True)
 
-        percent_of_gait_cycle = np.linspace(0.0, 1.0, num=gains.shape[0])
+        xlim = (0.0, 1.0)
+        percent_of_gait_cycle = np.linspace(xlim[0], xlim[1],
+                                            num=gains.shape[0])
 
         for i in range(q):
             for j in range(p):
@@ -683,14 +741,16 @@ class SimpleControlSolver(object):
                                 gains[:, i, j] + sigma,
                                 alpha=0.5)
                 ax.plot(percent_of_gait_cycle, gains[:, i, j], marker='o')
-                ax.set_title('Input: {}\nOutput: {}'.format(
-                    self.sensors[j], self.controls[i]), fontsize=8)
                 ax.xaxis.set_major_formatter(formatter)
+                ax.set_xlim(xlim)
 
                 for tick in ax.xaxis.get_major_ticks():
                     tick.label.set_fontsize(6)
                 if j == 0:
-                    ax.set_ylabel('Gain', fontsize=10)
+                    ax.set_ylabel('{}\nGain'.format(self.controls[i]),
+                                  fontsize=10)
+                if i == 0:
+                    ax.set_title(self.sensors[j])
                 if i == q - 1:
                     ax.set_xlabel('Percent of gait cycle', fontsize=10)
 
