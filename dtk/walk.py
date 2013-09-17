@@ -287,12 +287,6 @@ class SimpleControlSolver(object):
             panel for the controls.
 
         """
-        # These are just dummy values so that self.lengths() computes
-        # something with the actual values are assigned. Should be a better
-        # way to handle this.
-        self._data_panel = np.ones((2, 2))
-        self._controls = []
-        self._sensors = []
         self._gain_omission_matrix = None
 
         self.data_panel = data_panel
@@ -306,7 +300,8 @@ class SimpleControlSolver(object):
     @data_panel.setter
     def data_panel(self, value):
         self._data_panel = value
-        self.lengths()
+        self.m = value.shape[0]
+        self.n = value.shape[1]
 
     @property
     def controls(self):
@@ -315,7 +310,7 @@ class SimpleControlSolver(object):
     @controls.setter
     def controls(self, value):
         self._controls = value
-        self.lengths()
+        self.q = len(value)
 
     @property
     def sensors(self):
@@ -324,7 +319,7 @@ class SimpleControlSolver(object):
     @sensors.setter
     def sensors(self, value):
         self._sensors = value
-        self.lengths()
+        self.p = len(value)
 
     @property
     def gain_omission_matrix(self):
@@ -571,29 +566,6 @@ class SimpleControlSolver(object):
                 process.least_squares_variance(A, sum_of_residuals)
 
         return x, variance, covariance
-
-    def lengths(self):
-        """Returns the number of sensors, controls, steps cycles, and time
-        steps.
-
-        Returns
-        =======
-        n : integer
-            The number of time steps.
-        m : integer
-            The number of step cycles.
-        p : integer
-            The number of sensors.
-        q : integer
-            The number of controls.
-
-        """
-        self.n = self.data_panel.shape[1]
-        self.m = self.data_panel.shape[0]
-        self.p = len(self.sensors)
-        self.q = len(self.controls)
-
-        return self.n, self.m, self.p, self.q
 
     def form_sensor_vectors(self):
         """Returns an array of sensor vectors for each cycle and each time step.

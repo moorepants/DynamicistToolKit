@@ -225,22 +225,14 @@ class TestSimpleControlSolver():
     def test_init(self):
 
         assert self.all_cycles is self.solver.data_panel
-        assert self.sensors is self.solver.sensors
-        assert self.controls is self.solver.controls
-
-    def test_lengths(self):
-
-        n, m, p, q = self.solver.lengths()
-
         assert self.solver.n == self.n
         assert self.solver.m == self.m
-        assert self.solver.p == self.p
-        assert self.solver.q == self.q
 
-        assert n == self.n
-        assert m == self.m
-        assert p == self.p
-        assert q == self.q
+        assert self.sensors is self.solver.sensors
+        assert self.solver.p == self.p
+
+        assert self.controls is self.solver.controls
+        assert self.solver.q == self.q
 
     def test_form_sensor_vectors(self):
 
