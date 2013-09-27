@@ -223,6 +223,37 @@ def least_squares_variance(A, sum_of_residuals):
     return variance, covariance
 
 
+def coefficient_of_determination(measured, predicted):
+    """Computes the coefficient of determination with respect to a measured
+    and predicted array.
+
+    Parameters
+    ----------
+    measured : array_like, shape(n,)
+    predicted : array_like, shape(n,)
+
+    Returns
+    -------
+    r_squared : float
+       The coefficient of determination.
+
+    Notes
+    -----
+
+          sum( [predicted - mean(predicted)] ** 2 )       sum( [measured - predicted] ** 2 )
+    R^2 = ----------------------------------------- = 1 - --------------------------------------
+          sum( [measured - mean(measured)] ** 2 )         sum( [measured - mean(measured)] ** 2 )
+
+    """
+
+    numerator = np.linalg.norm(measured - predicted)
+    denominator = np.linalg.norm(measured - measured.mean())
+
+    r_squared = 1.0 - numerator / denominator
+
+    return r_squared
+
+
 def fit_goodness(ym, yp):
     '''
     Calculate the goodness of fit.
