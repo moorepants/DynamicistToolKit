@@ -16,8 +16,8 @@ def test_coefficient_of_determination():
     # define a simple line with some measured data points
     num_samples = 100
     x = np.arange(num_samples)
-    slope = 5.0
-    intercept = 3.0
+    slope = np.random.choice([-1.0, 1.0]) * float(np.random.randint(1, 100))
+    intercept = np.random.choice([-1.0, 1.0]) * float(np.random.randint(1, 100))
     y = slope * x + intercept
     # add some noise to each to create fake measurements
     x_measured = x + 0.001 * np.random.random(num_samples)
@@ -48,31 +48,31 @@ def test_coefficient_of_determination():
     second_r_squared = process.coefficient_of_determination(y_measured,
                                                             y_predicted)
 
-    testing.assert_allclose(xhat, [slope, intercept], rtol=0.0, atol=5e-3)
+    testing.assert_allclose(xhat, [slope, intercept], rtol=0.0, atol=0.3)
 
     # It seems that numpy.linalg.lstsq doesn't output a fery high precision
     # value for the residual sum of squares, so I set the tolerance here to
     # pass.
     testing.assert_allclose(error_sum_of_squares,
                             sums_of_squares_of_residuals, rtol=0.0,
-                            atol=1e-7)
+                            atol=5e-6)
     # This also doesn't have high precision, not sure why.
     testing.assert_allclose(error_sum_of_squares,
                             expected_error_sum_of_squares, rtol=0.0,
-                            atol=1e-8)
+                            atol=5e-6)
 
     testing.assert_allclose(total_sum_of_squares,
                             expected_total_sum_of_squares)
 
     # This precision issue carryies through to these compuations.
     testing.assert_allclose(r_squared, expected_r_squared, rtol=0.0,
-                            atol=2e-7)
+                            atol=5e-6)
     # This passes with default tolerances
     testing.assert_allclose(r_squared, second_expected_r_squared)
     testing.assert_allclose(second_r_squared, expected_r_squared, rtol=0.0,
                             atol=2e-5)
     testing.assert_allclose(second_r_squared, second_expected_r_squared,
-                            rtol=0.0, atol=1e-5)
+                            rtol=0.0, atol=2e-5)
 
 
 def test_least_squares_variance():
