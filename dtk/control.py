@@ -413,10 +413,12 @@ class Bode(object):
                 if len(self.figs) < (system.numInputs * system.numOutputs):
                     fig = plt.figure()
 
-                    fig.yprops = dict(rotation=90,
-                                  horizontalalignment='right',
-                                  verticalalignment='center',
-                                  x=-0.01)
+                    # These where here but seem to be messing things up.
+                    #fig.yprops = dict(rotation=90,
+                                  #horizontalalignment='right',
+                                  #verticalalignment='center',
+                                  #x=-0.01)
+                    fig.yprops = {}
 
                     fig.axprops = {}
 
