@@ -230,7 +230,9 @@ def coefficient_of_determination(measured, predicted):
     Parameters
     ----------
     measured : array_like, shape(n,)
+        The observed or measured values.
     predicted : array_like, shape(n,)
+        The values predicted by a model.
 
     Returns
     -------
@@ -240,9 +242,18 @@ def coefficient_of_determination(measured, predicted):
     Notes
     -----
 
-          sum( [predicted - mean(predicted)] ** 2 )       sum( [measured - predicted] ** 2 )
-    R^2 = ----------------------------------------- = 1 - --------------------------------------
-          sum( [measured - mean(measured)] ** 2 )         sum( [measured - mean(measured)] ** 2 )
+    The coefficient of determination (also referred to as R^2 and VAF
+    (variance accounted for) is computed either of these two ways:
+
+          sum( [predicted - mean(measured)] ** 2 )
+    R^2 = ----------------------------------------
+          sum( [measured - mean(measured)] ** 2 )
+
+    or
+
+              sum( [measured - predicted] ** 2 )
+    R^2 = 1 - ---------------------------------------
+              sum( [measured - mean(measured)] ** 2 )
 
     """
 
@@ -276,11 +287,19 @@ def fit_goodness(ym, yp):
     SSR : float
         The regression sum of squares.
 
+    Notes
+    -----
+
+    SST = SSR + SSE
+
     '''
-    SSR = sum((yp - np.mean(ym))**2)
-    SST = sum((ym - np.mean(ym))**2)
+
+    ym_bar = np.mean(ym)
+    SSR = sum((yp - ym_bar) ** 2)
+    SST = sum((ym - ym_bar) ** 2)
     SSE = SST - SSR
     rsq = SSR / SST
+
     return rsq, SSE, SST, SSR
 
 
@@ -319,6 +338,7 @@ def spline_over_nan(x, y):
         return spline(x)
     else:
         return y
+
 
 def curve_area_stats(x, y):
     '''
@@ -381,6 +401,7 @@ def curve_area_stats(x, y):
         xstats[k] = np.array(v)
     return xstats
 
+
 def freq_spectrum(data, sampleRate):
     """
     Return the frequency spectrum of a data set.
@@ -430,6 +451,7 @@ def freq_spectrum(data, sampleRate):
         #power = abs(Y[1:n/2])**2
     return frequency, amplitude
 
+
 def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
     """
     Returns the filtered data for a low pass Butterworth filter.
@@ -462,6 +484,7 @@ def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
 
     return filtfilt(b, a, data, axis=axis)
 
+
 def subtract_mean(sig, hasNans=False):
     '''
     Subtracts the mean from a signal with nanmean.
@@ -482,6 +505,7 @@ def subtract_mean(sig, hasNans=False):
         return sig - nanmean(sig)
     else:
         return sig - np.mean(sig)
+
 
 def normalize(sig, hasNans=False):
     '''
@@ -507,6 +531,7 @@ def normalize(sig, hasNans=False):
         normSig = sig / np.max(sig)
 
     return normSig
+
 
 def derivative(x, y, method='forward'):
     '''Returns the derivative of y with respect to x.
@@ -546,6 +571,7 @@ def derivative(x, y, method='forward'):
         raise NotImplementedError("There is no %s method here! Only 'forward'\
             and 'combination' are currently available." % method)
 
+
 def time_vector(numSamples, sampleRate):
     '''Returns a time vector starting at zero.
 
@@ -562,6 +588,8 @@ def time_vector(numSamples, sampleRate):
         Time vector starting at zero.
 
     '''
+
     ns = float(numSamples)
     sr = float(sampleRate)
+
     return np.linspace(0., (ns - 1.) / sr, num=ns)
