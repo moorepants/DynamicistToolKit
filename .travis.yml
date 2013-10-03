@@ -4,9 +4,9 @@ python:
 virtualenv:
   system_site_packages: true
 before_install:
-  - sudo apt-get install -qq python-numpy python-scipy cython python-matplotlib
-install:
+  - sudo apt-get install -qq python-scipy cython python-matplotlib
   - pip install coverage pandas
-  - python setup.py install
   - pip freeze
+install:
+  - python setup.py install
 script: nosetests -v --with-coverage --cover-package=dtk
