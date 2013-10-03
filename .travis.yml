@@ -4,7 +4,8 @@ python:
 virtualenv:
   system_site_packages: true
 before_install:
-  - sudo apt-get install -qq python-scipy cython python-matplotlib
+  - sudo apt-get install -qq python-scipy python-matplotlib
+  - pip install cython
   - pip install coverage pandas
   - pip freeze
 install:
