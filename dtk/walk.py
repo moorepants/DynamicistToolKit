@@ -376,49 +376,156 @@ class SimpleControlSolver(object):
 
         x, variance, covariance = self.least_squares(A, b)
 
-        # TODO : I need a better name for the m_nom + Ks_nom,
-        # control_vectors is already taken.
+        deconstructed_solution = self.deconstruct_solution(x, covariance)
 
-        (gain_matrices, control_vectors, gain_matrices_variance,
-         control_vectors_variance) = \
-            self.deconstruct_solution(x, covariance)
+        gain_matrices = deconstructed_solution[0]
+        gain_matrices_variance = deconstructed_solution[2]
 
-        estimated_controls = self.compute_estimated_controls(A, x)
+        nominal_controls = deconstructed_solution[1]
+        nominal_controls_variance = deconstructed_solution[3]
 
-        return (gain_matrices, control_vectors, variance,
-                gain_matrices_variance, control_vectors_variance,
+        estimated_controls = \
+            self.compute_estimated_controls(gain_matrices, nominal_controls)
+
+        return (gain_matrices, nominal_controls, variance,
+                gain_matrices_variance, nominal_controls_variance,
                 estimated_controls)
 
-    def compute_estimated_controls(self, A, x):
-        """Returns a panel of data frames, one for each step, that has the
-        estimated control values at each time the gains were computed.
+    def compute_estimated_controls(self, gain_matrices, nominal_controls):
+        """Returns the predicted values of the controls and the
+        contributions to the controls given gains, K(t), and nominal
+        controls, m*(t), for each point in the gait cycle.
 
         Parameters
         ==========
-        A : array_like, shape(n, m)
-            The coefficient matrix of Ax = b.
-        x : array_like, shape(n * q * (p + 1),)
-            The solution matrix containing the gains and the commanded
-            controls.
+        gain_matrices : ndarray, shape(n, q, p)
+            The estimated gain matrices for each time step.
+        control_vectors : ndarray, shape(n, q)
+            The nominal control vector plus the gains multiplied by the
+            reference sensors at each time step.
 
         Returns
         =======
         panel : pandas.Panel, shape(m, n, q)
-            There is one data frame to correspond to each step and the steps
-            in self.data_panel.
+            There is one data frame to correspond to each step in
+            self.data_panel. Each data frame has columns of time series
+            which store m(t), m*(t), and the individual components due to
+            K(t) * se(t).
+
+        Notes
+        =====
+
+        m(t) = m0(t) + K(t) * [ s0(t) - s(t) ] = m0(t) + K(t) * se(t)
+        m(t) = m*(t) - K(t) * s(t)
+
+        This function returns m(t), m0(t), m*(t) for each control and K(t) *
+        [s0(t) - s(t)] for each sensor affecting each control. Where s0(t)
+        is estimated by taking the mean with respect to the steps.
 
         """
-        estimated_b = -np.dot(A, x)
+        # generate all of the column names
+        contributions = []
+        for control in self.controls:
+            for sensor in self.sensors:
+                contributions.append(control + '-' + sensor)
+
+        control_star = [control + '*' for control in self.controls]
+        control_0 = [control + '0' for control in self.controls]
+
+        col_names = self.controls + contributions + control_star + control_0
 
         panel = {}
+
+        # The mean of the sensors which we consider to be the commanded
+        # motion. This may be a bad assumption, but is the best we can do.
+        mean_sensors = self.data_panel.mean(axis='items')[self.sensors]
+
         for i, df in self.data_panel.iteritems():
-            estimated = df[self.controls].copy()
+
+            blank = np.zeros((self.n, self.q * 3 + self.p * self.q))
+            results = pandas.DataFrame(blank, index=df.index,
+                                       columns=col_names)
+
+            sensor_error = mean_sensors - df[self.sensors]
+
             for j in range(self.n):
-                estimated.loc[j, :] = \
-                    estimated_b[j * self.q:j * self.q + self.q]
-            panel[i] = estimated
+
+                # m(t) = m*(t) - K(t) * s(t)
+                m = nominal_controls[j] - np.dot(gain_matrices[j],
+                                                 df[self.sensors].iloc[j])
+                # m0(t) = m(t) - K(t) * se(t)
+                m0 = m - np.dot(gain_matrices[j],
+                                sensor_error[self.sensors].iloc[j])
+
+                # these assignments don't work if I do:
+                # results[self.controls].iloc[j] = m
+                # but this seems to work
+                # results.iloc[j][self.controls] = m
+                # this is explained here:
+                # https://github.com/pydata/pandas/issues/5093
+                row_label = results.index[j]
+                results.loc[row_label, self.controls] = m
+                results.loc[row_label, control_0] = m0
+                results.loc[row_label, control_star] = nominal_controls[j]
+
+                for k, sensor in enumerate(self.sensors):
+                    # control contribution due to the kth sensor
+                    names = [c + '-' + sensor for c in self.controls]
+                    results.loc[row_label, names] = gain_matrices[j, :, k] * \
+                        sensor_error.iloc[j, k]
+
+            panel[i] = results
 
         return pandas.Panel(panel)
+
+    def plot_control_contributions(self, estimated_panel, max_num_steps=4):
+        """Plots two graphs for each control and each step showing
+        contributions from the linear portions. The first set of graphs
+        shows the first few steps and the contributions to the control
+        moments. The second set of graph shows the mean contributions to the
+        control moment over all steps.
+
+        Parameters
+        ----------
+        panel : pandas.Panel, shape(m, n, q)
+            There is one data frame to correspond to each step. Each data
+            frame has columns of time series which store m(t), m*(t), and
+            the individual components due to K(t) * se(t).
+
+        """
+
+        num_steps = estimated_panel.shape[0]
+        if num_steps > max_num_steps:
+            num_steps = max_num_steps
+
+        column_names = estimated_panel[0].columns
+
+        for control in self.controls:
+            fig, axes = plt.subplots(int(round(num_steps / 2.0)), 2)
+            contribs = [name for name in column_names if '-' in name and
+                        name.startswith(control)]
+            contribs += [control + '0']
+
+            for ax, (step_num, cycle) in zip(axes.flatten()[:num_steps],
+                                             estimated_panel.iteritems()):
+                # here we want to plot each component of this:
+                # m0 + k11 * se1 + k12 se2
+                cycle[contribs].plot(kind='bar', stacked=True, ax=ax,
+                                     title='Step {}'.format(step_num))
+                for t in ax.get_legend().get_texts():
+                    t.set_fontsize(6)
+
+        mean = estimated_panel.mean(axis='items')
+        std = estimated_panel.std(axis='items')
+        for control in self.controls:
+            fig, ax = plt.subplots()
+            contribs = [control + '0']
+            contribs += [name for name in column_names if '-' in name and
+                         name.startswith(control)]
+            for col in contribs:
+                ax.errorbar(mean.index.values, mean[col].values,
+                            yerr=std[col].values)
+            ax.legend(contribs, fontsize=10)
 
     def plot_estimated_vs_measure_controls(self, estimated_panel, variance):
         """Plots a figure for each control where the measured control is
@@ -429,28 +536,32 @@ class SimpleControlSolver(object):
         estimated_walking = pandas.concat([df for k, df in
                                            estimated_panel.iteritems()],
                                           ignore_index=True)
+
         actual_walking = pandas.concat([df for k, df in
                                         self.data_panel.iteritems()],
                                        ignore_index=True)
 
-        fig, axes = plt.subplots(self.q, sharex=True)
+        fig, axes = plt.subplots(self.q * 2, sharex=True)
         for i, control in enumerate(self.controls):
-            axes[i].plot(actual_walking.index.values,
+            axes[i * 2].plot(actual_walking.index.values,
                          actual_walking[control].values)
-            axes[i].errorbar(estimated_walking.index.values,
+            axes[i * 2].errorbar(estimated_walking.index.values,
                              estimated_walking[control].values,
                              yerr=np.sqrt(variance) *
                              np.ones(len(estimated_walking)),
                              fmt='o')
-            axes[i].set_title(control)
-            axes[i].set_xlabel('Point at which a gain was computed.')
-            axes[i].set_ylabel(control)
-            axes[i].legend(('Measured Control', 'Estimated Control'))
+            axes[i * 2].set_title(control)
+            axes[i * 2].set_xlabel('Point at which a gain was computed.')
+            axes[i * 2].set_ylabel(control)
+            axes[i * 2].legend(('Measured Control', 'Estimated Control'))
+
+            error = actual_walking[control] - estimated_walking[control]
+            error.plot(ax=axes[i * 2 + 1])
 
     def deconstruct_solution(self, x, covariance):
-        """Returns the gain matrices and mc(t) for each time step.
+        """Returns the gain matrices and m*(t) for each time step.
 
-        m(t) = mc(t) - K(t) s(t)
+        m(t) = m*(t) - K(t) s(t)
 
         Parameters
         ==========
@@ -473,6 +584,11 @@ class SimpleControlSolver(object):
             The variance of the found commanded controls (covariance is
             neglected).
 
+        Notes
+        =====
+        x looks like:
+            [k11(0), k12(0), ..., kqp(0), m1*(0), ..., mq*(0), ...,
+             k11(n), k12(0), ..., kqp(n), m1*(n), ..., mq*(n)]
         """
         if self.gain_omission_matrix is not None:
             x1 = self.gain_omission_matrix.flatten()
@@ -556,8 +672,8 @@ class SimpleControlSolver(object):
         # lstsq returns an empty array for the sum of the residuals if it is
         # rank deficient. I'm not sure what the rank deficiency means for
         # computing the follow values, so I have this ignorant solution.
-        # Right now this is jsut to get the tests to pass for this function.
-        # Maybe I only need ot have a better formulated test case.
+        # Right now this is just to get the tests to falsely pass for this function.
+        # Maybe I only need to have a better formulated test set of data.
         if sum_of_residuals.size == 0:
             variance = np.nan
             covariance = np.nan * np.ones((len(x), len(x)))
@@ -568,7 +684,8 @@ class SimpleControlSolver(object):
         return x, variance, covariance
 
     def form_sensor_vectors(self):
-        """Returns an array of sensor vectors for each cycle and each time step.
+        """Returns an array of sensor vectors for each cycle and each time
+        step.
 
         Returns
         =======
@@ -613,13 +730,32 @@ class SimpleControlSolver(object):
         b : ndarray, shape(n * q,)
             The b vector which constaints the measured controls.
 
+        Note
+        ====
+
+        In the simplest fashion, you can put::
+
+            m(t) = m*(t) - K * s(t)
+
+        into the form::
+
+            Ax = b
+
+        with::
+
+            b = m(t)
+            A = [-s(t) 1]
+            x = [K(t) m*(t)]^T
+
+            [-s(t) 1] * [K(t) m*(t)]^T = m(t)
+
         """
         control_vectors = self.form_control_vectors()
 
         b = np.array([])
         for cycle in control_vectors:
             for time_step in cycle:
-                b = np.hstack((b, -time_step))
+                b = np.hstack((b, time_step))
 
         sensor_vectors = self.form_sensor_vectors()
 
@@ -638,9 +774,9 @@ class SimpleControlSolver(object):
                 for row in range(self.q):
 
                     An[row, row * self.p:(row + 1) * self.p] = \
-                        sensor_vectors[i, j]
+                        -sensor_vectors[i, j]
 
-                An = np.hstack((An, -np.eye(self.q)))
+                An = np.hstack((An, np.eye(self.q)))
 
                 num_rows, num_cols = An.shape
 

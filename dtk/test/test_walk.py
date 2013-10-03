@@ -193,7 +193,10 @@ class TestSimpleControlSolver():
         self.gain_omission_matrix[1, 0] = False
 
         # pick m*, K and s, then generate m
-        # m(t) = m*(t) + K(t)s(t)
+        # mm(t) = m*(t) - K(t)s(t)
+
+        # TODO : maybe I should set the problem up more generally, like:
+        # mm(t) = m0(t) + K(t) * [s0(t) - s(t)]
 
         self.m_star = 100.0 * np.array([np.cos(self.time),
                                         np.sin(self.time)]).T
@@ -201,20 +204,21 @@ class TestSimpleControlSolver():
                            [np.sin(2.0 * self.time),
                             np.cos(3.0 * self.time)]]).T
 
-        s = np.zeros((self.m, self.n, self.p))
-        m = np.zeros((self.m, self.n, self.q))
+        self.s = np.zeros((self.m, self.n, self.p))
+        self.mm = np.zeros((self.m, self.n, self.q))
         cycles = {}
         for i in range(self.m):
             noise = 0.25 * np.random.randn(self.n, self.p)
-            s[i] = np.vstack(((i + 1) * np.sin(self.time),
-                              (i + 1) * np.cos(self.time))).T + noise
+            self.s[i] = np.vstack(((i + 1) * np.sin(self.time),
+                                   (i + 1) * np.cos(self.time))).T + noise
             for j in range(self.n):
-                m[i, j] = self.m_star[j] + np.dot(self.K[j], s[i, j])
+                self.mm[i, j] = self.m_star[j] - np.dot(self.K[j],
+                                                        self.s[i, j])
             cycles['cycle {}'.format(i)] = \
-                pandas.DataFrame({self.sensors[0]: s[i, :, 0],
-                                  self.sensors[1]: s[i, :, 1],
-                                  self.controls[0]: m[i, :, 0],
-                                  self.controls[1]: m[i, :, 1],
+                pandas.DataFrame({self.sensors[0]: self.s[i, :, 0],
+                                  self.sensors[1]: self.s[i, :, 1],
+                                  self.controls[0]: self.mm[i, :, 0],
+                                  self.controls[1]: self.mm[i, :, 1],
                                   }, index=self.time)
 
         self.all_cycles = pandas.Panel(cycles)
@@ -237,9 +241,11 @@ class TestSimpleControlSolver():
     def test_form_sensor_vectors(self):
 
         sensor_vectors = self.solver.form_sensor_vectors()
+
         # this should be an m x n x p array
         assert sensor_vectors.shape == (self.m, self.n, self.p)
 
+        # TODO : change .ix to .iloc
         for i in range(self.m):
             for j in range(self.n):
                 testing.assert_allclose(sensor_vectors[i, j],
@@ -252,6 +258,7 @@ class TestSimpleControlSolver():
         # this should be an m x n x q array
         assert control_vectors.shape == (self.m, self.n, self.q)
 
+        # TODO : change .ix to .iloc
         for i in range(self.m):
             for j in range(self.n):
                 testing.assert_allclose(control_vectors[i, j],
@@ -267,7 +274,7 @@ class TestSimpleControlSolver():
                                 self.n * self.q * (self.p + 1)))
 
             for i, t in enumerate(self.time):
-                controls_at_t = -cycle[self.controls].ix[t]
+                controls_at_t = cycle[self.controls].ix[t]
                 try:
                     expected_b = np.hstack((expected_b, controls_at_t))
                 except NameError:
@@ -278,8 +285,8 @@ class TestSimpleControlSolver():
 
                 A_cycle[i * 2:i * 2 + 2, i * 6:i * 6 + 6] = \
                     np.array(
-                        [[cycle[self.sensors[0]][t], cycle[self.sensors[1]][t], 0.0, 0.0, -1.0, 0.0],
-                         [0.0, 0.0, cycle[self.sensors[0]][t], cycle[self.sensors[1]][t], 0.0, -1.0]])
+                        [[-cycle[self.sensors[0]][t], -cycle[self.sensors[1]][t], 0.0, 0.0, 1.0, 0.0],
+                         [0.0, 0.0, -cycle[self.sensors[0]][t], -cycle[self.sensors[1]][t], 0.0, 1.0]])
             try:
                 expected_A = np.vstack((expected_A, A_cycle))
             except NameError:
@@ -315,14 +322,12 @@ class TestSimpleControlSolver():
 
         A, b = self.solver.form_a_b()
         x, variance, covariance = self.solver.least_squares(A, b)
-        # TODO : Figure out why I need a negative sign on the Ks in the
-        # expected_x!
         for i in range(self.n):
             try:
-                expected_x = np.hstack((expected_x, -self.K[i].flatten(),
+                expected_x = np.hstack((expected_x, self.K[i].flatten(),
                                         self.m_star[i]))
             except NameError:
-                expected_x = np.hstack((-self.K[i].flatten(), self.m_star[i]))
+                expected_x = np.hstack((self.K[i].flatten(), self.m_star[i]))
         testing.assert_allclose(x, expected_x, atol=1e-10)
 
         self.solver.gain_omission_matrix = self.gain_omission_matrix
@@ -333,6 +338,7 @@ class TestSimpleControlSolver():
         removed_parameters = self.n * self.gain_omission_matrix.sum()
 
         assert len(x) == expected_normal_x_length - removed_parameters
+        # TODO : check that x is correct
 
     def test_deconstruct_solution(self):
         A, b = self.solver.form_a_b()
@@ -341,10 +347,11 @@ class TestSimpleControlSolver():
          control_vectors_variance) = \
             self.solver.deconstruct_solution(x, covariance)
 
-        testing.assert_allclose(gain_matrices, -self.K, atol=1e-12)
+        testing.assert_allclose(gain_matrices, self.K, atol=1e-12)
         testing.assert_allclose(control_vectors, self.m_star, atol=1e-12)
 
         # TODO : Make sure covariance matrices are decontructed properly.
+
         self.solver.gain_omission_matrix = self.gain_omission_matrix
         A, b = self.solver.form_a_b()
         x, variance, covariance = self.solver.least_squares(A, b)
@@ -362,12 +369,38 @@ class TestSimpleControlSolver():
         assert self.solver.gain_omission_matrix is None
 
         self.solver.solve(gain_omission_matrix=self.gain_omission_matrix)
+
         testing.assert_equal(self.solver.gain_omission_matrix,
                              self.gain_omission_matrix)
 
         # TODO : check everything else in solve!
 
     def test_compute_estimated_controls(self):
-        pass
+        A, b = self.solver.form_a_b()
+        x, variance, covariance = self.solver.least_squares(A, b)
+        solution = self.solver.deconstruct_solution(x, covariance)
+
+        estimated = self.solver.compute_estimated_controls(solution[0],
+                                                           solution[1])
+
+        expected_s0 = self.s.mean(axis=0)  # mean across steps, n x p
+
+        # for each step
+        for i, (item, df) in enumerate(estimated.iteritems()):
+            # check if the measured moments match
+            testing.assert_allclose(df[self.controls].values, self.mm[i])
+            # check if m* matches
+            testing.assert_allclose(df[[c + '*' for c in
+                                        self.controls]].values, self.m_star,
+                                    atol=1e-10)
+
+            for j in range(self.n):
+                expected_m0 = self.mm[i, j] - \
+                    np.dot(self.K[j], (expected_s0[j] - self.s[i, j]))
+                m0 = df.loc[df.index[j], [c + '0' for c in self.controls]].values
+                testing.assert_allclose(m0, expected_m0)
+
+            # todo: check the control contributions from the error in the
+            # signals
 
 #TODO: Write a test for the gfr function.
