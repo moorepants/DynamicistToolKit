@@ -60,7 +60,7 @@ class TestWalkingData():
 
         walking_data = WalkingData(self.data_frame)
 
-        assert walking_data.raw_data == self.data_frame
+        assert walking_data.raw_data is self.data_frame
 
     def test_grf_landmarks(self, plot=False):
 
@@ -112,7 +112,7 @@ class TestWalkingData():
                                         'd': [0.5, 0.75, 1.25, 1.5]},
                                        index=time)
 
-        assert interpolated == df_expected
+        testing.assert_allclose(interpolated.values, df_expected.values)
 
         testing.assert_allclose(interpolated.values, df_expected.values)
         testing.assert_allclose(interpolated.index.values.astype(float),
