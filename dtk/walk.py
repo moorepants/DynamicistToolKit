@@ -529,9 +529,25 @@ class SimpleControlSolver(object):
 
     def plot_estimated_vs_measure_controls(self, estimated_panel, variance):
         """Plots a figure for each control where the measured control is
-        shown compared to the estimated."""
+        shown compared to the estimated along with a plot of the error.
+
+        Parameters
+        ==========
+        estimated_panel : pandas.Panel
+            A panel where each item is a step.
+        variance : float
+            The variance of the fit.
+
+        Returns
+        =======
+        axes : array of matplotlib.axes.Axes, shape(q,)
+            The plot axes.
+
+        """
 
         # TODO : Construct the original time vector for the index.
+        # TODO : Plot the estimated controls versus the full actual
+        # measurement curve so that the measurement curve is very smooth.
 
         estimated_walking = pandas.concat([df for k, df in
                                            estimated_panel.iteritems()],
@@ -542,21 +558,39 @@ class SimpleControlSolver(object):
                                        ignore_index=True)
 
         fig, axes = plt.subplots(self.q * 2, sharex=True)
-        for i, control in enumerate(self.controls):
-            axes[i * 2].plot(actual_walking.index.values,
-                         actual_walking[control].values)
-            axes[i * 2].errorbar(estimated_walking.index.values,
-                             estimated_walking[control].values,
-                             yerr=np.sqrt(variance) *
-                             np.ones(len(estimated_walking)),
-                             fmt='o')
-            axes[i * 2].set_title(control)
-            axes[i * 2].set_xlabel('Point at which a gain was computed.')
-            axes[i * 2].set_ylabel(control)
-            axes[i * 2].legend(('Measured Control', 'Estimated Control'))
 
-            error = actual_walking[control] - estimated_walking[control]
-            error.plot(ax=axes[i * 2 + 1])
+        for i, control in enumerate(self.controls):
+
+            compare_axes = axes[i * 2]
+            error_axes = axes[i * 2 + 1]
+
+            sample_number = actual_walking.index.values
+            measured = actual_walking[control].values
+            predicted = estimated_walking[control].values
+            std_of_predicted = np.sqrt(variance) * np.ones_like(predicted)
+            error = measured - predicted
+            rms = np.sqrt(np.linalg.norm(error).mean())
+            r_squared = process.coefficient_of_determination(measured,
+                                                             predicted)
+
+            compare_axes.plot(sample_number, measured)
+            compare_axes.errorbar(sample_number, predicted,
+                                  yerr=std_of_predicted, fmt='.')
+            compare_axes.set_ylabel(control)
+            compare_axes.legend(('Measured',
+                                 'Estimated {:1.1%}'.format(r_squared)))
+
+            if i == len(self.controls) - 1:
+                error_axes.set_xlabel('Sample Number')
+
+            error_axes.plot(sample_number, error)
+            error_axes.legend(['RMS = {:1.2f}'.format(rms)])
+            #error_axes.text(0.9, 0.85, 'RMS = {:1.2f}'.format(rms),
+                            #transform=error_axes.transAxes,
+                            #bbox=dict(edgecolor='black', facecolor='white'))
+            error_axes.set_ylabel('Error in\n{}'.format(control))
+
+        return axes
 
     def deconstruct_solution(self, x, covariance):
         """Returns the gain matrices and m*(t) for each time step.
