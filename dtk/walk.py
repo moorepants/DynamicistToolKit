@@ -573,7 +573,8 @@ class SimpleControlSolver(object):
             r_squared = process.coefficient_of_determination(measured,
                                                              predicted)
 
-            compare_axes.plot(sample_number, measured)
+            compare_axes.plot(sample_number, measured, color='black',
+                              marker='.')
             compare_axes.errorbar(sample_number, predicted,
                                   yerr=std_of_predicted, fmt='.')
             compare_axes.set_ylabel(control)
@@ -583,11 +584,8 @@ class SimpleControlSolver(object):
             if i == len(self.controls) - 1:
                 error_axes.set_xlabel('Sample Number')
 
-            error_axes.plot(sample_number, error)
+            error_axes.plot(sample_number, error, color='black')
             error_axes.legend(['RMS = {:1.2f}'.format(rms)])
-            #error_axes.text(0.9, 0.85, 'RMS = {:1.2f}'.format(rms),
-                            #transform=error_axes.transAxes,
-                            #bbox=dict(edgecolor='black', facecolor='white'))
             error_axes.set_ylabel('Error in\n{}'.format(control))
 
         return axes
