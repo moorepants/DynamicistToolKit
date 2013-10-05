@@ -250,7 +250,9 @@ class WalkingData(object):
                     ax = axes
                 ax.plot(value[col_name].index, value[col_name], **kwargs)
                 ax.set_ylabel(col_name)
-                ax.set_xlabel('Time [s]')
+
+        # plot only on the last axes
+        ax.set_xlabel('Time [s]')
 
         return axes
 
