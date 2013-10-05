@@ -1082,7 +1082,7 @@ def gait_landmarks_from_grf(time, right_grf, left_grf,
 
     if do_plot:
 
-        plt.figure(figsize=(10, 8))
+        plt.figure()
         ones = np.array([1, 1])
 
         def myplot(index, label, ordinate, foot_strikes, toe_offs):
