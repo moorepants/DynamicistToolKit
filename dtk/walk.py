@@ -263,7 +263,7 @@ class SimpleControlSolver(object):
     matrix of gains multiplied by the error in the sensors and the nominal
     value of the sensors.
 
-    m_measured(t) = m_nominal + K(t) [s_nominal(t) - s(t)] = mc(t) - K(t) s(t)
+    m_measured(t) = m_nominal + K(t) [s_nominal(t) - s(t)] = m*(t) - K(t) s(t)
 
     This class solves for the time dependent gains and the "commanded"
     controls using a simple linear least squares.
@@ -329,7 +329,8 @@ class SimpleControlSolver(object):
     def gain_omission_matrix(self, value):
         if value is not None:
             if value.shape != (self.q, self.p):
-                raise ValueError('The gain omission matrix should be of shape({}, {})'.format(self.q, self.p))
+                raise ValueError('The gain omission matrix should be of ' +
+                                 'shape({}, {})'.format(self.q, self.p))
         self._gain_omission_matrix = value
 
     def solve(self, sparse_a=False, gain_omission_matrix=None):
@@ -501,7 +502,9 @@ class SimpleControlSolver(object):
         column_names = estimated_panel[0].columns
 
         for control in self.controls:
-            fig, axes = plt.subplots(int(round(num_steps / 2.0)), 2)
+            fig, axes = plt.subplots(int(round(num_steps / 2.0)), 2,
+                                     sharex=True)
+            fig.suptitle('Contributions to the {} control'.format(control))
             contribs = [name for name in column_names if '-' in name and
                         name.startswith(control)]
             contribs += [control + '0']
@@ -511,21 +514,47 @@ class SimpleControlSolver(object):
                 # here we want to plot each component of this:
                 # m0 + k11 * se1 + k12 se2
                 cycle[contribs].plot(kind='bar', stacked=True, ax=ax,
-                                     title='Step {}'.format(step_num))
+                                     title='Step {}'.format(step_num),
+                                     colormap='jet')
+                formatter = FuncFormatter(lambda l, p: '{:1.2f}'.format(l))
+                ax.xaxis.set_major_formatter(FuncFormatter(formatter))
+
                 for t in ax.get_legend().get_texts():
                     t.set_fontsize(6)
+                    # only show the contribution in the legend
+                    try:
+                        t.set_text(t.get_text().split('-')[1])
+                    except IndexError:
+                        t.set_text(t.get_text().split('.')[1])
+
+            for axis in axes[-1]:
+                axis.set_xlabel('Time [s]')
+
+        # snatch the colors from the last axes
+        contrib_colors = [patch.get_facecolor() for patch in
+                          ax.get_legend().get_patches()]
 
         mean = estimated_panel.mean(axis='items')
         std = estimated_panel.std(axis='items')
+
         for control in self.controls:
             fig, ax = plt.subplots()
+            fig.suptitle('Contributions to the {} control'.format(control))
             contribs = [control + '0']
             contribs += [name for name in column_names if '-' in name and
                          name.startswith(control)]
-            for col in contribs:
+            for col, color in zip(contribs, contrib_colors):
                 ax.errorbar(mean.index.values, mean[col].values,
-                            yerr=std[col].values)
-            ax.legend(contribs, fontsize=10)
+                            yerr=std[col].values, color=color)
+
+            labels = []
+            for contrib in contribs:
+                try:
+                    labels.append(contrib.split('-')[1])
+                except IndexError:
+                    labels.append(contrib.split('.')[1])
+            ax.legend(labels, fontsize=10)
+            ax.set_xlabel('Time [s]')
 
     def plot_estimated_vs_measure_controls(self, estimated_panel, variance):
         """Plots a figure for each control where the measured control is
@@ -689,13 +718,14 @@ class SimpleControlSolver(object):
 
         if num_equations < num_unknowns:
             raise Exception('Please add some walking cycles. There is ' +
-                'not enough data to solve for the number of unknowns.')
+                            'not enough data to solve for the number of ' +
+                            'unknowns.')
 
         if sparse.issparse(A):
             # scipy.sparse.linalg.lsmr is also an option
             x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
                 sparse.linalg.lsqr(A, b)
-            sum_of_residuals = r1norm # this may should be the r2norm
+            sum_of_residuals = r1norm  # this may should be the r2norm
         else:
             x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
             # Also this is potentially a faster implementation:
@@ -704,7 +734,8 @@ class SimpleControlSolver(object):
         # lstsq returns an empty array for the sum of the residuals if it is
         # rank deficient. I'm not sure what the rank deficiency means for
         # computing the follow values, so I have this ignorant solution.
-        # Right now this is just to get the tests to falsely pass for this function.
+        # Right now this is just to get the tests to falsely pass for this
+        # function.
         # Maybe I only need to have a better formulated test set of data.
         if sum_of_residuals.size == 0:
             variance = np.nan
@@ -726,8 +757,10 @@ class SimpleControlSolver(object):
             will look like [sensor_0, ..., sensor_(p-1)].
         """
         sensor_vectors = np.zeros((self.m, self.n, self.p))
-        for i, (panel_name, data_frame) in enumerate(self.data_panel.iteritems()):
-            for j, (index, values) in enumerate(data_frame[self.sensors].iterrows()):
+        for i, (panel_name, data_frame) in \
+                enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in \
+                    enumerate(data_frame[self.sensors].iterrows()):
                 sensor_vectors[i, j] = values.values
 
         return sensor_vectors
@@ -744,8 +777,10 @@ class SimpleControlSolver(object):
 
         """
         control_vectors = np.zeros((self.m, self.n, self.q))
-        for i, (panel_name, data_frame) in enumerate(self.data_panel.iteritems()):
-            for j, (index, values) in enumerate(data_frame[self.controls].iterrows()):
+        for i, (panel_name, data_frame) in \
+                enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in \
+                    enumerate(data_frame[self.controls].iterrows()):
                 control_vectors[i, j] = values.values
 
         return control_vectors
@@ -930,7 +965,7 @@ def find_constant_speed(time, speed, plot=False):
 
     filtered_speed = process.butterworth(speed, 3.0, sample_rate)
 
-    acceleration = np.hstack( (0.0, np.diff(filtered_speed)) )
+    acceleration = np.hstack((0.0, np.diff(filtered_speed)))
 
     noise_level = np.max(np.abs(acceleration[int(0.2 * len(acceleration)):-1]))
 
@@ -947,7 +982,7 @@ def find_constant_speed(time, speed, plot=False):
         fig, ax = plt.subplots(2, 1)
         ax[0].plot(time, speed, '.', time, filtered_speed, 'g-')
         ax[0].plot(np.ones(2) * (time[len(time) - new_indice]),
-            np.hstack( (np.max(speed), np.min(speed)) ))
+                   np.hstack((np.max(speed), np.min(speed))))
         ax[1].plot(time, np.hstack((0.0, np.diff(filtered_speed))), '.')
         fig.show()
 
