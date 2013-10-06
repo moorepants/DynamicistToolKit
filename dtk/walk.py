@@ -508,7 +508,7 @@ class SimpleControlSolver(object):
 
         for control in self.controls:
             fig, axes = plt.subplots(int(round(num_steps / 2.0)), 2,
-                                     sharex=True)
+                                     sharex=True, sharey=True)
             fig.suptitle('Contributions to the {} control'.format(control))
             contribs = [name for name in column_names if '-' in name and
                         name.startswith(control)]
