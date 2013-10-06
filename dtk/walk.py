@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# standard library
+import warnings
+
 # external
 import numpy as np
 import matplotlib.pyplot as plt
@@ -622,7 +625,9 @@ class SimpleControlSolver(object):
         return axes
 
     def deconstruct_solution(self, x, covariance):
-        """Returns the gain matrices and m*(t) for each time step.
+        """Returns the gain matrices, K(t), and m*(t) for each time step in
+        the gait cycle given the solution vector and the covariance matrix
+        of the solution.
 
         m(t) = m*(t) - K(t) s(t)
 
@@ -652,7 +657,15 @@ class SimpleControlSolver(object):
         x looks like:
             [k11(0), k12(0), ..., kqp(0), m1*(0), ..., mq*(0), ...,
              k11(n), k12(0), ..., kqp(n), m1*(n), ..., mq*(n)]
+
+        If there is a gain omission matrix then nan's are substituted for
+        all gains that were set to zero.
         """
+        # TODO : Fix the doc string to reflect the fact that x will be
+        # smaller when there is a gain omission matrix.
+
+        # If there is a gain omission matrix then augment the x vector and
+        # covariance matrix with nans for the missing values.
         if self.gain_omission_matrix is not None:
             x1 = self.gain_omission_matrix.flatten()
             x2 = np.array(self.q * [True])
@@ -666,8 +679,9 @@ class SimpleControlSolver(object):
             x_total[x_total == False] = np.nan
             x = x_total.astype(float)
 
-            cov_total = np.nan * np.ones((len(x_total), len(x_total)))
-            cov_total[~np.isnan(x)][:, ~np.isnan(x)] = covariance
+            cov_total = np.nan * np.ones((len(x), len(x)))
+            cov_total[np.outer(~np.isnan(x), ~np.isnan(x))] = \
+                covariance.flatten()
             covariance = cov_total
 
         gain_matrices = np.zeros((self.n, self.q, self.p))
@@ -728,23 +742,20 @@ class SimpleControlSolver(object):
             x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
                 sparse.linalg.lsqr(A, b)
             sum_of_residuals = r1norm  # this may should be the r2norm
+            # TODO : Make sure I'm doing the correct norm here.
         else:
             x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
             # Also this is potentially a faster implementation:
             # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
 
-        # lstsq returns an empty array for the sum of the residuals if it is
-        # rank deficient. I'm not sure what the rank deficiency means for
-        # computing the follow values, so I have this ignorant solution.
-        # Right now this is just to get the tests to falsely pass for this
-        # function.
-        # Maybe I only need to have a better formulated test set of data.
-        if sum_of_residuals.size == 0:
-            variance = np.nan
-            covariance = np.nan * np.ones((len(x), len(x)))
-        else:
-            variance, covariance = \
-                process.least_squares_variance(A, sum_of_residuals)
+            # TODO : compute the rank of the sparse matrix
+            if rank < A.shape[1] or rank > A.shape[0]:
+                print("After lstsq")
+                warnings.warn('The rank of A is {} and the shape is {}.'.format(
+                    rank, A.shape))
+
+        variance, covariance = \
+            process.least_squares_variance(A, sum_of_residuals)
 
         return x, variance, covariance
 
@@ -867,6 +878,11 @@ class SimpleControlSolver(object):
                     x_total = np.hstack((x1, x2))
 
             A = A[:, x_total]
+
+        rank_of_A = np.linalg.matrix_rank(A)
+        if rank_of_A < A.shape[1] or rank_of_A > A.shape[0]:
+            warnings.warn('The rank of A is {} and x is of length {}.'.format(
+                rank_of_A, A.shape[1]))
 
         return A, b
 

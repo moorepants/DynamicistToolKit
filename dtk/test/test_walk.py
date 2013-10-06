@@ -341,26 +341,30 @@ class TestSimpleControlSolver():
         # TODO : check that x is correct
 
     def test_deconstruct_solution(self):
+        # TODO : I don't know what the variances should be for this problem,
+        # so I don't have a check for that in place yet.
+
         A, b = self.solver.form_a_b()
         x, variance, covariance = self.solver.least_squares(A, b)
-        (gain_matrices, control_vectors, gain_matrices_covariance,
+        (gain_matrices, control_vectors, gain_matrices_variance,
          control_vectors_variance) = \
             self.solver.deconstruct_solution(x, covariance)
 
         testing.assert_allclose(gain_matrices, self.K, atol=1e-12)
         testing.assert_allclose(control_vectors, self.m_star, atol=1e-12)
 
-        # TODO : Make sure covariance matrices are decontructed properly.
-
+        # now with gain omission matrix
         self.solver.gain_omission_matrix = self.gain_omission_matrix
         A, b = self.solver.form_a_b()
         x, variance, covariance = self.solver.least_squares(A, b)
-        (gain_matrices, control_vectors, gain_matrices_covariance,
+        (gain_matrices, control_vectors, gain_matrices_variance,
          control_vectors_variance) = \
             self.solver.deconstruct_solution(x, covariance)
 
         for i in range(self.n):
             testing.assert_equal(~np.isnan(gain_matrices[i]),
+                                 self.gain_omission_matrix)
+            testing.assert_equal(~np.isnan(gain_matrices_variance[i]),
                                  self.gain_omission_matrix)
 
     def test_solve(self):
