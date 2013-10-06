@@ -299,16 +299,6 @@ class SimpleControlSolver(object):
         self.controls = controls
 
     @property
-    def data_panel(self):
-        return self._data_panel
-
-    @data_panel.setter
-    def data_panel(self, value):
-        self._data_panel = value
-        self.m = value.shape[0]
-        self.n = value.shape[1]
-
-    @property
     def controls(self):
         return self._controls
 
@@ -318,13 +308,14 @@ class SimpleControlSolver(object):
         self.q = len(value)
 
     @property
-    def sensors(self):
-        return self._sensors
+    def data_panel(self):
+        return self._data_panel
 
-    @sensors.setter
-    def sensors(self, value):
-        self._sensors = value
-        self.p = len(value)
+    @data_panel.setter
+    def data_panel(self, value):
+        self._data_panel = value
+        self.m = value.shape[0]
+        self.n = value.shape[1]
 
     @property
     def gain_omission_matrix(self):
@@ -338,64 +329,14 @@ class SimpleControlSolver(object):
                                  'shape({}, {})'.format(self.q, self.p))
         self._gain_omission_matrix = value
 
-    def solve(self, sparse_a=False, gain_omission_matrix=None):
-        """Returns the estimated gains and sensor limit cycles along with
-        their variance.
+    @property
+    def sensors(self):
+        return self._sensors
 
-        Parameters
-        ==========
-        sparse_a : boolean, optional, default=False
-            If true a sparse A matrix will be used along with a sparse
-            linear least squares solver.
-        gain_omission_matrix : boolean array_like, shape(q, p)
-            A matrix which is the same shape as the identified gain matrices
-            which has False in place of gains that should be assumed to be
-            zero and True for gains that should be identified.
-
-        Returns
-        =======
-        gain_matrices : ndarray, shape(n, q, p)
-            The estimated gain matrices for each time step.
-        control_vectors : ndarray, shape(n, q)
-            The nominal control vector plus the gains multiplied by the
-            reference sensors at each time step.
-        variance : float
-            The variance in the fitted curve.
-        gain_matrices_variance : ndarray, shape(n, q, p)
-            The variance of the found gains (covariance is neglected).
-        control_vectors_variance : ndarray, shape(n, q)
-            The variance of the found commanded controls (covariance is
-            neglected).
-        estimated_controls :
-
-        """
-        self.gain_omission_matrix = gain_omission_matrix
-
-        A, b = self.form_a_b()
-
-        # TODO : To actually get some memory reduction I should construct
-        # the A matrix with a scipy.sparse.lil_matrix in self.form_a_b
-        # instead of simply converting the dense matrix after I build it.
-
-        if sparse_a is True:
-            A = sparse.csr_matrix(A)
-
-        x, variance, covariance = self.least_squares(A, b)
-
-        deconstructed_solution = self.deconstruct_solution(x, covariance)
-
-        gain_matrices = deconstructed_solution[0]
-        gain_matrices_variance = deconstructed_solution[2]
-
-        nominal_controls = deconstructed_solution[1]
-        nominal_controls_variance = deconstructed_solution[3]
-
-        estimated_controls = \
-            self.compute_estimated_controls(gain_matrices, nominal_controls)
-
-        return (gain_matrices, nominal_controls, variance,
-                gain_matrices_variance, nominal_controls_variance,
-                estimated_controls)
+    @sensors.setter
+    def sensors(self, value):
+        self._sensors = value
+        self.p = len(value)
 
     def compute_estimated_controls(self, gain_matrices, nominal_controls):
         """Returns the predicted values of the controls and the
@@ -483,6 +424,271 @@ class SimpleControlSolver(object):
             panel[i] = results
 
         return pandas.Panel(panel)
+
+    def deconstruct_solution(self, x, covariance):
+        """Returns the gain matrices, K(t), and m*(t) for each time step in
+        the gait cycle given the solution vector and the covariance matrix
+        of the solution.
+
+        m(t) = m*(t) - K(t) s(t)
+
+        Parameters
+        ==========
+        x : array_like, shape(n * q * (p + 1),)
+            The solution matrix containing the gains and the commanded
+            controls.
+        covariance : array_like, shape(n * q * (p + 1), n * q * (p + 1))
+            The covariance of x with respect to the variance in the fit.
+
+        Returns
+        =======
+        gain_matrices : ndarray,  shape(n, q, p)
+            The gain matrices at each time step, K(t).
+        control_vectors : ndarray, shape(n, q)
+            The nominal control vector plus the gains multiplied by the
+            reference sensors at each time step.
+        gain_matrices_variance : ndarray, shape(n, q, p)
+            The variance of the found gains (covariance is neglected).
+        control_vectors_variance : ndarray, shape(n, q)
+            The variance of the found commanded controls (covariance is
+            neglected).
+
+        Notes
+        =====
+        x looks like:
+            [k11(0), k12(0), ..., kqp(0), m1*(0), ..., mq*(0), ...,
+             k11(n), k12(0), ..., kqp(n), m1*(n), ..., mq*(n)]
+
+        If there is a gain omission matrix then nan's are substituted for
+        all gains that were set to zero.
+        """
+        # TODO : Fix the doc string to reflect the fact that x will be
+        # smaller when there is a gain omission matrix.
+
+        # If there is a gain omission matrix then augment the x vector and
+        # covariance matrix with nans for the missing values.
+        if self.gain_omission_matrix is not None:
+            x1 = self.gain_omission_matrix.flatten()
+            x2 = np.array(self.q * [True])
+            for i in range(self.n):
+                try:
+                    x_total = np.hstack((x_total, x1, x2))
+                except NameError:
+                    x_total = np.hstack((x1, x2))
+            x_total = x_total.astype(object)
+            x_total[x_total == True] = x
+            x_total[x_total == False] = np.nan
+            x = x_total.astype(float)
+
+            cov_total = np.nan * np.ones((len(x), len(x)))
+            cov_total[np.outer(~np.isnan(x), ~np.isnan(x))] = \
+                covariance.flatten()
+            covariance = cov_total
+
+            x[np.isnan(x)] = 0.0
+            covariance[np.isnan(covariance)] = 0.0
+
+        gain_matrices = np.zeros((self.n, self.q, self.p))
+        control_vectors = np.zeros((self.n, self.q))
+
+        gain_matrices_variance = np.zeros((self.n, self.q, self.p))
+        control_vectors_variance = np.zeros((self.n, self.q))
+
+        parameter_variance = np.diag(covariance)
+
+        for i in range(self.n):
+
+            k_start = i * self.q * (self.p + 1)
+            k_end = self.q * ((i + 1) * self.p + i)
+            m_end = (i + 1) * self.q * (self.p + 1)
+
+            gain_matrices[i] = x[k_start:k_end].reshape(self.q, self.p)
+            control_vectors[i] = x[k_end:m_end]
+
+            gain_matrices_variance[i] = \
+                parameter_variance[k_start:k_end].reshape(self.q, self.p)
+            control_vectors_variance[i] = parameter_variance[k_end:m_end]
+
+        return (gain_matrices, control_vectors, gain_matrices_variance,
+                control_vectors_variance)
+
+    def form_a_b(self):
+        """Returns the A matrix and the b vector for the linear least
+        squares fit.
+
+        Returns
+        =======
+        A : ndarray, shape(n * q, n * q * (p + 1))
+            The A matrix which is sparse and contains the sensor
+            measurements and ones.
+        b : ndarray, shape(n * q,)
+            The b vector which constaints the measured controls.
+
+        Note
+        ====
+
+        In the simplest fashion, you can put::
+
+            m(t) = m*(t) - K * s(t)
+
+        into the form::
+
+            Ax = b
+
+        with::
+
+            b = m(t)
+            A = [-s(t) 1]
+            x = [K(t) m*(t)]^T
+
+            [-s(t) 1] * [K(t) m*(t)]^T = m(t)
+
+        """
+        control_vectors = self.form_control_vectors()
+
+        b = np.array([])
+        for cycle in control_vectors:
+            for time_step in cycle:
+                b = np.hstack((b, time_step))
+
+        sensor_vectors = self.form_sensor_vectors()
+
+        A = np.zeros((self.m * self.n * self.q,
+                      self.n * self.q * (self.p + 1)))
+
+        for i in range(self.m):
+
+            Am = np.zeros((self.n * self.q,
+                           self.n * self.q * (self.p + 1)))
+
+            for j in range(self.n):
+
+                An = np.zeros((self.q, self.q * self.p))
+
+                for row in range(self.q):
+
+                    An[row, row * self.p:(row + 1) * self.p] = \
+                        -sensor_vectors[i, j]
+
+                An = np.hstack((An, np.eye(self.q)))
+
+                num_rows, num_cols = An.shape
+
+                Am[j * num_rows:(j + 1) * num_rows, j * num_cols:(j + 1) *
+                    num_cols] = An
+
+            A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
+
+        # If there are nans in the gain omission matrix, then delete the
+        # columns in A associated with gains that are set to zero.
+        # TODO : Turn this into a method because I use it at least twice.
+        if self.gain_omission_matrix is not None:
+            x1 = self.gain_omission_matrix.flatten()
+            x2 = np.array(self.q * [True])
+            for i in range(self.n):
+                try:
+                    x_total = np.hstack((x_total, x1, x2))
+                except NameError:
+                    x_total = np.hstack((x1, x2))
+
+            A = A[:, x_total]
+
+        rank_of_A = np.linalg.matrix_rank(A)
+        if rank_of_A < A.shape[1] or rank_of_A > A.shape[0]:
+            warnings.warn('The rank of A is {} and x is of length {}.'.format(
+                rank_of_A, A.shape[1]))
+
+        return A, b
+
+    def form_control_vectors(self):
+        """Returns an array of control vectors for each cycle and each time
+        step.
+
+        Returns
+        =======
+        control_vectors : ndarray, shape(m, n, q)
+            The sensor vector form the i'th cycle and the j'th time step
+            will look like [control_0, ..., control_(q-1)].
+
+        """
+        control_vectors = np.zeros((self.m, self.n, self.q))
+        for i, (panel_name, data_frame) in \
+                enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in \
+                    enumerate(data_frame[self.controls].iterrows()):
+                control_vectors[i, j] = values.values
+
+        return control_vectors
+
+    def form_sensor_vectors(self):
+        """Returns an array of sensor vectors for each cycle and each time
+        step.
+
+        Returns
+        =======
+        sensor_vectors : ndarray, shape(m, n, p)
+            The sensor vector form the i'th cycle and the j'th time step
+            will look like [sensor_0, ..., sensor_(p-1)].
+        """
+        sensor_vectors = np.zeros((self.m, self.n, self.p))
+        for i, (panel_name, data_frame) in \
+                enumerate(self.data_panel.iteritems()):
+            for j, (index, values) in \
+                    enumerate(data_frame[self.sensors].iterrows()):
+                sensor_vectors[i, j] = values.values
+
+        return sensor_vectors
+
+    def least_squares(self, A, b):
+        """Returns the solution to the linear least squares and the
+        covariance matrix of the solution.
+
+        Parameters
+        ==========
+        A : array_like, shape(n, m)
+            The coefficient matrix of Ax = b.
+        b : array_like, shape(n,)
+            The right hand side of Ax = b.
+
+        Returns
+        =======
+        x : ndarray, shape(m,)
+            The best fit solution.
+        variance : float
+            The variance of the fit.
+        covariance : ndarray, shape(m, m)
+            The covariance of the solution.
+
+        """
+
+        num_equations, num_unknowns = A.shape
+
+        if num_equations < num_unknowns:
+            raise Exception('Please add some walking cycles. There is ' +
+                            'not enough data to solve for the number of ' +
+                            'unknowns.')
+
+        if sparse.issparse(A):
+            # scipy.sparse.linalg.lsmr is also an option
+            x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
+                sparse.linalg.lsqr(A, b)
+            sum_of_residuals = r1norm  # this may should be the r2norm
+            # TODO : Make sure I'm doing the correct norm here.
+        else:
+            x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
+            # Also this is potentially a faster implementation:
+            # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
+
+            # TODO : compute the rank of the sparse matrix
+            if rank < A.shape[1] or rank > A.shape[0]:
+                print("After lstsq")
+                warnings.warn('The rank of A is {} and the shape is {}.'.format(
+                    rank, A.shape))
+
+        variance, covariance = \
+            process.least_squares_variance(A, sum_of_residuals)
+
+        return x, variance, covariance
 
     def plot_control_contributions(self, estimated_panel, max_num_steps=4):
         """Plots two graphs for each control and each step showing
@@ -624,271 +830,6 @@ class SimpleControlSolver(object):
 
         return axes
 
-    def deconstruct_solution(self, x, covariance):
-        """Returns the gain matrices, K(t), and m*(t) for each time step in
-        the gait cycle given the solution vector and the covariance matrix
-        of the solution.
-
-        m(t) = m*(t) - K(t) s(t)
-
-        Parameters
-        ==========
-        x : array_like, shape(n * q * (p + 1),)
-            The solution matrix containing the gains and the commanded
-            controls.
-        covariance : array_like, shape(n * q * (p + 1), n * q * (p + 1))
-            The covariance of x with respect to the variance in the fit.
-
-        Returns
-        =======
-        gain_matrices : ndarray,  shape(n, q, p)
-            The gain matrices at each time step, K(t).
-        control_vectors : ndarray, shape(n, q)
-            The nominal control vector plus the gains multiplied by the
-            reference sensors at each time step.
-        gain_matrices_variance : ndarray, shape(n, q, p)
-            The variance of the found gains (covariance is neglected).
-        control_vectors_variance : ndarray, shape(n, q)
-            The variance of the found commanded controls (covariance is
-            neglected).
-
-        Notes
-        =====
-        x looks like:
-            [k11(0), k12(0), ..., kqp(0), m1*(0), ..., mq*(0), ...,
-             k11(n), k12(0), ..., kqp(n), m1*(n), ..., mq*(n)]
-
-        If there is a gain omission matrix then nan's are substituted for
-        all gains that were set to zero.
-        """
-        # TODO : Fix the doc string to reflect the fact that x will be
-        # smaller when there is a gain omission matrix.
-
-        # If there is a gain omission matrix then augment the x vector and
-        # covariance matrix with nans for the missing values.
-        if self.gain_omission_matrix is not None:
-            x1 = self.gain_omission_matrix.flatten()
-            x2 = np.array(self.q * [True])
-            for i in range(self.n):
-                try:
-                    x_total = np.hstack((x_total, x1, x2))
-                except NameError:
-                    x_total = np.hstack((x1, x2))
-            x_total = x_total.astype(object)
-            x_total[x_total == True] = x
-            x_total[x_total == False] = np.nan
-            x = x_total.astype(float)
-
-            cov_total = np.nan * np.ones((len(x), len(x)))
-            cov_total[np.outer(~np.isnan(x), ~np.isnan(x))] = \
-                covariance.flatten()
-            covariance = cov_total
-
-            x[np.isnan(x)] = 0.0
-            covariance[np.isnan(covariance)] = 0.0
-
-        gain_matrices = np.zeros((self.n, self.q, self.p))
-        control_vectors = np.zeros((self.n, self.q))
-
-        gain_matrices_variance = np.zeros((self.n, self.q, self.p))
-        control_vectors_variance = np.zeros((self.n, self.q))
-
-        parameter_variance = np.diag(covariance)
-
-        for i in range(self.n):
-
-            k_start = i * self.q * (self.p + 1)
-            k_end = self.q * ((i + 1) * self.p + i)
-            m_end = (i + 1) * self.q * (self.p + 1)
-
-            gain_matrices[i] = x[k_start:k_end].reshape(self.q, self.p)
-            control_vectors[i] = x[k_end:m_end]
-
-            gain_matrices_variance[i] = \
-                parameter_variance[k_start:k_end].reshape(self.q, self.p)
-            control_vectors_variance[i] = parameter_variance[k_end:m_end]
-
-        return (gain_matrices, control_vectors, gain_matrices_variance,
-                control_vectors_variance)
-
-    def least_squares(self, A, b):
-        """Returns the solution to the linear least squares and the
-        covariance matrix of the solution.
-
-        Parameters
-        ==========
-        A : array_like, shape(n, m)
-            The coefficient matrix of Ax = b.
-        b : array_like, shape(n,)
-            The right hand side of Ax = b.
-
-        Returns
-        =======
-        x : ndarray, shape(m,)
-            The best fit solution.
-        variance : float
-            The variance of the fit.
-        covariance : ndarray, shape(m, m)
-            The covariance of the solution.
-
-        """
-
-        num_equations, num_unknowns = A.shape
-
-        if num_equations < num_unknowns:
-            raise Exception('Please add some walking cycles. There is ' +
-                            'not enough data to solve for the number of ' +
-                            'unknowns.')
-
-        if sparse.issparse(A):
-            # scipy.sparse.linalg.lsmr is also an option
-            x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
-                sparse.linalg.lsqr(A, b)
-            sum_of_residuals = r1norm  # this may should be the r2norm
-            # TODO : Make sure I'm doing the correct norm here.
-        else:
-            x, sum_of_residuals, rank, s = np.linalg.lstsq(A, b)
-            # Also this is potentially a faster implementation:
-            # http://graal.ift.ulaval.ca/alexandredrouin/2013/06/29/linear-least-squares-solver/
-
-            # TODO : compute the rank of the sparse matrix
-            if rank < A.shape[1] or rank > A.shape[0]:
-                print("After lstsq")
-                warnings.warn('The rank of A is {} and the shape is {}.'.format(
-                    rank, A.shape))
-
-        variance, covariance = \
-            process.least_squares_variance(A, sum_of_residuals)
-
-        return x, variance, covariance
-
-    def form_sensor_vectors(self):
-        """Returns an array of sensor vectors for each cycle and each time
-        step.
-
-        Returns
-        =======
-        sensor_vectors : ndarray, shape(m, n, p)
-            The sensor vector form the i'th cycle and the j'th time step
-            will look like [sensor_0, ..., sensor_(p-1)].
-        """
-        sensor_vectors = np.zeros((self.m, self.n, self.p))
-        for i, (panel_name, data_frame) in \
-                enumerate(self.data_panel.iteritems()):
-            for j, (index, values) in \
-                    enumerate(data_frame[self.sensors].iterrows()):
-                sensor_vectors[i, j] = values.values
-
-        return sensor_vectors
-
-    def form_control_vectors(self):
-        """Returns an array of control vectors for each cycle and each time
-        step.
-
-        Returns
-        =======
-        control_vectors : ndarray, shape(m, n, q)
-            The sensor vector form the i'th cycle and the j'th time step
-            will look like [control_0, ..., control_(q-1)].
-
-        """
-        control_vectors = np.zeros((self.m, self.n, self.q))
-        for i, (panel_name, data_frame) in \
-                enumerate(self.data_panel.iteritems()):
-            for j, (index, values) in \
-                    enumerate(data_frame[self.controls].iterrows()):
-                control_vectors[i, j] = values.values
-
-        return control_vectors
-
-    def form_a_b(self):
-        """Returns the A matrix and the b vector for the linear least
-        squares fit.
-
-        Returns
-        =======
-        A : ndarray, shape(n * q, n * q * (p + 1))
-            The A matrix which is sparse and contains the sensor
-            measurements and ones.
-        b : ndarray, shape(n * q,)
-            The b vector which constaints the measured controls.
-
-        Note
-        ====
-
-        In the simplest fashion, you can put::
-
-            m(t) = m*(t) - K * s(t)
-
-        into the form::
-
-            Ax = b
-
-        with::
-
-            b = m(t)
-            A = [-s(t) 1]
-            x = [K(t) m*(t)]^T
-
-            [-s(t) 1] * [K(t) m*(t)]^T = m(t)
-
-        """
-        control_vectors = self.form_control_vectors()
-
-        b = np.array([])
-        for cycle in control_vectors:
-            for time_step in cycle:
-                b = np.hstack((b, time_step))
-
-        sensor_vectors = self.form_sensor_vectors()
-
-        A = np.zeros((self.m * self.n * self.q,
-                      self.n * self.q * (self.p + 1)))
-
-        for i in range(self.m):
-
-            Am = np.zeros((self.n * self.q,
-                           self.n * self.q * (self.p + 1)))
-
-            for j in range(self.n):
-
-                An = np.zeros((self.q, self.q * self.p))
-
-                for row in range(self.q):
-
-                    An[row, row * self.p:(row + 1) * self.p] = \
-                        -sensor_vectors[i, j]
-
-                An = np.hstack((An, np.eye(self.q)))
-
-                num_rows, num_cols = An.shape
-
-                Am[j * num_rows:(j + 1) * num_rows, j * num_cols:(j + 1) *
-                    num_cols] = An
-
-            A[i * self.n * self.q:i * self.n * self.q + self.n * self.q] = Am
-
-        # If there are nans in the gain omission matrix, then delete the
-        # columns in A associated with gains that are set to zero.
-        # TODO : Turn this into a method because I use it at least twice.
-        if self.gain_omission_matrix is not None:
-            x1 = self.gain_omission_matrix.flatten()
-            x2 = np.array(self.q * [True])
-            for i in range(self.n):
-                try:
-                    x_total = np.hstack((x_total, x1, x2))
-                except NameError:
-                    x_total = np.hstack((x1, x2))
-
-            A = A[:, x_total]
-
-        rank_of_A = np.linalg.matrix_rank(A)
-        if rank_of_A < A.shape[1] or rank_of_A > A.shape[0]:
-            warnings.warn('The rank of A is {} and x is of length {}.'.format(
-                rank_of_A, A.shape[1]))
-
-        return A, b
-
     def plot_gains(self, gains, gain_variance):
         """Plots the identified gains versus percentage of the gait cycle.
 
@@ -957,6 +898,65 @@ class SimpleControlSolver(object):
         plt.tight_layout()
 
         return axes
+
+    def solve(self, sparse_a=False, gain_omission_matrix=None):
+        """Returns the estimated gains and sensor limit cycles along with
+        their variance.
+
+        Parameters
+        ==========
+        sparse_a : boolean, optional, default=False
+            If true a sparse A matrix will be used along with a sparse
+            linear least squares solver.
+        gain_omission_matrix : boolean array_like, shape(q, p)
+            A matrix which is the same shape as the identified gain matrices
+            which has False in place of gains that should be assumed to be
+            zero and True for gains that should be identified.
+
+        Returns
+        =======
+        gain_matrices : ndarray, shape(n, q, p)
+            The estimated gain matrices for each time step.
+        control_vectors : ndarray, shape(n, q)
+            The nominal control vector plus the gains multiplied by the
+            reference sensors at each time step.
+        variance : float
+            The variance in the fitted curve.
+        gain_matrices_variance : ndarray, shape(n, q, p)
+            The variance of the found gains (covariance is neglected).
+        control_vectors_variance : ndarray, shape(n, q)
+            The variance of the found commanded controls (covariance is
+            neglected).
+        estimated_controls :
+
+        """
+        self.gain_omission_matrix = gain_omission_matrix
+
+        A, b = self.form_a_b()
+
+        # TODO : To actually get some memory reduction I should construct
+        # the A matrix with a scipy.sparse.lil_matrix in self.form_a_b
+        # instead of simply converting the dense matrix after I build it.
+
+        if sparse_a is True:
+            A = sparse.csr_matrix(A)
+
+        x, variance, covariance = self.least_squares(A, b)
+
+        deconstructed_solution = self.deconstruct_solution(x, covariance)
+
+        gain_matrices = deconstructed_solution[0]
+        gain_matrices_variance = deconstructed_solution[2]
+
+        nominal_controls = deconstructed_solution[1]
+        nominal_controls_variance = deconstructed_solution[3]
+
+        estimated_controls = \
+            self.compute_estimated_controls(gain_matrices, nominal_controls)
+
+        return (gain_matrices, nominal_controls, variance,
+                gain_matrices_variance, nominal_controls_variance,
+                estimated_controls)
 
 
 def find_constant_speed(time, speed, plot=False):
