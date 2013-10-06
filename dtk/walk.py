@@ -35,32 +35,6 @@ class WalkingData(object):
 
         self.raw_data = data_frame
 
-    def time_derivative(self, col_names, new_col_names=None):
-        """Numerically differentiates the specified columns with respect to
-        the time index and adds the new columns to `self.raw_data`.
-
-        Parameters
-        ==========
-        col_names : list of strings
-            The column names for the time series which should be numerically
-            time differentiated.
-        new_col_names : list of strings, optional
-            The desired new column name(s) for the time differentiated
-            series. If None, then a default name of `Time derivative of
-            <origin column name>` will be used.
-
-        """
-
-        if new_col_names is None:
-            new_col_names = ['Time derivative of {}'.format(c) for c in
-                             col_names]
-
-        for col_name, new_col_name in zip(col_names, new_col_names):
-            self.raw_data[new_col_name] = \
-                process.derivative(self.raw_data.index.values.astype(float),
-                                   self.raw_data[col_name],
-                                   method='combination')
-
     def grf_landmarks(self, right_vertical_grf_col_name,
                       left_vertical_grf_col_name, **kwargs):
         """Returns the times at which heel strikes and toe offs happen in
@@ -150,6 +124,37 @@ class WalkingData(object):
         # len() stays consistent
         return interpolated_data_frame.drop_duplicates()
 
+    def plot_steps(self, *col_names, **kwargs):
+        """Plots the steps.
+
+        Parameters
+        ==========
+        col_names : string
+            A variable number of strings naming the columns to plot.
+        kwargs : key value pairs
+            Any extra kwargs to pass to the matplotlib plot command.
+
+        """
+
+        if len(col_names) == 0:
+            raise ValueError('Please supply some column names to plot.')
+
+        fig, axes = plt.subplots(len(col_names), sharex=True)
+
+        for key, value in self.steps.iteritems():
+            for i, col_name in enumerate(col_names):
+                try:
+                    ax = axes[i]
+                except TypeError:
+                    ax = axes
+                ax.plot(value[col_name].index, value[col_name], **kwargs)
+                ax.set_ylabel(col_name)
+
+        # plot only on the last axes
+        ax.set_xlabel('Time [s]')
+
+        return axes
+
     def split_at(self, side, section='both', num_samples=None):
         """Forms a pandas.Panel which has an item for each step. The index
         will be a new time vector starting at zero.
@@ -228,36 +233,31 @@ class WalkingData(object):
 
         return self.steps
 
-    def plot_steps(self, *col_names, **kwargs):
-        """Plots the steps.
+    def time_derivative(self, col_names, new_col_names=None):
+        """Numerically differentiates the specified columns with respect to
+        the time index and adds the new columns to `self.raw_data`.
 
         Parameters
         ==========
-        col_names : string
-            A variable number of strings naming the columns to plot.
-        kwargs : key value pairs
-            Any extra kwargs to pass to the matplotlib plot command.
+        col_names : list of strings
+            The column names for the time series which should be numerically
+            time differentiated.
+        new_col_names : list of strings, optional
+            The desired new column name(s) for the time differentiated
+            series. If None, then a default name of `Time derivative of
+            <origin column name>` will be used.
 
         """
 
-        if len(col_names) == 0:
-            raise ValueError('Please supply some column names to plot.')
+        if new_col_names is None:
+            new_col_names = ['Time derivative of {}'.format(c) for c in
+                             col_names]
 
-        fig, axes = plt.subplots(len(col_names), sharex=True)
-
-        for key, value in self.steps.iteritems():
-            for i, col_name in enumerate(col_names):
-                try:
-                    ax = axes[i]
-                except TypeError:
-                    ax = axes
-                ax.plot(value[col_name].index, value[col_name], **kwargs)
-                ax.set_ylabel(col_name)
-
-        # plot only on the last axes
-        ax.set_xlabel('Time [s]')
-
-        return axes
+        for col_name, new_col_name in zip(col_names, new_col_names):
+            self.raw_data[new_col_name] = \
+                process.derivative(self.raw_data.index.values.astype(float),
+                                   self.raw_data[col_name],
+                                   method='combination')
 
 
 class SimpleControlSolver(object):
