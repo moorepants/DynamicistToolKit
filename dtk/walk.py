@@ -684,6 +684,9 @@ class SimpleControlSolver(object):
                 covariance.flatten()
             covariance = cov_total
 
+            x[np.isnan(x)] = 0.0
+            covariance[np.isnan(covariance)] = 0.0
+
         gain_matrices = np.zeros((self.n, self.q, self.p))
         control_vectors = np.zeros((self.n, self.q))
 

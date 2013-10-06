@@ -350,7 +350,7 @@ class TestSimpleControlSolver():
          control_vectors_variance) = \
             self.solver.deconstruct_solution(x, covariance)
 
-        testing.assert_allclose(gain_matrices, self.K, atol=1e-12)
+        testing.assert_allclose(gain_matrices, self.K, atol=1e-10)
         testing.assert_allclose(control_vectors, self.m_star, atol=1e-12)
 
         # now with gain omission matrix
@@ -362,9 +362,9 @@ class TestSimpleControlSolver():
             self.solver.deconstruct_solution(x, covariance)
 
         for i in range(self.n):
-            testing.assert_equal(~np.isnan(gain_matrices[i]),
+            testing.assert_equal(np.abs(gain_matrices[i]) > 1e-16,
                                  self.gain_omission_matrix)
-            testing.assert_equal(~np.isnan(gain_matrices_variance[i]),
+            testing.assert_equal(np.abs(gain_matrices_variance[i]) > 1e-16,
                                  self.gain_omission_matrix)
 
     def test_solve(self):
