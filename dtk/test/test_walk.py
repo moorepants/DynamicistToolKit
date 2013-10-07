@@ -186,14 +186,15 @@ class TestSimpleControlSolver():
         self.n = len(self.time)
         self.p = len(self.sensors)
         self.q = len(self.controls)
-        self.m = 10
+        self.r = 10
+        self.m = self.r / 2
 
         self.gain_omission_matrix = np.array(self.q * [self.p * [True]])
         self.gain_omission_matrix[0, 1] = False
         self.gain_omission_matrix[1, 0] = False
 
-        # pick m*, K and s, then generate m
-        # mm(t) = m*(t) - K(t)s(t)
+        # pick m*(t), K(t), and s(t), then generate mm(t)
+        # mm(t) = m*(t) - K(t) * s(t)
 
         # TODO : maybe I should set the problem up more generally, like:
         # mm(t) = m0(t) + K(t) * [s0(t) - s(t)]
@@ -204,10 +205,10 @@ class TestSimpleControlSolver():
                            [np.sin(2.0 * self.time),
                             np.cos(3.0 * self.time)]]).T
 
-        self.s = np.zeros((self.m, self.n, self.p))
-        self.mm = np.zeros((self.m, self.n, self.q))
+        self.s = np.zeros((self.r, self.n, self.p))
+        self.mm = np.zeros((self.r, self.n, self.q))
         cycles = {}
-        for i in range(self.m):
+        for i in range(self.r):
             noise = 0.25 * np.random.randn(self.n, self.p)
             self.s[i] = np.vstack(((i + 1) * np.sin(self.time),
                                    (i + 1) * np.cos(self.time))).T + noise
@@ -228,7 +229,8 @@ class TestSimpleControlSolver():
 
     def test_init(self):
 
-        assert self.all_cycles is self.solver.data_panel
+        assert self.all_cycles.iloc[:self.m] == self.solver.identification_data
+        assert self.all_cycles.iloc[self.m:] == self.solver.validation_data
         assert self.solver.n == self.n
         assert self.solver.m == self.m
 
@@ -238,6 +240,15 @@ class TestSimpleControlSolver():
         assert self.controls is self.solver.controls
         assert self.solver.q == self.q
 
+        self.solver = SimpleControlSolver(self.all_cycles, self.sensors,
+                                          self.controls,
+                                          validation_data=self.all_cycles)
+
+        assert self.all_cycles is self.solver.identification_data
+        assert self.all_cycles is self.solver.validation_data
+        assert self.solver.n == self.n
+        assert self.solver.m == self.r
+
     def test_form_sensor_vectors(self):
 
         sensor_vectors = self.solver.form_sensor_vectors()
@@ -245,11 +256,10 @@ class TestSimpleControlSolver():
         # this should be an m x n x p array
         assert sensor_vectors.shape == (self.m, self.n, self.p)
 
-        # TODO : change .ix to .iloc
         for i in range(self.m):
             for j in range(self.n):
                 testing.assert_allclose(sensor_vectors[i, j],
-                    self.all_cycles.ix[i][self.sensors].ix[j])
+                    self.all_cycles.iloc[i][self.sensors].iloc[j])
 
     def test_form_control_vectors(self):
 
@@ -258,15 +268,14 @@ class TestSimpleControlSolver():
         # this should be an m x n x q array
         assert control_vectors.shape == (self.m, self.n, self.q)
 
-        # TODO : change .ix to .iloc
         for i in range(self.m):
             for j in range(self.n):
                 testing.assert_allclose(control_vectors[i, j],
-                    self.all_cycles.ix[i][self.controls].ix[j])
+                    self.all_cycles.iloc[i][self.controls].iloc[j])
 
     def test_form_a_b(self):
 
-        for cycle_key in sorted(self.all_cycles.keys()):
+        for cycle_key in sorted(self.all_cycles.keys())[:self.m]:
 
             cycle = self.all_cycles[cycle_key]
 
@@ -387,20 +396,21 @@ class TestSimpleControlSolver():
         estimated = self.solver.compute_estimated_controls(solution[0],
                                                            solution[1])
 
-        expected_s0 = self.s.mean(axis=0)  # mean across steps, n x p
+        # mean across validation steps, n x p
+        expected_s0 = self.s[self.m:].mean(axis=0)
 
         # for each step
         for i, (item, df) in enumerate(estimated.iteritems()):
             # check if the measured moments match
-            testing.assert_allclose(df[self.controls].values, self.mm[i])
+            testing.assert_allclose(df[self.controls].values, self.mm[i + self.m])
             # check if m* matches
             testing.assert_allclose(df[[c + '*' for c in
                                         self.controls]].values, self.m_star,
                                     atol=1e-10)
 
             for j in range(self.n):
-                expected_m0 = self.mm[i, j] - \
-                    np.dot(self.K[j], (expected_s0[j] - self.s[i, j]))
+                expected_m0 = self.mm[i + self.m, j] - \
+                    np.dot(self.K[j], (expected_s0[j] - self.s[i + self.m, j]))
                 m0 = df.loc[df.index[j], [c + '0' for c in self.controls]].values
                 testing.assert_allclose(m0, expected_m0)
 

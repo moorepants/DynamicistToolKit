@@ -275,14 +275,14 @@ class SimpleControlSolver(object):
 
     """
 
-    def __init__(self, data_panel, sensors, controls):
+    def __init__(self, data, sensors, controls, validation_data=None):
         """Initializes the solver.
 
         Parameters
         ==========
-        data_panel : pandas.Panel, shape(m, n, u)
+        data : pandas.Panel, shape(r, n, p + q)
             A panel in which each item is a data frame of the time series of
-            various measured sensors with time as the index. This should not
+            various measurements with time as the index. This should not
             have any missing values.
         sensors : sequence of strings
             A sequence of p strings which match column names in the data
@@ -290,13 +290,38 @@ class SimpleControlSolver(object):
         controls : sequence of strings
             A sequence of q strings which match column names in the data
             panel for the controls.
+        validation_data : pandas.Panel, shape(w, n, p + q), optional
+            A panel in which each item is a data frame of the time series of
+            various measured sensors with time as the index. This should not
+            have any missing values.
+
+        Notes
+        =====
+        r : number of gait cycles (steps)
+        n : number of time samples in each gait cycle
+        p + q : number of measurements in the gait cycle
+
+        m : number of gait cycles used in identification
+
+        If no validation data is supplied then the last half of the steps
+        will be used for validation.
+        m = r / 2 (integer division)
+        else
+        m = r
 
         """
         self._gain_omission_matrix = None
 
-        self.data_panel = data_panel
         self.sensors = sensors
         self.controls = controls
+
+        if validation_data is None:
+            num_steps = data.shape[0] / 2
+            self.identification_data = data.iloc[:num_steps]
+            self.validation_data = data.iloc[num_steps:]
+        else:
+            self.identification_data = data
+            self.validation_data = validation_data
 
     @property
     def controls(self):
@@ -308,12 +333,12 @@ class SimpleControlSolver(object):
         self.q = len(value)
 
     @property
-    def data_panel(self):
-        return self._data_panel
+    def identification_data(self):
+        return self._identification_data
 
-    @data_panel.setter
-    def data_panel(self, value):
-        self._data_panel = value
+    @identification_data.setter
+    def identification_data(self, value):
+        self._identification_data = value
         self.m = value.shape[0]
         self.n = value.shape[1]
 
@@ -338,6 +363,19 @@ class SimpleControlSolver(object):
         self._sensors = value
         self.p = len(value)
 
+    @property
+    def validation_data(self):
+        return self._validation_data
+
+    @validation_data.setter
+    def validation_data(self, value):
+        if value.shape[1] != self.identification_data.shape[1]:
+            raise ValueError('The validation data must have the same ' +
+                             'number of time steps as the identification ' +
+                             'data.')
+
+        self._validation_data = value
+
     def compute_estimated_controls(self, gain_matrices, nominal_controls):
         """Returns the predicted values of the controls and the
         contributions to the controls given gains, K(t), and nominal
@@ -355,7 +393,7 @@ class SimpleControlSolver(object):
         =======
         panel : pandas.Panel, shape(m, n, q)
             There is one data frame to correspond to each step in
-            self.data_panel. Each data frame has columns of time series
+            self.validation_data. Each data frame has columns of time series
             which store m(t), m*(t), and the individual components due to
             K(t) * se(t).
 
@@ -385,9 +423,9 @@ class SimpleControlSolver(object):
 
         # The mean of the sensors which we consider to be the commanded
         # motion. This may be a bad assumption, but is the best we can do.
-        mean_sensors = self.data_panel.mean(axis='items')[self.sensors]
+        mean_sensors = self.validation_data.mean(axis='items')[self.sensors]
 
-        for i, df in self.data_panel.iteritems():
+        for i, df in self.validation_data.iteritems():
 
             blank = np.zeros((self.n, self.q * 3 + self.p * self.q))
             results = pandas.DataFrame(blank, index=df.index,
@@ -461,6 +499,7 @@ class SimpleControlSolver(object):
 
         If there is a gain omission matrix then nan's are substituted for
         all gains that were set to zero.
+
         """
         # TODO : Fix the doc string to reflect the fact that x will be
         # smaller when there is a gain omission matrix.
@@ -602,7 +641,7 @@ class SimpleControlSolver(object):
 
     def form_control_vectors(self):
         """Returns an array of control vectors for each cycle and each time
-        step.
+        step in the identification data.
 
         Returns
         =======
@@ -613,7 +652,7 @@ class SimpleControlSolver(object):
         """
         control_vectors = np.zeros((self.m, self.n, self.q))
         for i, (panel_name, data_frame) in \
-                enumerate(self.data_panel.iteritems()):
+                enumerate(self.identification_data.iteritems()):
             for j, (index, values) in \
                     enumerate(data_frame[self.controls].iterrows()):
                 control_vectors[i, j] = values.values
@@ -622,7 +661,7 @@ class SimpleControlSolver(object):
 
     def form_sensor_vectors(self):
         """Returns an array of sensor vectors for each cycle and each time
-        step.
+        step in the identification data.
 
         Returns
         =======
@@ -632,7 +671,7 @@ class SimpleControlSolver(object):
         """
         sensor_vectors = np.zeros((self.m, self.n, self.p))
         for i, (panel_name, data_frame) in \
-                enumerate(self.data_panel.iteritems()):
+                enumerate(self.identification_data.iteritems()):
             for j, (index, values) in \
                     enumerate(data_frame[self.sensors].iterrows()):
                 sensor_vectors[i, j] = values.values
@@ -710,7 +749,7 @@ class SimpleControlSolver(object):
         if num_steps > max_num_steps:
             num_steps = max_num_steps
 
-        column_names = estimated_panel[0].columns
+        column_names = estimated_panel.iloc[0].columns
 
         for control in self.controls:
             fig, axes = plt.subplots(int(round(num_steps / 2.0)), 2,
@@ -794,7 +833,7 @@ class SimpleControlSolver(object):
                                           ignore_index=True)
 
         actual_walking = pandas.concat([df for k, df in
-                                        self.data_panel.iteritems()],
+                                        self.validation_data.iteritems()],
                                        ignore_index=True)
 
         fig, axes = plt.subplots(self.q * 2, sharex=True)
