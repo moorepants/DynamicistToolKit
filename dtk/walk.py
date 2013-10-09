@@ -15,6 +15,17 @@ from scipy import sparse
 from dtk import process
 
 
+def _to_percent(value, position):
+    """Returns a string representation of a percentage for matplotlib
+    tick labels."""
+    if plt.rcParams['text.usetex'] is True:
+        return '{:1.0%}'.format(value).replace('%', r'$\%$')
+    else:
+        return '{:1.0%}'.format(value)
+
+# tick label formatter
+_percent_formatter = FuncFormatter(_to_percent)
+
 class WalkingData(object):
     """A class to store typical walking data."""
 
@@ -176,6 +187,8 @@ class WalkingData(object):
                 for key, value in self.steps.iteritems():
                     ax.plot(value[col_name].index, value[col_name], **kwargs)
 
+            ax.xaxis.set_major_formatter(_percent_formatter)
+
             ax.set_ylabel(col_name)
 
         # plot only on the last axes
@@ -185,7 +198,7 @@ class WalkingData(object):
 
     def split_at(self, side, section='both', num_samples=None):
         """Forms a pandas.Panel which has an item for each step. The index
-        will be a new time vector starting at zero.
+        of each step data frame will be a percentage of gait cycle.
 
         Parameters
         ==========
@@ -233,31 +246,43 @@ class WalkingData(object):
 
         max_num_samples = min(samples)
         max_time = min(max_times)
+        if num_samples is None:
+            num_samples = max_num_samples
+        # TODO: This percent should always be computed with respect to heel
+        # strike next heel strike, i.e.:
+        # stance: 0.0 to percent stance
+        # swing: percent stance to 1.0
+        # both: 0.0 to 1.0
+        percent_gait = np.linspace(0.0, 1.0, num=num_samples)
 
         steps = {}
         for i, lead_val in enumerate(lead):
             try:
-                # get the step and truncate it to the max value
+                # get the step and truncate it to minimum step length
                 data_frame = \
                     self.raw_data[lead_val:trail[i]].iloc[:max_num_samples]
             except IndexError:
                 pass
             else:
-                # make a new index starting from zero for each step
+                # make a new time index starting from zero for each step
                 new_index = data_frame.index.values.astype(float) - \
                     data_frame.index[0]
                 data_frame.index = new_index
-                if num_samples is None:
-                    num_samples = max_num_samples
                 # create a time vector index which has a specific number
                 # of samples over the period of time, the max time needs
                 sub_sample_index = np.linspace(0.0, max_time,
                                                num=num_samples)
                 interpolated_data_frame = self.interpolate(data_frame,
                                                            sub_sample_index)
+                # change the index to percent of gait cycle
+                interpolated_data_frame.index = percent_gait
                 steps[i] = interpolated_data_frame
 
         self.steps = pandas.Panel(steps)
+
+        # TODO: compute speed (treadmill speed?), cadence (steps/second),
+        # swing to stance, stride length for each step in a seperate data
+        # frame with step number as the index
 
         return self.steps
 
@@ -794,8 +819,18 @@ class SimpleControlSolver(object):
                 cycle[contribs].plot(kind='bar', stacked=True, ax=ax,
                                      title='Step {}'.format(step_num),
                                      colormap='jet')
-                formatter = FuncFormatter(lambda l, p: '{:1.2f}'.format(l))
-                ax.xaxis.set_major_formatter(FuncFormatter(formatter))
+                # TODO: Figure out why the xtick formatting doesn't work
+                # this formating method seems to make the whole plot blank
+                #formatter = FuncFormatter(lambda l, p: '{1.2f}'.format(l))
+                #ax.xaxis.set_major_formatter(formatter)
+                # this formatter doesn't seem to work with this plot as it
+                # operates on the xtick values instead of the already
+                # overidden labels
+                #ax.xaxis.set_major_formatter(_percent_formatter)
+                # This doesn't seem to actually overwrite the labels:
+                #for label in ax.get_xticklabels():
+                    #current = label.get_text()
+                    #label.set_text('{:1.0%}'.format(float(current)))
 
                 for t in ax.get_legend().get_texts():
                     t.set_fontsize(6)
@@ -833,6 +868,7 @@ class SimpleControlSolver(object):
                     labels.append(contrib.split('.')[1])
             ax.legend(labels, fontsize=10)
             ax.set_xlabel('Time [s]')
+            ax.xaxis.set_major_formatter(_percent_formatter)
 
     def plot_estimated_vs_measure_controls(self, estimated_panel, variance):
         """Plots a figure for each control where the measured control is
@@ -916,25 +952,15 @@ class SimpleControlSolver(object):
         # TODO : Make plots have the same scale if they share the same units
         # or figure out how to normalize these.
 
-        def to_percent(y, position):
-            s = str(100 * y)
-            if plt.rcParams['text.usetex'] is True:
-                return s + r'$\%$'
-            else:
-                return s + '%'
-
-        formatter = FuncFormatter(to_percent)
-
         n, q, p = gains.shape
 
         fig, axes = plt.subplots(q, p, sharex=True, sharey=True)
 
-        xlim = (0.0, 1.0)
-        percent_of_gait_cycle = np.linspace(xlim[0], xlim[1],
-                                            num=gains.shape[0])
+        percent_of_gait_cycle = \
+            self.identification_data.iloc[0].index.values.astype(float)
+        xlim = (percent_of_gait_cycle[0], percent_of_gait_cycle[-1])
 
         for i in range(q):
-
             for j in range(p):
                 try:
                     ax = axes[i, j]
@@ -946,7 +972,7 @@ class SimpleControlSolver(object):
                                 gains[:, i, j] + sigma,
                                 alpha=0.5)
                 ax.plot(percent_of_gait_cycle, gains[:, i, j], marker='o')
-                ax.xaxis.set_major_formatter(formatter)
+                ax.xaxis.set_major_formatter(_percent_formatter)
                 ax.set_xlim(xlim)
 
                 for tick in ax.xaxis.get_major_ticks():
