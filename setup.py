@@ -2,16 +2,20 @@
 
 from setuptools import setup, find_packages
 
+from dtk import __version__
+
 setup(name='DynamicistToolKit',
       author='Jason K. Moore',
       author_email='moorepants@gmail.com',
-      version='0.1.0',
+      version=__version__,
       url="http://github.com/moorepants/DynamicistToolKit",
       description='Various tools for theoretical and experimental dynamics.',
       license='UNLICENSE.txt',
       packages=find_packages(),
-      install_requires=['numpy', 'scipy', 'matplotlib', 'pandas'],
-      tests_require=['nose'],
+      install_requires=['numpy>=1.8.0', 'scipy>=0.13.0', 'matplotlib>=1.3.0',
+                        'pandas>=0.12.0'],
+      extras_require={'doc': ['sphinx>=1.2b3', 'numpydoc>=0.4']},
+      tests_require=['nose>1.3.0'],
       test_suite='nose.collector',
       long_description=open('README.rst').read(),
       classifiers=[
