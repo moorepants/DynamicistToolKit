@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# standard library
+from distutils.version import LooseVersion
+
 # external dependencies
 import numpy as np
 from numpy.fft import fft, fftfreq
+from scipy import __version__ as scipy_version
 from scipy.integrate import trapz, cumtrapz
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fmin
@@ -454,9 +458,8 @@ def freq_spectrum(data, sampleRate):
     return frequency, amplitude
 
 
-def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
-    """
-    Returns the filtered data for a low pass Butterworth filter.
+def butterworth(data, cutoff, samplerate, order=2, axis=-1):
+    """Returns the filtered data for a low pass Butterworth filter.
 
     Parameters
     ----------
@@ -464,8 +467,8 @@ def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
         The data to filter.
     cutoff : float or int
         The cutoff frequency in hertz.
-    sampleRate : float or int
-        The sampling rate in hertz.
+    samplerate : float or int
+        The sample rate in hertz.
     order : int
         The order of the Butterworth filter.
     axis : int
@@ -482,9 +485,22 @@ def butterworth(data, cutoff, sampleRate, order=2, axis=-1):
 
     """
 
-    b, a = butter(order, float(cutoff) / float(sampleRate) / 2.)
+    b, a = butter(order, float(cutoff) / float(samplerate) / 2.)
 
-    return filtfilt(b, a, data, axis=axis)
+    # SciPy 0.9.0 has a simple filtfilt, with no optional arguments. SciPy
+    # 0.10.0 introduced the axis argument. So, to stay compatible with
+    # 0.9.0, which is the SciPy installed on Ubuntu 12.04 LTS, we check the
+    # version.
+    nine = LooseVersion('0.9.0')
+    ten = LooseVersion('0.10.0')
+    current = LooseVersion(scipy_version)
+    if current >= nine and current < ten:
+        if axis != -1:
+            print('SciPy 0.9.0 only supports 1D filtfilt, your axis ' +
+                  'argument has been disregarded.')
+        return filtfilt(b, a, data)
+    elif current >= ten:
+        return filtfilt(b, a, data, axis=axis)
 
 
 def subtract_mean(sig, hasNans=False):
