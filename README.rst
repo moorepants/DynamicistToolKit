@@ -1,6 +1,5 @@
-=================
-DynamicistToolKit
-=================
+Introduction
+============
 
 This is a collection of Python modules which contain tools that are helpful for
 a dynamicist. Right now it is basically a place I place general tools that
@@ -9,25 +8,14 @@ don't necessarily need a distribution of their own.
 Modules
 =======
 
-process
--------
-
-Various tools for common signal processing tasks.
-
-inertia
--------
-
-Various functions for calculating and manipulating inertial quantities.
-
-bicycle
--------
-
-Generic tools for basic bicycle dynamics analysis.
-
-walk
-----
-
-Tools for working with gait data and walking models.
+**bicycle**
+   Generic tools for basic bicycle dynamics analysis.
+**inertia**
+   Various functions for calculating and manipulating inertial quantities.
+**process**
+   Various tools for common signal processing tasks.
+**walk**
+   Tools for working with gait data and walking models.
 
 Installation
 ============
@@ -67,6 +55,9 @@ Or install for development purposes::
 
    $ python setup.py develop
 
+.. [#] You will need all build dependencies and also note that matplotlib
+       doesn't play nice with pip.
+
 Tests
 =====
 
@@ -83,9 +74,6 @@ numpydoc::
    $ cd docs
    $ make html
    $ firefox _build/html/index.html
-
-.. [#] You will need all build dependencies and also note that matplotlib
-       doesn't play nice with pip.
 
 Release Notes
 =============

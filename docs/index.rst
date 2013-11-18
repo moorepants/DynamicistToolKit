@@ -6,6 +6,8 @@
 Welcome to DynamicistToolKit's documentation!
 =============================================
 
+.. include:: ../README.rst
+
 Contents:
 
 .. toctree::
