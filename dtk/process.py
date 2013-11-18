@@ -244,17 +244,18 @@ def coefficient_of_determination(measured, predicted):
     -----
 
     The coefficient of determination (also referred to as R^2 and VAF
-    (variance accounted for) is computed either of these two ways:
+    (variance accounted for) is computed either of these two ways::
 
-          sum( [predicted - mean(measured)] ** 2 )
-    R^2 = ----------------------------------------
-          sum( [measured - mean(measured)] ** 2 )
+            sum( [predicted - mean(measured)] ** 2 )
+      R^2 = ----------------------------------------
+            sum( [measured - mean(measured)] ** 2 )
 
-    or
+    or::
 
-              sum( [measured - predicted] ** 2 )
-    R^2 = 1 - ---------------------------------------
-              sum( [measured - mean(measured)] ** 2 )
+                sum( [measured - predicted] ** 2 )
+      R^2 = 1 - ---------------------------------------
+                sum( [measured - mean(measured)] ** 2 )
+
 
     """
 
@@ -345,8 +346,8 @@ def curve_area_stats(x, y):
     '''
     Return the box plot stats of a curve based on area.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     x : ndarray, shape (n,)
         The x values
     y : ndarray, shape (n,m)
@@ -354,8 +355,8 @@ def curve_area_stats(x, y):
         n are the time steps
         m are the various curves
 
-    Returns:
-    --------
+    Returns
+    -------
     A dictionary containing:
     median : ndarray, shape (m,)
         The x value corresponding to 0.5*area under the curve

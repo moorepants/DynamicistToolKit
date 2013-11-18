@@ -35,15 +35,15 @@ def compound_pendulum_inertia(m, g, l, T):
 def torsional_pendulum_inertia(k, T):
     '''Calculate the moment of inertia for an ideal torsional pendulum.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     k : float
         Torsional stiffness.
     T : float
         Period of oscillation.
 
-    Returns:
-    --------
+    Returns
+    -------
     I : float
         Moment of inertia.
 

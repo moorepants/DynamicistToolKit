@@ -616,8 +616,8 @@ class SimpleControlSolver(object):
         b : ndarray, shape(n * q,)
             The b vector which constaints the measured controls.
 
-        Note
-        ====
+        Notes
+        =====
 
         In the simplest fashion, you can put::
 

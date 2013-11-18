@@ -86,7 +86,18 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
 
 def benchmark_parameters():
-    """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
+    """Returns the benchmark bicycle parameters from [Meijaard2007]_.
+
+    References
+    ----------
+
+    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+       Schwab, A. L. Linearized dynamics equations for the balance and steer
+       of a bicycle: A benchmark and review Proceedings of the Royal Society
+       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+       1955-1982
+
+    """
 
     p = {}
 
@@ -145,6 +156,15 @@ def benchmark_matrices():
                steer angle]
     and f = [roll torque,
              steer torque]
+
+    References
+    ----------
+
+    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+       Schwab, A. L. Linearized dynamics equations for the balance and steer
+       of a bicycle: A benchmark and review Proceedings of the Royal Society
+       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+       1955-1982
 
     """
 
@@ -520,7 +540,7 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     ----------
     benchmarkParameters : dictionary
         Contains the set of parameters for the Whipple bicycle model as
-        presented in Meijaard2007.
+        presented in [Meijaard2007]_.
     oldMassCenter : boolean
         If true it returns the fork mass center dimensions, l3 and l4, with
         respect to the rear offset intersection with the steer axis, otherwise
@@ -531,6 +551,15 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     mooreParameters : dictionary
         The parameter set for the Moore derivation of the whipple bicycle model
         as presented in Moore2012.
+
+    References
+    ----------
+
+    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+       Schwab, A. L. Linearized dynamics equations for the balance and steer
+       of a bicycle: A benchmark and review Proceedings of the Royal Society
+       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+       1955-1982
 
     """
 
@@ -650,7 +679,16 @@ def lambda_from_abc(rF, rR, a, b, c):
     Returns
     -------
     lam : float
-        The steer axis tilt as described in Meijaard2007.
+        The steer axis tilt as described in [Meijaard2007]_.
+
+    References
+    ----------
+
+    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+       Schwab, A. L. Linearized dynamics equations for the balance and steer
+       of a bicycle: A benchmark and review Proceedings of the Royal Society
+       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+       1955-1982
 
     '''
     def lam_equality(lam, rF, rR, a, b, c):
@@ -668,8 +706,8 @@ def lambda_from_abc(rF, rR, a, b, c):
 def trail(rF, lam, fo):
     '''Returns the trail and mechanical trail.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     rF: float
         The front wheel radius
     lam: float
@@ -678,8 +716,8 @@ def trail(rF, lam, fo):
     fo: float
         The fork offset
 
-    Returns:
-    --------
+    Returns
+    -------
     c: float
         Trail
     cm: float
@@ -769,7 +807,7 @@ def benchmark_par_to_canonical(p):
     """
     Returns the canonical matrices of the Whipple bicycle model linearized
     about the upright constant velocity configuration. It uses the parameter
-    definitions from Meijaard et al. 2007.
+    definitions from [Meijaard2007]_.
 
     Parameters
     ----------
@@ -788,7 +826,14 @@ def benchmark_par_to_canonical(p):
     K2 : ndarray, shape(2,2)
         The stiffness matrix proportional to the speed squared, v**2.
 
-    This function handles parameters with uncertanties.
+    References
+    ----------
+
+    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+       Schwab, A. L. Linearized dynamics equations for the balance and steer
+       of a bicycle: A benchmark and review Proceedings of the Royal Society
+       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+       1955-1982
 
     """
     mT = p['mR'] + p['mB'] + p['mH'] + p['mF']
