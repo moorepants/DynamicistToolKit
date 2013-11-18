@@ -20,21 +20,16 @@ Modules
 Installation
 ============
 
-Install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The SciPy
-Stack instructions are helpful for this: http://www.scipy.org/stackspec.html
+You will need Python 2.7 and setuptools to install the packages. Its best to
+install the dependencies first (NumPy, SciPy, matplotlib, Pandas).  The SciPy
+Stack instructions are helpful for this: http://www.scipy.org/stackspec.html.
 
-Pip will theoretically [#]_ get the dependencies for you (or at least check)::
+You can install using pip (or easy_install). Pip will theoretically [#]_ get
+the dependencies for you (or at least check if you have them)::
 
-   $ pip install -r requirements.txt
+   $ pip install DynamicistToolKit
 
-And the development requirements::
-
-   $ pip install -r dev-requirements.txt
-
-I'm only testing with the versions in the requirements files for now, but the
-software may work on older versions.
-
-Now download the source with your preferred method.
+Or download the source with your preferred method and install manually.
 
 Using Git::
 
@@ -64,6 +59,16 @@ Tests
 Run the tests with nose::
 
    $ nosetests
+
+Vagrant
+=======
+
+A vagrant file and provisioning script are included to test the code on an
+Ubuntu 13.10 box. To load the box and run the tests simply type::
+
+  $ vagrant up
+
+See ``bootstrap.sh`` and ``VagrantFile`` to see what's going on.
 
 Documentation
 =============
