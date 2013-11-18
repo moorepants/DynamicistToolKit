@@ -73,6 +73,10 @@ See ``bootstrap.sh`` and ``VagrantFile`` to see what's going on.
 Documentation
 =============
 
+The documentation is hosted at ReadTheDocs:
+
+http://dynamicisttoolkit.readthedocs.org
+
 You can build the documentation (currently sparse) if you have Sphinx and
 numpydoc::
 
