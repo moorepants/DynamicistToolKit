@@ -1,6 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# external libraries
 import numpy as np
 from numpy import testing
-from dtk.inertia import *
+
+# local libraries
+from ..inertia import *
+
 
 def test_euler_rotation(display=False):
     # body-three 1-2-3

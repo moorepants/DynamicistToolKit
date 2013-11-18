@@ -11,8 +11,8 @@ import pandas
 from nose.tools import assert_raises
 
 # local
-from dtk.walk import find_constant_speed, SimpleControlSolver, WalkingData
-from dtk.process import time_vector
+from ..walk import find_constant_speed, SimpleControlSolver, WalkingData
+from ..process import time_vector
 
 
 def test_find_constant_speed():

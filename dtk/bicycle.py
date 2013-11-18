@@ -1,12 +1,20 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# standard library
 from math import sin, cos, tan, atan, pi
-from scipy.optimize import newton
+
+# external libraries
 import numpy as np
+from scipy.optimize import newton
 from matplotlib.pyplot import figure, rcParams
 
+# local libraries
 from inertia import y_rot
 
-def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None,
-        v0=0., vf=10., num=50, g=9.81):
+
+def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
+                                   vf=10., num=50, g=9.81):
     """Returns the state and input matrices for a set of speeds.
 
     Parameters
@@ -76,6 +84,7 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None,
 
     return speeds, As, Bs
 
+
 def benchmark_parameters():
     """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
 
@@ -109,6 +118,7 @@ def benchmark_parameters():
     p['IFyy'] = 0.28
 
     return p
+
 
 def benchmark_matrices():
     """Returns the entries to the M, C1, K0, and K2 matrices for the benchmark parameter
@@ -148,6 +158,7 @@ def benchmark_matrices():
                    [0., 2.65431523794604]])
 
     return M, C1, K0, K2
+
 
 def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
     """Returns the location in the ground plane of the front wheel contact
@@ -218,6 +229,7 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
     return q9, q10
 
+
 def meijaard_figure_four(time, rollRate, steerRate, speed):
     width = 4.0 # inches
     golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
@@ -253,6 +265,7 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
     speedAxis.set_ylabel('Speed [m/s]')
 
     return fig
+
 
 def moore_to_basu(moore, rr, lam):
     """Returns the coordinates, speeds, and accelerations in BasuMandal2007's
@@ -318,6 +331,7 @@ def moore_to_basu(moore, rr, lam):
 
     return basu
 
+
 def basu_sig_figs():
     """Returns the number of significant figures reported in Table 1 of
     Basu-Mandal2007.
@@ -344,6 +358,7 @@ def basu_sig_figs():
 
     return sigFigs
 
+
 def basu_table_one_output():
 
     basu = {}
@@ -358,6 +373,7 @@ def basu_table_one_output():
     basu['betafdd'] = 2.4548072904550
 
     return basu
+
 
 def basu_table_one_input():
 
@@ -384,6 +400,7 @@ def basu_table_one_input():
     basu['betafd'] = 8.0133620584155
 
     return basu
+
 
 def basu_to_moore_input(basu, rr, lam):
     """Returns the coordinates and speeds of the Moore2012 derivation of the
@@ -437,6 +454,7 @@ def basu_to_moore_input(basu, rr, lam):
     moore['u8'] = -basu['betafd']
 
     return moore
+
 
 def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     """Returns the pitch angle of the bicycle frame for a given roll, steer and
@@ -492,6 +510,7 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     q5 = newton(pitch_constraint, guess, args=args)
 
     return q5
+
 
 def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     """Returns the parameters for the Whipple model as derived by Jason K.
@@ -609,6 +628,7 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
 
     return mP
 
+
 def lambda_from_abc(rF, rR, a, b, c):
     '''Returns the steer axis tilt, lamba, for the parameter set based on the
     offsets from the steer axis.
@@ -644,6 +664,7 @@ def lambda_from_abc(rF, rR, a, b, c):
 
     return lam
 
+
 def trail(rF, lam, fo):
     '''Returns the trail and mechanical trail.
 
@@ -671,6 +692,7 @@ def trail(rF, lam, fo):
     # mechanical trail
     cm = c * cos(lam)
     return c, cm
+
 
 def sort_modes(evals, evecs):
     '''Sort eigenvalues and eigenvectors into weave, capsize, caster modes.
@@ -741,6 +763,7 @@ def sort_modes(evals, evecs):
     capsize = {'evals' : evalsorg[:, 1], 'evecs' : evecsorg[:, :, 1]}
     caster = {'evals' : evalsorg[:, 0], 'evecs' : evecsorg[:, :, 0]}
     return weave, capsize, caster
+
 
 def benchmark_par_to_canonical(p):
     """
@@ -836,6 +859,7 @@ def benchmark_par_to_canonical(p):
     C1 = np.array([[C1pp, C1pd], [C1dp, C1dd]])
 
     return M, C1, K0, K2
+
 
 def benchmark_state_space(M, C1, K0, K2, v, g):
     """

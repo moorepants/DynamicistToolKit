@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# external dependencies
 import numpy as np
 from numpy.fft import fft, fftfreq
 from scipy.integrate import trapz, cumtrapz

@@ -4,15 +4,15 @@
 # standard library
 import warnings
 
-# external
+# external libraries
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import pandas
 from scipy import sparse
 
-# local
-from dtk import process
+# local libraries
+import process
 
 
 def _to_percent(value, position):

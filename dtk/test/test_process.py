@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# standard library
 import os
 
-from dtk import process
+# external libraries
 import numpy as np
 from numpy import testing
+
+# local libraries
+from .. import process
 
 
 def test_coefficient_of_determination():

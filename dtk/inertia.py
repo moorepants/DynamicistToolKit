@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# external libraries
 import numpy as np
+
 
 def compound_pendulum_inertia(m, g, l, T):
     '''Returns the moment of inertia for an object hung as a compound
@@ -26,6 +31,7 @@ def compound_pendulum_inertia(m, g, l, T):
 
     return I
 
+
 def torsional_pendulum_inertia(k, T):
     '''Calculate the moment of inertia for an ideal torsional pendulum.
 
@@ -46,6 +52,7 @@ def torsional_pendulum_inertia(k, T):
     I = k * T**2 / 4. / np.pi**2
 
     return I
+
 
 def parallel_axis(Ic, m, d):
     '''Returns the moment of inertia of a body about a different point.
@@ -77,6 +84,7 @@ def parallel_axis(Ic, m, d):
     dMat[2] = np.array([-a * c, -b * c, a**2 + b**2])
     return Ic + m * dMat
 
+
 def inertia_components(jay, beta):
     '''Returns the 2D orthogonal inertia tensor.
 
@@ -103,6 +111,7 @@ def inertia_components(jay, beta):
     betaMat = np.matrix(np.vstack((cb**2, -2 * sb * cb, sb**2)).T)
     eye = np.squeeze(np.asarray(np.dot(betaMat.I, jay)))
     return eye
+
 
 def tube_inertia(l, m, ro, ri):
     '''Calculate the moment of inertia for a tube (or rod) where the x axis is
@@ -133,6 +142,7 @@ def tube_inertia(l, m, ro, ri):
     Iz = Iy
     return Ix, Iy, Iz
 
+
 def cylinder_inertia(l, m, ro, ri):
     """
     Calculate the moment of inertia for a hollow cylinder (or solid cylinder) where the x axis is
@@ -162,6 +172,7 @@ def cylinder_inertia(l, m, ro, ri):
     Iz = Iy
     return Ix, Iy, Iz
 
+
 def total_com(coordinates, masses):
     """
     Returns the center of mass of a group of objects if the indivdual
@@ -187,6 +198,7 @@ def total_com(coordinates, masses):
     cT = np.sum(products, axis=1) / mT
     return mT, cT
 
+
 def rotate_inertia_about_y(I, angle):
     """
     Returns inertia tensor rotated through angle about the Y axis.
@@ -207,6 +219,7 @@ def rotate_inertia_about_y(I, angle):
                    [sa, 0., ca]])
     Irot = C * I * C.T
     return np.array(Irot)
+
 
 def principal_axes(I):
     """
@@ -230,6 +243,7 @@ def principal_axes(I):
     Ip = Ip[indices]
     C = C.T[indices]
     return Ip, C
+
 
 def x_rot(angle):
     """Returns the rotation matrix for a reference frame rotated through an
@@ -259,6 +273,7 @@ def x_rot(angle):
                     [0., -sa, ca]])
     return Rx
 
+
 def y_rot(angle):
     """Returns the rotation matrix for a reference frame rotated through an
     angle about the y axis.
@@ -287,6 +302,7 @@ def y_rot(angle):
                     [sa, 0., ca]])
     return Ry
 
+
 def z_rot(angle):
     """Returns the rotation matrix for a reference frame rotated through an
     angle about the z axis.
@@ -314,6 +330,7 @@ def z_rot(angle):
                     [-sa, ca, 0.],
                     [0., 0., 1.]])
     return Rz
+
 
 def euler_rotation(angles, order):
     """
@@ -386,6 +403,7 @@ def euler_rotation(angles, order):
 
     return mat[2] * mat[1] * mat[0]
 
+
 def rotate3(angles):
     """
     Produces a three-dimensional rotation matrix as rotations around the
@@ -429,6 +447,7 @@ def rotate3(angles):
                  [  0, sx,  cx]])
 
     return Rz * Ry * Rx
+
 
 def euler_123(angles):
     """
@@ -476,6 +495,7 @@ def euler_123(angles):
                  [     0,     0,     1]])
 
     return R1 * R2 * R3
+
 
 def rotate3_inertia(RotMat,relInertia):
     """

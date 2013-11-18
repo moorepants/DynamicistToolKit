@@ -1,4 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# standard library
 import itertools
+
+# external libraries
 import numpy as np
 import matplotlib.pyplot as plt
 

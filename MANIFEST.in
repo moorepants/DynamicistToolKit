@@ -1,0 +1,4 @@
+include dtk/test/data/*
+include docs/*.rst
+include docs/Makefile
+include docs/conf.py

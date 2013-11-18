@@ -1,5 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# standard libary
 from math import pi
-from dtk import bicycle
+
+# local libraries
+from .. import bicycle
+
 
 def test_basu_to_moore_input():
 

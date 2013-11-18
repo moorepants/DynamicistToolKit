@@ -2,9 +2,9 @@
 DynamicistToolKit
 =================
 
-This is a collection of Python modules and tools that are helpful for a
-dynamicist. Right not is basically a place I throw general tools that I need
-use of in the other software I write.
+This is a collection of Python modules which contain tools that are helpful for
+a dynamicist. Right now it is basically a place I place general tools that
+don't necessarily need a distribution of their own.
 
 Modules
 =======
@@ -32,15 +32,38 @@ Tools for working with gait data and walking models.
 Installation
 ============
 
-Get the dependencies: SciPy Stack http://www.scipy.org/stackspec.html
+Install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The SciPy
+Stack instructions are helpful for this: http://www.scipy.org/stackspec.html
 
-Now download the source.
+Pip will theoretically [#]_ get the dependencies for you (or at least check)::
 
-Then for basic system installation::
+   $ pip install -r requirements.txt
+
+And the development requirements::
+
+   $ pip install -r dev-requirements.txt
+
+I'm only testing with the versions in the requirements files for now, but the
+software may work on older versions.
+
+Now download the source with your preferred method.
+
+Using Git::
+
+   $ git clone git@github.com:moorepants/DynamicistToolKit.git
+   $ cd DynamicistToolKit
+
+Or wget::
+
+   $ wget https://github.com/moorepants/DynamicistToolKit/archive/master.zip
+   $ unzip master.zip
+   $ cd DynamicistToolKit-master
+
+Then for basic installation::
 
    $ python setup.py install
 
-And to install for development purposes::
+Or install for development purposes::
 
    $ python setup.py develop
 
@@ -54,9 +77,26 @@ Run the tests with nose::
 Documentation
 =============
 
-You can build the documentation (currently sparse) if you have Sphinx::
+You can build the documentation (currently sparse) if you have Sphinx and
+numpydoc::
 
-   $ pip install sphinx numpydoc
    $ cd docs
    $ make html
    $ firefox _build/html/index.html
+
+.. [#] You will need all build dependencies and also note that matplotlib
+       doesn't play nice with pip.
+
+Release Notes
+=============
+
+0.2.0
+-----
+
+- Addition of walking dynamics module.
+
+0.1.0
+-----
+
+- Original code base that was used for the computations in this dissertation:
+  https://github.com/moorepants/dissertation
