@@ -543,11 +543,15 @@ def derivative(x, y, method='forward'):
     x : ndarray, shape(n,)
     y : ndarray, shape(n,)
     method : string, optional
-        'forward' : Use the forward difference method.
-        'central' : Use the central difference method.
-        'backward' : Use the backward difference method.
-        'combination' : Use forward on the first point, backward on the last
-            and central on the rest.
+        'forward'
+           Use the forward difference method.
+        'central'
+          Use the central difference method.
+        'backward'
+          Use the backward difference method.
+        'combination'
+          Use forward on the first point, backward on the last and central
+          on the rest.
 
     Returns
     -------

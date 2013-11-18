@@ -86,18 +86,7 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
 
 def benchmark_parameters():
-    """Returns the benchmark bicycle parameters from [Meijaard2007]_.
-
-    References
-    ----------
-
-    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
-       Schwab, A. L. Linearized dynamics equations for the balance and steer
-       of a bicycle: A benchmark and review Proceedings of the Royal Society
-       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
-       1955-1982
-
-    """
+    """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
 
     p = {}
 
@@ -156,15 +145,6 @@ def benchmark_matrices():
                steer angle]
     and f = [roll torque,
              steer torque]
-
-    References
-    ----------
-
-    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
-       Schwab, A. L. Linearized dynamics equations for the balance and steer
-       of a bicycle: A benchmark and review Proceedings of the Royal Society
-       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
-       1955-1982
 
     """
 
@@ -552,15 +532,6 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
         The parameter set for the Moore derivation of the whipple bicycle model
         as presented in Moore2012.
 
-    References
-    ----------
-
-    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
-       Schwab, A. L. Linearized dynamics equations for the balance and steer
-       of a bicycle: A benchmark and review Proceedings of the Royal Society
-       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
-       1955-1982
-
     """
 
     bP = benchmarkParameters
@@ -680,15 +651,6 @@ def lambda_from_abc(rF, rR, a, b, c):
     -------
     lam : float
         The steer axis tilt as described in [Meijaard2007]_.
-
-    References
-    ----------
-
-    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
-       Schwab, A. L. Linearized dynamics equations for the balance and steer
-       of a bicycle: A benchmark and review Proceedings of the Royal Society
-       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
-       1955-1982
 
     '''
     def lam_equality(lam, rF, rR, a, b, c):
@@ -825,15 +787,6 @@ def benchmark_par_to_canonical(p):
         The stiffness matrix proportional to gravity, g.
     K2 : ndarray, shape(2,2)
         The stiffness matrix proportional to the speed squared, v**2.
-
-    References
-    ----------
-
-    .. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
-       Schwab, A. L. Linearized dynamics equations for the balance and steer
-       of a bicycle: A benchmark and review Proceedings of the Royal Society
-       A: Mathematical, Physical and Engineering Sciences, 2007, 463,
-       1955-1982
 
     """
     mT = p['mR'] + p['mB'] + p['mH'] + p['mF']

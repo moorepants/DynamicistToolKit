@@ -6,12 +6,21 @@
 Welcome to DynamicistToolKit's documentation!
 =============================================
 
-.. include:: ../README.rst
-
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+.. include:: ../README.rst
+
+References
+==========
+
+.. [Meijaard2007] Meijaard, J. P.; Papadopoulos, J. M.; Ruina, A. &
+   Schwab, A. L. Linearized dynamics equations for the balance and steer
+   of a bicycle: A benchmark and review Proceedings of the Royal Society
+   A: Mathematical, Physical and Engineering Sciences, 2007, 463,
+   1955-1982
 
 Indices and tables
 ==================
