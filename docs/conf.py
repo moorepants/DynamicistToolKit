@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DynamicistToolKit'
-copyright = u'2011-2013, Jason Moore'
+copyright = u'2011-2013, Jason K. Moore'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -185,7 +185,7 @@ htmlhelp_basename = 'DynamicistToolKitdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'DynamicistToolKit.tex', u'DynamicistToolKit Documentation',
-   u'Jason Moore', 'manual'),
+   u'Jason K. Moore', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -218,5 +218,5 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'dynamicisttoolkit', u'DynamicistToolKit Documentation',
-     [u'Jason Moore'], 1)
+     [u'Jason K. Moore'], 1)
 ]
