@@ -29,6 +29,10 @@ from dtk import __version__
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.autosummary', 'numpydoc']
 
+# Get rid of warnings:
+# http://stackoverflow.com/questions/12206334/sphinx-autosummary-toctree-contains-reference-to-nonexisting-document-warnings
+numpydoc_show_class_members = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
