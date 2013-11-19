@@ -87,6 +87,8 @@ numpydoc::
 Release Notes
 =============
 
+- TravisCI tests now run.
+
 0.2.0
 -----
 
