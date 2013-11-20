@@ -26,9 +26,63 @@ def _to_percent(value, position):
 # tick label formatter
 _percent_formatter = FuncFormatter(_to_percent)
 
+
 class DFlowData(object):
     """A class to store and manipulates the tab delimited text data outputs
     from Motek Medical's D-Flow software."""
+
+    def __init__(self, mocap_tsv_path=None, record_tsv_path=None,
+                 meta_yml_path=None):
+        """Loads the raw data and builds a master data frame and meta
+        data."""
+        pass
+
+    def extract_data(self, event=None, measurements=None, interpolate=None):
+        """Returns a data frame which may be a subject of the master data
+        frame."""
+        pass
+
+    def _search_for_meta_data_file(self):
+        """Returns the path to a meta data file in the same directory as the
+        data file(s) if it exists."""
+        pass
+
+    def _parse_meta_data_file(self):
+        """Returns a dictionary containing the meta data stored in the
+        optional meta data file."""
+        pass
+
+    def _extract_events_from_record_file(self):
+        """Returns a dictionary of events and times from the record file
+        and/or meta data file."""
+        pass
+
+    def _load_mocap_data(self):
+        """Returns a data frame generated from the tsv mocap file."""
+        pass
+
+    def _label_mocap_missing_values(self):
+        """Returns a data frame with missing values replaced."""
+        pass
+
+    def _interpolate_data_frame(self, sample_rate=100):
+        """Returns a data frame which has been resampled at the given sample
+        rate."""
+        pass
+
+    def _load_record_data(self):
+        """Returns a data frame generated from the tsv record file."""
+        pass
+
+    def _generate_joint_angles_rates_torques(self):
+        """Returns a data frame with joint angles, rates, and torques."""
+        pass
+
+    def _join_data_frames(self):
+        """Stores a master data frame made up all all time series data that
+        was extracted from the files or computed."""
+        pass
+
 
 class WalkingData(object):
     """A class to store typical walking data."""

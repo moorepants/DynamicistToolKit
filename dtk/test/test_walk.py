@@ -80,10 +80,43 @@ def test_dflow():
 
 
     """
+    # create a sample mocap file
+    nominal_sample_period = 0.01
+    number_of_samples = 101
+    deviations = np.random.choice([-1.0, 1.0]) * 0.0001 * np.random.random(number_of_samples)
+    variable_ periods = nominal_sample_period * np.ones(number_of_samples) + deviations
+    np.cumsum()
+    mocap_data = {'TimeStamp': 51.687 + np.cumsum(variable_periods),
+                  'FrameNumber': np.arange(1, number_of_samples - 1, 1),
+                  'T10.PosX': np.random.random(number_of_samples - 1),
+                  'T10.PosY': np.random.random(number_of_samples - 1),
+                  'T10.PosZ': np.random.random(number_of_samples - 1),
+                  'FP1.MomX': np.random.random(number_of_samples - 1),
+                 }
+
+    # make some fake missing values in the marker positions
+
+    mocap_data_frame = pandas.DataFrame(mocap_data)
+    path_to_mocap_data_file = 'example_mocap_tsv_file.txt'
+    pandas.to_csv(path_to_mocap_data_file, sep='\t', float_format='%1.6d')
+
+    # fake meta data
+    meta_data = {'date': '2013-10-3',
+                 'trial number': 5,
+                 'project': 'projecta',
+                 'events': {'A': 'Zeroing', 'B': 'Walking', 'C': 'Relaxing'}}
+
+    path_to_meta_data_file = 'example_meta_data_file.yml'
+    with open(path_to_meta_data_file, 'w') as f:
+        yaml.dump(f, meta_data)
+
+    # fake record module file with events
+    record_data = {'Time':,
+                   'LeftBeltSpeed':,
+                   'RightBeltSpeed':,
+                   }
 
     path_to_record_data_file = ''
-    path_to_mocap_data_file = ''
-    path_to_meta_data_file = ''
 
     # intialize the data object, all computations are done to process and
     # merge the data into one big nice data frame
