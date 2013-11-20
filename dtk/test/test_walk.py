@@ -27,6 +27,84 @@ def test_find_constant_speed():
 
     assert 6.5 < constant_speed_time < 7.5
 
+def test_dflow():
+    """we need class that deals with d flow data and running the hbm command
+    line program
+
+    input
+    -----
+
+    mocap module file: times series of markers, force plate stuff, analog
+    measurements this is basically at 100 hz, but not exactly
+
+    record module file: variable sample rate of treadmill motions (or any
+    other variables from dflow) and events
+
+    meta data file(s)
+
+    output
+    ------
+    pandas data frame with all measurements from both files at 100 hertz, missing values set at NA,
+
+    time start from 0 for all?
+
+    event times?
+
+    actions
+    -------
+
+    look for metadata in directory of the files (search up the hierarchy?)
+    parse meta data
+    store meta data as a dictionary
+
+    parse record file for event times
+    load time series from record file into data frame
+    interpolate data in record file at 100 hertz
+
+    load time series from mocap file into data frame
+
+    generate hbm output with the mocap file
+    load hbm outputs into data frames
+    interpolate at 100 hertz
+
+    join all off the data frames in to one data frame at 100 hz sample rate
+    with the time stamp starting at zero as the index
+
+    attributes
+    ----------
+
+    record module data path (or file handle)
+    mocap module data path (or file handle)
+    meta data file path (or file handle)
+    hbmtest configuration details
+
+
+    """
+
+    path_to_record_data_file = ''
+    path_to_mocap_data_file = ''
+    path_to_meta_data_file = ''
+
+    # intialize the data object, all computations are done to process and
+    # merge the data into one big nice data frame
+    dflow_data = DFlowData(mocap=path_to_mocap_data_file,
+                           record=path_to_record_data_file,
+                           meta_data=path_to_meta_data_file)
+
+    dflow_data.meta['subject'] = 'Subject01'
+    dflow_data.meta['date'] = DateTime()
+    dflow_data.meta['project'] = 'Control Identification in Walking and Running.'
+
+    # returns all signals with time stamp as the index for the whole
+    # measurement
+    full_run_data_frame = dflow_data.data_frame()
+
+    # returns a data frame that has the time series for a single event
+    zeroing_data_frame = dflow_data.data_frame(event='Zeroing',
+                                               measurements=['RKnee.Angle', 'LKnee.Angle'],
+                                               interpolate=100)
+
+
 
 class TestWalkingData():
 

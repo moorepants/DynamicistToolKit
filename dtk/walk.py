@@ -26,6 +26,10 @@ def _to_percent(value, position):
 # tick label formatter
 _percent_formatter = FuncFormatter(_to_percent)
 
+class DFlowData(object):
+    """A class to store and manipulates the tab delimited text data outputs
+    from Motek Medical's D-Flow software."""
+
 class WalkingData(object):
     """A class to store typical walking data."""
 
