@@ -61,6 +61,9 @@ class DFlowData(object):
         """Returns a data frame generated from the tsv mocap file."""
         pass
 
+    def _compute_missing_value_statistics(self):
+        pass
+
     def _label_mocap_missing_values(self):
         """Returns a data frame with missing values replaced."""
         pass

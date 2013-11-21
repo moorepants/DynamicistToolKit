@@ -9,9 +9,11 @@ import numpy as np
 from numpy import testing
 import pandas
 from nose.tools import assert_raises
+# TODO : Add yaml to the walk module dependencies
+import yaml
 
 # local
-from ..walk import find_constant_speed, SimpleControlSolver, WalkingData
+from ..walk import find_constant_speed, SimpleControlSolver, WalkingData, DFlowData
 from ..process import time_vector
 
 
@@ -27,7 +29,8 @@ def test_find_constant_speed():
 
     assert 6.5 < constant_speed_time < 7.5
 
-def test_dflow():
+
+class TestDFlowData():
     """we need class that deals with d flow data and running the hbm command
     line program
 
@@ -40,11 +43,14 @@ def test_dflow():
     record module file: variable sample rate of treadmill motions (or any
     other variables from dflow) and events
 
+    mocap file with no loads for compensation
+
     meta data file(s)
 
     output
     ------
-    pandas data frame with all measurements from both files at 100 hertz, missing values set at NA,
+    pandas data frame with all measurements from both files at 100 hertz,
+    missing values set at NA,
 
     time start from 0 for all?
 
@@ -62,6 +68,10 @@ def test_dflow():
     interpolate data in record file at 100 hertz
 
     load time series from mocap file into data frame
+    identify missing markers
+
+    load the compensation file
+    compute the compensatation for the forces
 
     generate hbm output with the mocap file
     load hbm outputs into data frames
@@ -80,63 +90,182 @@ def test_dflow():
 
 
     """
-    # create a sample mocap file
-    nominal_sample_period = 0.01
-    number_of_samples = 101
-    deviations = np.random.choice([-1.0, 1.0]) * 0.0001 * np.random.random(number_of_samples)
-    variable_ periods = nominal_sample_period * np.ones(number_of_samples) + deviations
-    np.cumsum()
-    mocap_data = {'TimeStamp': 51.687 + np.cumsum(variable_periods),
-                  'FrameNumber': np.arange(1, number_of_samples - 1, 1),
-                  'T10.PosX': np.random.random(number_of_samples - 1),
-                  'T10.PosY': np.random.random(number_of_samples - 1),
-                  'T10.PosZ': np.random.random(number_of_samples - 1),
-                  'FP1.MomX': np.random.random(number_of_samples - 1),
-                 }
 
-    # make some fake missing values in the marker positions
+    dflow_start_time = 51.687
+    cortex_start_frame = 2375
+    cortex_nominal_sample_period = 0.01
+    dflow_max_period_deviation = 0.0012
+    cortex_number_of_samples = 501
+    cortex_marker_labels = ['T10.PosX', 'T10.PosY', 'T10.PosZ']
+    cortex_analog_labels = ['FP1.ForX', 'FP1.MomX']
 
-    mocap_data_frame = pandas.DataFrame(mocap_data)
+    dflow_max_sample_period = 1.0 / 10.0
+    dflow_min_sample_period = 1.0 / 300.0
+    dflow_number_of_samples = 1000
+
     path_to_mocap_data_file = 'example_mocap_tsv_file.txt'
-    pandas.to_csv(path_to_mocap_data_file, sep='\t', float_format='%1.6d')
+    path_to_record_data_file = 'example_record_tsv_file.txt'
+    path_to_meta_data_file = 'example_meta_data_file.yml'
 
-    # fake meta data
     meta_data = {'date': '2013-10-3',
                  'trial number': 5,
                  'project': 'projecta',
-                 'events': {'A': 'Zeroing', 'B': 'Walking', 'C': 'Relaxing'}}
+                 'events': {'A': 'Zeroing',
+                            'B': 'Walking',
+                            'C': 'Relaxing'},
+                 }
 
-    path_to_meta_data_file = 'example_meta_data_file.yml'
-    with open(path_to_meta_data_file, 'w') as f:
-        yaml.dump(f, meta_data)
+    def create_sample_mocap_file(self):
+        """
+        The text file output from the mocap module in DFlow is a tab
+        delimited file. The first line is the header. The header contains
+        the `TimeStamp` column which is the system time on the DFlow
+        computer when it receives the Cortex frame and is thus not exactly
+        at 100 hz, it has a light variation. The next column is the
+        `FrameNumber` column which is the Cortex frame number. Cortex
+        samples at 100hz and the frame numbers start at some positive
+        integer value. The remaining columns are samples of the analog
+        signals (force plate forces/moments) and the computed marker
+        positions at each Cortex frame. The analog signals are simply
+        voltages that have been scaled by some calibration function and they
+        should have a reading at each frame. The markers sometimes go
+        missing (i.e. can't been seen by the cameras. When a marker goes
+        missing DFlow outputs the last non-missing value in all three axes
+        until the marker is visible again.
 
-    # fake record module file with events
-    record_data = {'Time':,
-                   'LeftBeltSpeed':,
-                   'RightBeltSpeed':,
-                   }
+        """
 
-    path_to_record_data_file = ''
+        # This generates the slightly variable sampling periods seen in the
+        # time stamp column.
+        deviations = (self.dflow_max_period_deviation *
+                      np.random.choice([-1.0, 1.0]) *
+                      np.random.random(self.cortex_number_of_samples))
+        variable_periods = (self.cortex_nominal_sample_period *
+                            np.ones(self.cortex_number_of_samples) +
+                            deviations)
 
-    # intialize the data object, all computations are done to process and
-    # merge the data into one big nice data frame
-    dflow_data = DFlowData(mocap=path_to_mocap_data_file,
-                           record=path_to_record_data_file,
-                           meta_data=path_to_meta_data_file)
+        mocap_data = {'TimeStamp': self.dflow_start_time +
+                      np.cumsum(variable_periods),
+                      'FrameNumber': range(self.cortex_start_frame,
+                                           self.cortex_start_frame +
+                                           self.cortex_number_of_samples, 1),
+                      }
 
-    dflow_data.meta['subject'] = 'Subject01'
-    dflow_data.meta['date'] = DateTime()
-    dflow_data.meta['project'] = 'Control Identification in Walking and Running.'
+        for label in self.cortex_marker_labels():
+            mocap_data[label] = np.sin(mocap_data['TimeStamp'])
 
-    # returns all signals with time stamp as the index for the whole
-    # measurement
-    full_run_data_frame = dflow_data.data_frame()
+        for label in self.cortex_analog_labels():
+            mocap_data[label] = np.cos(mocap_data['TimeStamp'])
 
-    # returns a data frame that has the time series for a single event
-    zeroing_data_frame = dflow_data.data_frame(event='Zeroing',
-                                               measurements=['RKnee.Angle', 'LKnee.Angle'],
-                                               interpolate=100)
+        # Generate some indices when markers start to go missing and the
+        # number of frames each marker goes missing.
+        missing_marker_start_indices = \
+            np.random.randint(0, high=self.cortex_number_of_samples, size=5)
+        length_missing = np.random.randint(1, high=10, size=5)
 
+        # TODO: If the missing marker start indice is too close the the end
+        # of the array or too close the start of the next missing marker
+        # then another should be selected.
+
+        for index in missing_marker_start_indices:
+            for i, signal in enumerate(self.cortex_marker_labels):
+                mocap_data[signal][index:index + length_missing[i]] = \
+                    mocap_data[signal][index]
+
+        mocap_data_frame = pandas.DataFrame(mocap_data)
+        mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
+                                float_format='%1.6f', index=False,
+                                cols=['TimeStep', 'FrameNumber'] +
+                                self.cortex_marker_lables +
+                                self.cortex_analog_labels)
+
+        def create_sample_meta_data_file(self):
+            """We will have an optional YAML file containing meta data for
+            each trial in the same directory as the trials time series data
+            files."""
+
+            with open(self.path_to_meta_data_file, 'w') as f:
+                yaml.dump(self.meta_data, f)
+
+        def create_sample_record_file(self):
+            """The record module output file is a tab delimited file. The
+            first list is the header and the first column is a `Time` column
+            which records the Dflow system time. The period between each
+            time sample is variable depending on DFlow's processing load.
+            The sample rate can be as high as 300 hz. The file also records
+            """
+
+            variable_periods = (self.dflow_min_sample_period +
+                                (self.dflow_max_sample_period -
+                                 self.dflow_min_sample_period) *
+                                np.random.random(self.dflow_number_of_samples))
+
+            record_data = {}
+            record_data['Time'] = \
+                self.dflow_start_time + np.cumsum(variable_periods)
+            record_data['LeftBeltSpeed'] = \
+                np.random.random(self.dflow_number_of_samples)
+            record_data['RightBeltSpeed'] = \
+                np.random.random(self.dflow_number_of_samples)
+
+            record_data_frame = pandas.DataFrame(record_data)
+            record_data_frame.to_csv(self.path_to_record_data_file, sep='\t',
+                                     float_format='%1.6f', index=False,
+                                     cols=['Time', 'LeftBeltSpeed',
+                                           'RightBeltSpeed'])
+
+            event_template = "#\n# EVENT {} - COUNT {}\n#\n"
+
+            event_times = {'A': np.random.choice(record_data['Time']),
+                           'B': np.random.choice(record_data['Time']),
+                           'C': np.random.choice(record_data['Time'])}
+
+            # This loops through the record file and inserts the events.
+            new_lines = ''
+            with open(self.path_to_record_data_file, 'r') as f:
+                for line in f:
+                    new_lines += line
+
+                    if 'Time' in line:
+                        time_col_index = line.strip().split('\t').index('Time')
+
+                    time_string = line.strip().split('\t')[time_col_index]
+
+                    for key, value in event_times.items():
+                        if '{:1.6f}'.format(value) == time_string:
+                            print('{:1.6f}'.format(value), time_string)
+                            new_lines += event_template.format(key, '1')
+
+            with open(self.path_to_record_data_file, 'w') as f:
+                f.write(new_lines)
+
+        def test_init(self):
+
+            # intialize the data object, all computations are done to
+            # process and merge the data into one big nice data frame
+            dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
+                                   record=self.path_to_record_data_file,
+                                   meta_data=self.path_to_meta_data_file)
+
+            dflow_data.meta['subject'] = 'Subject01'
+            dflow_data.meta['date'] = ''
+            dflow_data.meta['project'] = \
+                'Control Identification in Walking and Running.'
+
+        def test_extract_data(self):
+            dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
+                                   record=self.path_to_record_data_file,
+                                   meta_data=self.path_to_meta_data_file)
+            # returns all signals with time stamp as the index for the whole
+            # measurement
+            full_run_data_frame = dflow_data.extract_data()
+
+            # returns a data frame that has the time series for a single event
+            zeroing_data_frame = \
+                dflow_data.extract_data(event='Zeroing',
+                                        measurements=['RKnee.Angle',
+                                                      'LKnee.Angle'],
+                                        interpolate=100)
 
 
 class TestWalkingData():
