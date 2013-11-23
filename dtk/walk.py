@@ -35,12 +35,9 @@ class DFlowData(object):
                  meta_yml_path=None):
         """Loads the raw data and builds a master data frame and meta
         data."""
-        pass
-
-    def extract_data(self, event=None, measurements=None, interpolate=None):
-        """Returns a data frame which may be a subject of the master data
-        frame."""
-        pass
+        self.mocap_tsv_path = mocap_tsv_path
+        self.record_tsv_path = record_tsv_path
+        self.meta_yml_path = meta_yml_path
 
     def _search_for_meta_data_file(self):
         """Returns the path to a meta data file in the same directory as the
@@ -84,6 +81,11 @@ class DFlowData(object):
     def _join_data_frames(self):
         """Stores a master data frame made up all all time series data that
         was extracted from the files or computed."""
+        pass
+
+    def extract_data(self, event=None, measurements=None, interpolate=None):
+        """Returns a data frame which may be a subject of the master data
+        frame."""
         pass
 
 

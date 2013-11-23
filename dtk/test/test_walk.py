@@ -172,100 +172,150 @@ class TestDFlowData():
                 mocap_data[signal][index:index + length_missing[i]] = \
                     mocap_data[signal][index]
 
-        mocap_data_frame = pandas.DataFrame(mocap_data)
-        mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
-                                float_format='%1.6f', index=False,
-                                cols=['TimeStep', 'FrameNumber'] +
-                                self.cortex_marker_lables +
-                                self.cortex_analog_labels)
-
-        def create_sample_meta_data_file(self):
-            """We will have an optional YAML file containing meta data for
-            each trial in the same directory as the trials time series data
-            files."""
-
-            with open(self.path_to_meta_data_file, 'w') as f:
-                yaml.dump(self.meta_data, f)
-
-        def create_sample_record_file(self):
-            """The record module output file is a tab delimited file. The
-            first list is the header and the first column is a `Time` column
-            which records the Dflow system time. The period between each
-            time sample is variable depending on DFlow's processing load.
-            The sample rate can be as high as 300 hz. The file also records
-            """
-
-            variable_periods = (self.dflow_min_sample_period +
-                                (self.dflow_max_sample_period -
-                                 self.dflow_min_sample_period) *
-                                np.random.random(self.dflow_number_of_samples))
-
-            record_data = {}
-            record_data['Time'] = \
-                self.dflow_start_time + np.cumsum(variable_periods)
-            record_data['LeftBeltSpeed'] = \
-                np.random.random(self.dflow_number_of_samples)
-            record_data['RightBeltSpeed'] = \
-                np.random.random(self.dflow_number_of_samples)
-
-            record_data_frame = pandas.DataFrame(record_data)
-            record_data_frame.to_csv(self.path_to_record_data_file, sep='\t',
+        self.mocap_data_frame = pandas.DataFrame(mocap_data)
+        self.mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
                                      float_format='%1.6f', index=False,
-                                     cols=['Time', 'LeftBeltSpeed',
-                                           'RightBeltSpeed'])
+                                     cols=['TimeStep', 'FrameNumber'] +
+                                     self.cortex_marker_lables +
+                                     self.cortex_analog_labels)
 
-            event_template = "#\n# EVENT {} - COUNT {}\n#\n"
+    def create_sample_meta_data_file(self):
+        """We will have an optional YAML file containing meta data for
+        each trial in the same directory as the trials time series data
+        files."""
 
-            event_times = {'A': np.random.choice(record_data['Time']),
-                           'B': np.random.choice(record_data['Time']),
-                           'C': np.random.choice(record_data['Time'])}
+        with open(self.path_to_meta_data_file, 'w') as f:
+            yaml.dump(self.meta_data, f)
 
-            # This loops through the record file and inserts the events.
-            new_lines = ''
-            with open(self.path_to_record_data_file, 'r') as f:
-                for line in f:
-                    new_lines += line
+    def create_sample_record_file(self):
+        """The record module output file is a tab delimited file. The
+        first list is the header and the first column is a `Time` column
+        which records the Dflow system time. The period between each
+        time sample is variable depending on DFlow's processing load.
+        The sample rate can be as high as 300 hz. The file also records
+        """
 
-                    if 'Time' in line:
-                        time_col_index = line.strip().split('\t').index('Time')
+        variable_periods = (self.dflow_min_sample_period +
+                            (self.dflow_max_sample_period -
+                                self.dflow_min_sample_period) *
+                            np.random.random(self.dflow_number_of_samples))
 
-                    time_string = line.strip().split('\t')[time_col_index]
+        record_data = {}
+        record_data['Time'] = \
+            self.dflow_start_time + np.cumsum(variable_periods)
+        record_data['LeftBeltSpeed'] = \
+            np.random.random(self.dflow_number_of_samples)
+        record_data['RightBeltSpeed'] = \
+            np.random.random(self.dflow_number_of_samples)
 
-                    for key, value in event_times.items():
-                        if '{:1.6f}'.format(value) == time_string:
-                            print('{:1.6f}'.format(value), time_string)
-                            new_lines += event_template.format(key, '1')
+        self.record_data_frame = pandas.DataFrame(record_data)
+        self.record_data_frame.to_csv(self.path_to_record_data_file,
+                                        sep='\t', float_format='%1.6f',
+                                        index=False, cols=['Time',
+                                                            'LeftBeltSpeed',
+                                                            'RightBeltSpeed'])
 
-            with open(self.path_to_record_data_file, 'w') as f:
-                f.write(new_lines)
+        event_template = "#\n# EVENT {} - COUNT {}\n#\n"
 
-        def test_init(self):
+        event_times = {'A': np.random.choice(record_data['Time']),
+                        'B': np.random.choice(record_data['Time']),
+                        'C': np.random.choice(record_data['Time'])}
 
-            # intialize the data object, all computations are done to
-            # process and merge the data into one big nice data frame
-            dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
-                                   record=self.path_to_record_data_file,
-                                   meta_data=self.path_to_meta_data_file)
+        # This loops through the record file and inserts the events.
+        new_lines = ''
+        with open(self.path_to_record_data_file, 'r') as f:
+            for line in f:
+                new_lines += line
 
-            dflow_data.meta['subject'] = 'Subject01'
-            dflow_data.meta['date'] = ''
-            dflow_data.meta['project'] = \
-                'Control Identification in Walking and Running.'
+                if 'Time' in line:
+                    time_col_index = line.strip().split('\t').index('Time')
 
-        def test_extract_data(self):
-            dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
-                                   record=self.path_to_record_data_file,
-                                   meta_data=self.path_to_meta_data_file)
-            # returns all signals with time stamp as the index for the whole
-            # measurement
-            full_run_data_frame = dflow_data.extract_data()
+                time_string = line.strip().split('\t')[time_col_index]
 
-            # returns a data frame that has the time series for a single event
-            zeroing_data_frame = \
-                dflow_data.extract_data(event='Zeroing',
-                                        measurements=['RKnee.Angle',
-                                                      'LKnee.Angle'],
-                                        interpolate=100)
+                for key, value in event_times.items():
+                    if '{:1.6f}'.format(value) == time_string:
+                        print('{:1.6f}'.format(value), time_string)
+                        new_lines += event_template.format(key, '1')
+
+        with open(self.path_to_record_data_file, 'w') as f:
+            f.write(new_lines)
+
+    def setup(self):
+        self.create_sample_mocap_file()
+        self.create_sample_record_file()
+        self.create_sample_meta_data_file()
+
+    def test_init(self):
+
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                         record_tsv_path=self.path_to_record_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+
+        assert data.mocap_tsv_path == self.path_to_mocap_data_file
+        assert data.record_tsv_path == self.path_to_record_data_file
+        assert data.meta_yml_path == self.path_to_meta_data_file
+
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+
+        assert data.mocap_tsv_path == self.path_to_mocap_data_file
+        assert data.record_tsv_path is None
+        assert data.meta_yml_path == self.path_to_meta_data_file
+
+        data = DFlowData(record_tsv_path=self.path_to_record_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+
+        assert data.mocap_tsv_path is None
+        assert data.record_tsv_path == self.path_to_record_data_file
+        assert data.meta_yml_path == self.path_to_meta_data_file
+
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
+
+        assert data.mocap_tsv_path == self.path_to_mocap_data_file
+        assert data.record_tsv_path is None
+        assert data.meta_yml_path is None
+
+        data = DFlowData(record_tsv_path=self.path_to_record_data_file)
+
+        assert data.mocap_tsv_path is None
+        assert data.record_tsv_path == self.path_to_record_data_file
+        assert data.meta_yml_path is None
+
+        assert_raises(DFlowData(meta_yml_path=self.path_to_meta_data_file),
+                      ValueError)
+
+    def test_parse_meta_data_file(self):
+
+        dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
+                                record=self.path_to_record_data_file,
+                                meta_data=self.path_to_meta_data_file)
+
+        dflow_data._parse_meta_data_file()
+
+        assert dflow_data.meta == self.meta_data
+
+    def test_load_mocap_data(self):
+
+        assert data.raw_mocap_data == self.mocap_data_frame
+
+    def test_load_record_data(self):
+
+        assert data.raw_record_data == self.record_data_frame
+
+    def test_extract_data(self):
+        dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
+                                record=self.path_to_record_data_file,
+                                meta_data=self.path_to_meta_data_file)
+        # returns all signals with time stamp as the index for the whole
+        # measurement
+        full_run_data_frame = dflow_data.extract_data()
+
+        # returns a data frame that has the time series for a single event
+        zeroing_data_frame = \
+            dflow_data.extract_data(event='Zeroing',
+                                    measurements=['RKnee.Angle',
+                                                    'LKnee.Angle'],
+                                    interpolate=100)
 
 
 class TestWalkingData():
