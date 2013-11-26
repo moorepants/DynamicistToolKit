@@ -31,6 +31,8 @@ class DFlowData(object):
     """A class to store and manipulates the tab delimited text data outputs
     from Motek Medical's D-Flow software."""
 
+    marker_column_endings = ['.Pos' + c for c in ['X', 'Y', 'Z']]
+
     def __init__(self, mocap_tsv_path=None, record_tsv_path=None,
                  meta_yml_path=None):
         """Loads the raw data and builds a master data frame and meta
@@ -56,7 +58,45 @@ class DFlowData(object):
 
     def _load_mocap_data(self):
         """Returns a data frame generated from the tsv mocap file."""
-        pass
+        mocap_raw_data_frame = pandas.read_csv(self.mocap_tsv_path,
+                                               delimiter='\t')
+        # analog: force plate forces/moments
+        # markers
+        # inverse dynamics: joint angles, rates, accelerations, moments, power
+
+        # for each marker column we need to identify the constants values
+        # and replace with NA, only if the values are constant in all
+        # coordinates of a marker
+        marker_col_names = []
+        for col in mocap_raw_data_frame.columns:
+            if any(col.endswith(x) for x in self.marker_column_endings):
+                marker_col_names.append(col)
+
+        unique_marker_names = list(set([c.split('.')[0] for c in
+                                        marker_col_names]))
+
+        tolerance = 1e-16
+        are_constant = abs(df[marker_col_names].diff()) < tolerance
+
+        # now make sure that the marker is constant in all coordinates for
+        # each marker
+        for marker in unique_marker_names:
+            single_marker_cols = marker + pos in self.marker_column_endings
+            are_constant[single_marker_cols] = are_constant[single_marker_cols].all(axis=1)
+
+        mocap_raw_data_frame[marker_col_names][are_constant] = np.nan
+
+        self.mocap_raw_data = mocap_raw_data
+
+        def find_missing(position):
+            """
+            position : ndarray, shape(n, 3)
+                The x, y, and z positions of a marker over n timesteps.
+            """
+
+
+
+        # we need to compute the cortex time
 
     def _compute_missing_value_statistics(self):
         pass
