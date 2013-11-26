@@ -207,3 +207,12 @@ class TestTimeShiftRealData():
                                   self.shifted_signal, self.sample_rate)
         assert len(truncated_signal1) == len(truncated_signal2) == \
             len(self.truncated_time)
+
+
+def test_time_vector():
+
+    expected_time = [0.0, 1.0, 2.0, 3.0, 4.0]
+    testing.assert_allclose(process.time_vector(5, 1.0), expected_time)
+
+    expected_time = [1.0, 2.0, 3.0, 4.0, 5.0]
+    testing.assert_allclose(process.time_vector(5, 1.00, 1.0), expected_time)

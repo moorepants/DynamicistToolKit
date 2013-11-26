@@ -594,15 +594,17 @@ def derivative(x, y, method='forward'):
             and 'combination' are currently available." % method)
 
 
-def time_vector(numSamples, sampleRate):
+def time_vector(num_samples, sample_rate, start_time=0.0):
     '''Returns a time vector starting at zero.
 
     Parameters
     ----------
-    numSamples : int or float
+    num_samples : int
         Total number of samples.
-    sampleRate : int or float
+    sample_rate : float
         Sample rate of the signal in hertz.
+    start_time : float, optional, default=0.0
+        The start time of the time series.
 
     Returns
     -------
@@ -611,7 +613,7 @@ def time_vector(numSamples, sampleRate):
 
     '''
 
-    ns = float(numSamples)
-    sr = float(sampleRate)
+    ns = num_samples
+    sr = float(sample_rate)
 
-    return np.linspace(0., (ns - 1.) / sr, num=ns)
+    return np.linspace(start_time, (ns - 1) / sr + start_time, num=ns)
