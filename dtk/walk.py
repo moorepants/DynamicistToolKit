@@ -26,12 +26,65 @@ def _to_percent(value, position):
 # tick label formatter
 _percent_formatter = FuncFormatter(_to_percent)
 
+def interpolate(data_frame, time):
+    """Returns a data frame with a index based on the provided time
+    array and linear interpolation.
+
+    Parameters
+    ==========
+    data_frame : pandas.DataFrame
+        A data frame with time series columns. The index should be in
+        same units as the provided time array.
+    time : array_like, shape(n,)
+        A monotonically increasing array of time in seconds at which the
+        data frame should be interpolated at.
+
+    Returns
+    =======
+    interpolated_data_frame : pandas.DataFrame
+        The data frame with an index matching `time_vector` and
+        interpolated values based on `data_frame`.
+
+    """
+
+    total_index = np.sort(np.hstack((data_frame.index.values,
+                                        time)))
+    reindexed_data_frame = data_frame.reindex(total_index)
+    interpolated_data_frame = \
+        reindexed_data_frame.apply(pandas.Series.interpolate,
+                                    method='values').loc[time]
+
+    # If the first or last value of a series is NA then the interpolate
+    # function leaves it as an NA value, so use backfill to take care of
+    # those.
+    interpolated_data_frame = \
+        interpolated_data_frame.fillna(method='backfill')
+    # Because the time vector may have matching indices as the original
+    # index (i.e. always the zero indice), drop any duplicates so the
+    # len() stays consistent
+    return interpolated_data_frame.drop_duplicates()
+
 
 class DFlowData(object):
-    """A class to store and manipulates the tab delimited text data outputs
+    """A class to store and manipulate the tab delimited text data outputs
     from Motek Medical's D-Flow software."""
 
-    marker_column_endings = ['.Pos' + c for c in ['X', 'Y', 'Z']]
+    coordinate_labels = ['X', 'Y', 'Z']
+
+    marker_column_endings = ['.Pos' + c for c in coordinate_labels]
+    hbm_column_suffix = ['.Mom', '.Ang']  # Acc Rate Pow ?
+    # FP2 : right
+    # FP1 : left
+    force_plate_names = ['FP1', 'FP2']
+    force_plate_suffix = [suffix_beg + end for end in coordinate_labels for
+                          suffix_beg in ['.For', '.Mom', '.Cop']]
+
+    """dflow spits out analog channel names like:
+
+        Channel1.Anlg
+        Channel2.Anlg
+        """
+    cortex_sample_rate = 100  # Hz
 
     def __init__(self, mocap_tsv_path=None, record_tsv_path=None,
                  meta_yml_path=None):
@@ -51,18 +104,28 @@ class DFlowData(object):
         optional meta data file."""
         pass
 
-    def _extract_events_from_record_file(self):
-        """Returns a dictionary of events and times from the record file
-        and/or meta data file."""
-        pass
+    def _get_mocap_column_labels(self):
+        """Stores a list of the column labels, in order, from the mocap tsv
+        file."""
+        with open(self.mocap_tsv_path, 'r') as f:
+            self.mocap_column_labels = f.readline().strip().split('\t')
 
-    def _load_mocap_data(self):
-        """Returns a data frame generated from the tsv mocap file."""
-        mocap_raw_data_frame = pandas.read_csv(self.mocap_tsv_path,
-                                               delimiter='\t')
-        # analog: force plate forces/moments
-        # markers
-        # inverse dynamics: joint angles, rates, accelerations, moments, power
+    def _remove_hbm_columns(self, data_frame):
+        """Returns the provided data frame with all columns computed by the
+        human body model removed. These are based on D-Flow's naming scheme,
+        i.e. any column that ends in '.Ang' or '.Mom'."""
+
+        hbm_cols = []
+        for col in data_frame.columns:
+            if any(col.endswith(x) for x in self.hbm_column_suffix):
+                hbm_cols.append(col)
+
+        return data_frame.drop(hbm_cols, axis=1)
+
+    def _identify_missing_markers(self, data_frame):
+        """Returns the data frame in which all marker columns (ends with
+        '.PosX', '.PosY', '.PosZ') have had constant marker values replaced
+        with nan."""
 
         # for each marker column we need to identify the constants values
         # and replace with NA, only if the values are constant in all
@@ -86,33 +149,69 @@ class DFlowData(object):
 
         mocap_raw_data_frame[marker_col_names][are_constant] = np.nan
 
-        self.mocap_raw_data = mocap_raw_data
+    def _generate_cortex_timestamp(self, data_frame):
+        """Returns the data frame with a new index based on the constant
+        sample rate from Cortex."""
 
-        def find_missing(position):
-            """
-            position : ndarray, shape(n, 3)
-                The x, y, and z positions of a marker over n timesteps.
-            """
+        # It doesn't seem that frames are ever dropped (i.e. missing frame
+        # number in the sequence). But if that is ever the case, this
+        # function needs to be modified to deal with that and generate the
+        # new time stamp with the frame number column instead of a generic
+        # call to the time_vector function.
 
+        self.cortex_num_samples = len(data_frame)
+        self.cortex_time = process.time_vector(self.cortex_num_samples,
+                                               self.cortex_sample_rate)
+        #data_frame['D-Flow TimeStamp'] = data_frame['TimeStamp']
+        #del data_frame['TimeStamp']a
 
+        return data_frame
 
-        # we need to compute the cortex time
+    def _interpolate_missing_markers(self, data_frame, method="linear"):
+        """Returns the data frame with all missing markers replaced by some
+        interpolated value."""
+        # should use pandas default methods and also a spline fit
+        pass
+
+    def _load_mocap_data(self):
+        """Stores a data frame attribute generated from the tsv mocap file
+        with human body model columns removed and missing markers
+        identified."""
+        self._get_mocap_column_labels()
+        mocap_raw_data_frame = pandas.read_csv(self.mocap_tsv_path,
+                                               delimiter='\t')
+        mocap_data_frame = self._remove_hbm_columns(mocap_raw_data_frame)
+        mocap_data_frame = self._identify_missing_markers(mocap_data_frame)
+        mocap_data_frame = self._generate_cortex_timestamp(mocap_data_frame)
+        mocap_data_frame.index = self.mocap_time
+        mocap_data_frame = self._interpolate_missing_markers(mocap_data_frame)
+        self.mocap_data = mocap_raw_data_frame
 
     def _compute_missing_value_statistics(self):
+        """Returns a report of missing values in the marker columns."""
         pass
 
-    def _label_mocap_missing_values(self):
-        """Returns a data frame with missing values replaced."""
-        pass
-
-    def _interpolate_data_frame(self, sample_rate=100):
-        """Returns a data frame which has been resampled at the given sample
-        rate."""
-        pass
+    def _extract_events_from_record_file(self):
+        """Returns a dictionary of events and times from the record file
+        and/or meta data file."""
 
     def _load_record_data(self):
-        """Returns a data frame generated from the tsv record file."""
-        pass
+        """Stores a data frame with the data from the record module."""
+
+        self._extract_events_from_record_file()
+
+        # The record module file is tab delimited and may have events
+        # interspersed in between the rows which are commenting by hashes.
+        record_raw_data_frame = pandas.read_csv(self.record_tsv_path,
+                                                delimiter='\t', comment='#',
+                                                index_col="Time")
+
+        # Now resample the record module data at the D-Flow time stamp
+        # stored in the mocap file and then rewrite the index to the cortex
+        # time stamp.
+        self.record_data = interpolate(record_raw_data_frame,
+                                       self.mocap_raw_data['TimeStamp'])
+        self.record_data.index = self.mocap_time
 
     def _generate_joint_angles_rates_torques(self):
         """Returns a data frame with joint angles, rates, and torques."""
@@ -121,12 +220,18 @@ class DFlowData(object):
     def _join_data_frames(self):
         """Stores a master data frame made up all all time series data that
         was extracted from the files or computed."""
-        pass
+        self.data = self.mocap_data.join(self.record_data)
 
     def extract_data(self, event=None, measurements=None, interpolate=None):
         """Returns a data frame which may be a subject of the master data
         frame."""
         pass
+
+    def write_dflow_tsv(self, filename):
+        """
+
+        # This must preserve the mocap column order and can only append the
+        # record or hbm stuff to the rigth most columns.
 
 
 class WalkingData(object):
@@ -198,45 +303,6 @@ class WalkingData(object):
         self.offs['left'] = left_offs
 
         return right_strikes, left_strikes, right_offs, left_offs
-
-    @staticmethod
-    def interpolate(data_frame, time):
-        """Returns a data frame with a index based on the provided time
-        array and linear interpolation.
-
-        Parameters
-        ==========
-        data_frame : pandas.DataFrame
-            A data frame with time series columns. The index should be in
-            seconds.
-        time : array_like, shape(n,)
-            A monotonically increasing array of time in seconds at which the
-            data frame should be interpolated at.
-
-        Returns
-        =======
-        interpolated_data_frame : pandas.DataFrame
-            The data frame with an index matching `time_vector` and
-            interpolated values based on `data_frame`.
-
-        """
-
-        total_index = np.sort(np.hstack((data_frame.index.values,
-                                         time)))
-        reindexed_data_frame = data_frame.reindex(total_index)
-        interpolated_data_frame = \
-            reindexed_data_frame.apply(pandas.Series.interpolate,
-                                       method='values').loc[time]
-
-        # If the first or last value of a series is NA then the interpolate
-        # function leaves it as an NA value, so use backfill to take care of
-        # those.
-        interpolated_data_frame = \
-            interpolated_data_frame.fillna(method='backfill')
-        # Because the time vector may have matching indices as the original
-        # index (i.e. always the zero indice), drop any duplicates so the
-        # len() stays consistent
-        return interpolated_data_frame.drop_duplicates()
 
     def plot_steps(self, *col_names, **kwargs):
         """Plots the steps.
@@ -375,8 +441,8 @@ class WalkingData(object):
                 # of samples over the period of time, the max time needs
                 sub_sample_index = np.linspace(0.0, max_time,
                                                num=num_samples)
-                interpolated_data_frame = self.interpolate(data_frame,
-                                                           sub_sample_index)
+                interpolated_data_frame = interpolate(data_frame,
+                                                      sub_sample_index)
                 # change the index to percent of gait cycle
                 interpolated_data_frame.index = percent_gait
                 steps[i] = interpolated_data_frame

@@ -13,7 +13,8 @@ from nose.tools import assert_raises
 import yaml
 
 # local
-from ..walk import find_constant_speed, SimpleControlSolver, WalkingData, DFlowData
+from ..walk import (find_constant_speed, interpolate, SimpleControlSolver,
+                    WalkingData, DFlowData)
 from ..process import time_vector
 
 
@@ -28,6 +29,33 @@ def test_find_constant_speed():
     indice, constant_speed_time = find_constant_speed(time, speed, plot=False)
 
     assert 6.5 < constant_speed_time < 7.5
+
+
+def test_interpolate():
+    df = pandas.DataFrame({'a': [np.nan, 3.0, 5.0, 7.0],
+                           'b': [5.0, np.nan, 9.0, 11.0],
+                           'c': [2.0, 4.0, 6.0, 8.0],
+                           'd': [0.5, 1.0, 1.5, np.nan]},
+                          index=[0.0, 2.0, 4.0, 6.0])
+
+    time = [0.0, 1.0, 3.0, 5.0]
+
+    interpolated = interpolate(df, time)
+
+    # NOTE : pandas.Series.interpolate does not extrapolate (because
+    # np.interp doesn't.
+
+    df_expected = pandas.DataFrame({'a': [4.0, 4.0, 4.0, 6.0],
+                                    'b': [5.0, 6.0, 8.0, 10.0],
+                                    'c': [2.0, 3.0, 5.0, 7.0],
+                                    'd': [0.5, 0.75, 1.25, 1.5]},
+                                   index=time)
+
+    testing.assert_allclose(interpolated.values, df_expected.values)
+
+    testing.assert_allclose(interpolated.values, df_expected.values)
+    testing.assert_allclose(interpolated.index.values.astype(float),
+                            df_expected.index.values.astype(float))
 
 
 class TestDFlowData():
@@ -98,6 +126,7 @@ class TestDFlowData():
     cortex_number_of_samples = 501
     cortex_marker_labels = ['T10.PosX', 'T10.PosY', 'T10.PosZ']
     cortex_analog_labels = ['FP1.ForX', 'FP1.MomX']
+    dflow_hbm_labels = ['RKneeFlexion.Ang', 'RKneeFlexion.Mom']
 
     dflow_max_sample_period = 1.0 / 10.0
     dflow_min_sample_period = 1.0 / 300.0
@@ -114,6 +143,51 @@ class TestDFlowData():
                             'B': 'Walking',
                             'C': 'Relaxing'},
                  }
+    # TODO : add names for analog columns because you can't name analog
+    # signals uniquely in dflow
+    """
+    Treamdill reference frame
+    X: points to the right
+    Y: points upwards
+    Z: point backwards
+    The first 12 are raw voltage signals of the force plate measurements.
+    TODO : Need to figure out what these mean, would be nice to store the
+    calibration matrix from voltages to forces/momements also.
+    Channel1.Anlg
+    Channel2.Anlg
+    Channel3.Anlg
+    Channel4.Anlg
+    Channel5.Anlg
+    Channel6.Anlg
+    Channel7.Anlg
+    Channel8.Anlg
+    Channel9.Anlg
+    Channel10.Anlg
+    Channel11.Anlg
+    Channel12.Anlg
+    # the arrow on the accelerometers which aligns with the local X axis diretion is
+    # always pointing forward (i.e. aligned with the negative z direction)
+    # Front left
+    Channel13.Anlg : EMG
+    Channel14.Anlg : AccX
+    Channel15.Anlg : AccY
+    Channel16.Anlg : AccZ
+    # Back left
+    Channel17.Anlg : EMG
+    Channel18.Anlg : AccX
+    Channel19.Anlg : AccY
+    Channel20.Anlg : AccZ
+    # Front right
+    Channel21.Anlg : EMG
+    Channel22.Anlg : AccX
+    Channel23.Anlg : AccY
+    Channel24.Anlg : AccZ
+    # Back right
+    Channel25.Anlg : EMG
+    Channel26.Anlg
+    Channel27.Anlg
+    Channel28.Anlg
+    """
 
     def create_sample_mocap_file(self):
         """
@@ -302,6 +376,9 @@ class TestDFlowData():
 
         assert data.raw_record_data == self.record_data_frame
 
+    def test_extract_events(self):
+        pass
+
     def test_extract_data(self):
         dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
                                 record=self.path_to_record_data_file,
@@ -381,32 +458,6 @@ class TestWalkingData():
 
         testing.assert_allclose(expected_left_offs, left_offs)
         testing.assert_allclose(expected_left_strikes, left_strikes)
-
-    def test_interpolate(self):
-        df = pandas.DataFrame({'a': [np.nan, 3.0, 5.0, 7.0],
-                               'b': [5.0, np.nan, 9.0, 11.0],
-                               'c': [2.0, 4.0, 6.0, 8.0],
-                               'd': [0.5, 1.0, 1.5, np.nan]},
-                              index=[0.0, 2.0, 4.0, 6.0])
-
-        time = [0.0, 1.0, 3.0, 5.0]
-
-        interpolated = WalkingData.interpolate(df, time)
-
-        # NOTE : pandas.Series.interpolate does not extrapolate (because
-        # np.interp doesn't.
-
-        df_expected = pandas.DataFrame({'a': [4.0, 4.0, 4.0, 6.0],
-                                        'b': [5.0, 6.0, 8.0, 10.0],
-                                        'c': [2.0, 3.0, 5.0, 7.0],
-                                        'd': [0.5, 0.75, 1.25, 1.5]},
-                                       index=time)
-
-        testing.assert_allclose(interpolated.values, df_expected.values)
-
-        testing.assert_allclose(interpolated.values, df_expected.values)
-        testing.assert_allclose(interpolated.index.values.astype(float),
-                                df_expected.index.values.astype(float))
 
     def test_split_at(self, plot=False):
 
