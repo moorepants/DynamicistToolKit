@@ -32,6 +32,7 @@ def test_find_constant_speed():
 
 
 def test_interpolate():
+
     df = pandas.DataFrame({'a': [np.nan, 3.0, 5.0, 7.0],
                            'b': [5.0, np.nan, 9.0, 11.0],
                            'c': [2.0, 4.0, 6.0, 8.0],
@@ -184,9 +185,9 @@ class TestDFlowData():
     Channel24.Anlg : AccZ
     # Back right
     Channel25.Anlg : EMG
-    Channel26.Anlg
-    Channel27.Anlg
-    Channel28.Anlg
+    Channel26.Anlg : AccX
+    Channel27.Anlg : AccY
+    Channel28.Anlg : AccZ
     """
 
     def create_sample_mocap_file(self):
@@ -225,33 +226,37 @@ class TestDFlowData():
                                            self.cortex_number_of_samples, 1),
                       }
 
-        for label in self.cortex_marker_labels():
+        for label in self.cortex_marker_labels:
             mocap_data[label] = np.sin(mocap_data['TimeStamp'])
 
-        for label in self.cortex_analog_labels():
+        for label in self.cortex_analog_labels:
+            mocap_data[label] = np.cos(mocap_data['TimeStamp'])
+
+        for label in self.dflow_hbm_labels:
             mocap_data[label] = np.cos(mocap_data['TimeStamp'])
 
         # Generate some indices when markers start to go missing and the
         # number of frames each marker goes missing.
-        missing_marker_start_indices = \
+        self.missing_marker_start_indices = \
             np.random.randint(0, high=self.cortex_number_of_samples, size=5)
-        length_missing = np.random.randint(1, high=10, size=5)
+        self.length_missing = np.random.randint(1, high=10, size=5)
 
         # TODO: If the missing marker start indice is too close the the end
         # of the array or too close the start of the next missing marker
         # then another should be selected.
 
-        for index in missing_marker_start_indices:
+        for index in self.missing_marker_start_indices:
             for i, signal in enumerate(self.cortex_marker_labels):
-                mocap_data[signal][index:index + length_missing[i]] = \
+                mocap_data[signal][index:index + self.length_missing[i]] = \
                     mocap_data[signal][index]
 
         self.mocap_data_frame = pandas.DataFrame(mocap_data)
         self.mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
                                      float_format='%1.6f', index=False,
-                                     cols=['TimeStep', 'FrameNumber'] +
-                                     self.cortex_marker_lables +
-                                     self.cortex_analog_labels)
+                                     cols=['TimeStamp', 'FrameNumber'] +
+                                     self.cortex_marker_labels +
+                                     self.cortex_analog_labels +
+                                     self.dflow_hbm_labels)
 
     def create_sample_meta_data_file(self):
         """We will have an optional YAML file containing meta data for
@@ -292,8 +297,8 @@ class TestDFlowData():
         event_template = "#\n# EVENT {} - COUNT {}\n#\n"
 
         event_times = {'A': np.random.choice(record_data['Time']),
-                        'B': np.random.choice(record_data['Time']),
-                        'C': np.random.choice(record_data['Time'])}
+                       'B': np.random.choice(record_data['Time']),
+                       'C': np.random.choice(record_data['Time'])}
 
         # This loops through the record file and inserts the events.
         new_lines = ''
@@ -308,8 +313,12 @@ class TestDFlowData():
 
                 for key, value in event_times.items():
                     if '{:1.6f}'.format(value) == time_string:
-                        print('{:1.6f}'.format(value), time_string)
                         new_lines += event_template.format(key, '1')
+
+        # TODO: Add comments at the end of the file that show the event
+        # count numbers.
+
+        new_lines += "# EVENT A occured 1 time\n# EVENT B occured 1 time\n# EVENT C occured 1 time"
 
         with open(self.path_to_record_data_file, 'w') as f:
             f.write(new_lines)
@@ -355,24 +364,84 @@ class TestDFlowData():
         assert data.record_tsv_path == self.path_to_record_data_file
         assert data.meta_yml_path is None
 
-        assert_raises(DFlowData(meta_yml_path=self.path_to_meta_data_file),
-                      ValueError)
+        assert_raises(ValueError, DFlowData)
 
     def test_parse_meta_data_file(self):
 
-        dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
-                                record=self.path_to_record_data_file,
-                                meta_data=self.path_to_meta_data_file)
+        dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                               record_tsv_path=self.path_to_record_data_file,
+                               meta_yml_path=self.path_to_meta_data_file)
 
         dflow_data._parse_meta_data_file()
 
         assert dflow_data.meta == self.meta_data
 
-    def test_load_mocap_data(self):
+    def test_get_mocap_column_labels(self):
 
-        assert data.raw_mocap_data == self.mocap_data_frame
+        dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
+
+        dflow_data._get_mocap_column_labels()
+
+        expected_columns = (['TimeStamp', 'FrameNumber'] +
+                            self.cortex_marker_labels +
+                            self.cortex_analog_labels +
+                            self.dflow_hbm_labels)
+
+        assert dflow_data.mocap_column_labels == expected_columns
+
+    def test_remove_hbm_column_labels(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+
+        data = pandas.DataFrame({'RKnee.Ang': range(5),
+                                 'RKnee.Mom': range(5),
+                                 'RKnee.PosX': range(5)})
+
+        data = dflow_data._remove_hmb_columns(data)
+
+        assert any(col not in data.columns for col in ['RKnee.Ang',
+                                                       'RKnee.Mom'])
+
+    def test_identify_missing_markers(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+        data_frame = pandas.read_csv(dflow_data.mocap_tsv_path,
+                                     delimiter='\t')
+        identified = dflow_data._identify_missing_markers(data_frame)
+
+        self.missing_marker_start_indices = \
+            np.random.randint(0, high=self.cortex_number_of_samples, size=5)
+        self.length_missing = np.random.randint(1, high=10, size=5)
+
+        for index in self.missing_marker_start_indices:
+            for suffix in ['.PosX', '.PosY', '.PosZ']:
+                assert all(identified['T10' + suffix][index:self.length_missing].isnull())
+
+    def test_interpolate_missing_markers(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+
+        with_missing = pandas.DataFrame({
+            'T10.PosX': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0],
+            'T10.PosY': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0],
+            'T10.PosZ': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0]})
+
+        interpolated = dflow_data._interpolate_missing_markers(with_missing)
+
+        without_missing = pandas.DataFrame({
+            'T10.PosX': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            'T10.PosY': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            'T10.PosZ': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]})
+
+        assert interpolated == without_missing
+
+
+    def test_load_mocap_data(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+        raw_mocap_data = dflow_data._load_mocap_data()
+
+        assert raw_mocap_data == self.mocap_data_frame
 
     def test_load_record_data(self):
+        dflow_data = DFlowData(record_tsv_path=self.path_to_record_data_file)
+        raw_record_data = dflow_data._load_record_data()
 
         assert data.raw_record_data == self.record_data_frame
 
@@ -380,9 +449,9 @@ class TestDFlowData():
         pass
 
     def test_extract_data(self):
-        dflow_data = DFlowData(mocap=self.path_to_mocap_data_file,
-                                record=self.path_to_record_data_file,
-                                meta_data=self.path_to_meta_data_file)
+        dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                               record_tsv_path=self.path_to_record_data_file,
+                               meta_yml_path=self.path_to_meta_data_file)
         # returns all signals with time stamp as the index for the whole
         # measurement
         full_run_data_frame = dflow_data.extract_data()
