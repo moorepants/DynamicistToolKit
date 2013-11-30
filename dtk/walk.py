@@ -3,6 +3,7 @@
 
 # standard library
 import warnings
+import re
 
 # external libraries
 import numpy as np
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import pandas
 from scipy import sparse
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 import yaml
 
 # local libraries
@@ -68,21 +69,24 @@ def interpolate(data_frame, time):
 
 
 class DFlowData(object):
-    """A class to store and manipulate the tab delimited text data outputs
-    from Motek Medical's D-Flow software."""
+    """A class to store and manipulate the data outputs from Motek Medical's
+    D-Flow software."""
 
     coordinate_labels = ['X', 'Y', 'Z']
 
     marker_coordinate_suffixes = ['.Pos' + c for c in coordinate_labels]
+    # D-Flow outputs real time computed values of the joint torques, joint
+    # angles, and the muscle forces. The joint torques end in '.Mom', the
+    # joint angles end in '.Ang', and the muscle forces seem to fit this
+    # Python regular expression '[LR]_.*'.
     hbm_column_suffix = ['.Mom', '.Ang']  # Acc Rate Pow ?
-    # FP2 : right
-    # FP1 : left
-    force_plate_names = ['FP1', 'FP2']
+    force_plate_names = ['FP1', 'FP2']  # FP1 : left, FP2 : right
     force_plate_suffix = [suffix_beg + end for end in coordinate_labels for
                           suffix_beg in ['.For', '.Mom', '.Cop']]
 
     cortex_sample_rate = 100  # Hz
     constant_marker_tolerance = 1e-16
+    hbm_na = '0.000000'
 
     def __init__(self, mocap_tsv_path=None, record_tsv_path=None,
                  meta_yml_path=None):
@@ -99,14 +103,45 @@ class DFlowData(object):
     def _parse_meta_data_file(self):
         """Returns a dictionary containing the meta data stored in the
         optional meta data file."""
-        with open(self.meta_yml_path, 'r') as f:
-            self.meta = yaml.load(f)
+        if self.meta_yml_path is not None:
+            with open(self.meta_yml_path, 'r') as f:
+                self.meta = yaml.load(f)
 
-    def _get_mocap_column_labels(self):
-        """Stores a list of the column labels, in order, from the mocap tsv
+    def _store_mocap_column_labels(self):
+        """Stores a list of the motion capture file's column labels as an
+        attribute. The list is in the same order as in the mocap tsv
         file."""
         with open(self.mocap_tsv_path, 'r') as f:
             self.mocap_column_labels = f.readline().strip().split('\t')
+
+    def _marker_column_labels(self, mocap_column_labels):
+        """Returns a list of column labels that correpsond to markers, i.e.
+        ones that end in '.PosX', '.PosY', or '.PosZ', given a master
+        list."""
+
+        marker_coordinate_col_names = []
+        for col in mocap_column_labels:
+            if any(col.endswith(x) for x in self.marker_coordinate_suffixes):
+                marker_coordinate_col_names.append(col)
+
+        return marker_coordinate_col_names
+
+    def _store_hbm_column_labels(self, mocap_column_labels):
+        """Stores a list of human body model column labels, the indices of
+        the labels, and the indices of the non-hbm labels in relation to the
+        rest of the header."""
+        self.hbm_indices = []
+        self.non_hbm_indices = []
+        self.hbm_column_labels = []
+        reg_exps = [re.compile('^[LR]_.*'),
+                    re.compile('.*\.Mom$'),
+                    re.compile('.*\.Ang$')]
+        for i, label in enumerate(mocap_column_labels):
+            if any(exp.match(label) for exp in reg_exps):
+                self.hbm_indices.append(i)
+                self.hbm_column_labels.append(label)
+            else:
+                self.non_hbm_indices.append(i)
 
     def _remove_hbm_columns(self, data_frame):
         """Returns the provided data frame with all columns computed by the
@@ -131,16 +166,16 @@ class DFlowData(object):
 
         # Get a list of all columns that give marker coordinate data, i.e.
         # ones that end in '.PosX', '.PosY', or '.PosZ'.
-        marker_coordinate_col_names = []
-        for col in data_frame.columns:
-            if any(col.endswith(x) for x in self.marker_coordinate_suffixes):
-                marker_coordinate_col_names.append(col)
+        marker_coordinate_col_names = \
+            self._marker_column_labels(self.mocap_column_labels)
 
         # A list of unique markers in the data set (i.e. without the
         # suffixes).
         unique_marker_names = list(set([c.split('.')[0] for c in
                                         marker_coordinate_col_names]))
 
+        # Create a boolean array that labels all constant values (wrt to
+        # tolerance) as True.
         are_constant = data_frame[marker_coordinate_col_names].diff().abs() < \
             self.constant_marker_tolerance
 
@@ -149,14 +184,15 @@ class DFlowData(object):
         for marker in unique_marker_names:
             single_marker_cols = [marker + pos for pos in
                                   self.marker_coordinate_suffixes]
-            are_constant[single_marker_cols] = \
-                are_constant[single_marker_cols].all(axis=1)
+            for col in single_marker_cols:
+                are_constant[col] = \
+                    are_constant[single_marker_cols].all(axis=1)
 
         data_frame[marker_coordinate_col_names][are_constant] = np.nan
 
         return data_frame
 
-    def _reindex_at_cortex_timestamp(self, data_frame):
+    def _generate_cortex_time_stamp(self, data_frame):
         """Returns the data frame with a new index based on the constant
         sample rate from Cortex."""
 
@@ -169,37 +205,57 @@ class DFlowData(object):
         self.cortex_num_samples = len(data_frame)
         self.cortex_time = process.time_vector(self.cortex_num_samples,
                                                self.cortex_sample_rate)
-        data_frame.index = self.cortex_time
-
-        # TODO : Should I distinguish the D-Flow timestamp better?
-        #data_frame['D-Flow TimeStamp'] = data_frame['TimeStamp']
-        #del data_frame['TimeStamp']a
+        data_frame['Cortex Time'] = self.cortex_time
+        data_frame['D-Flow Time'] = data_frame['TimeStamp']
 
         return data_frame
 
-    def _interpolate_missing_markers(self, data_frame, method="linear"):
+    def _interpolate_missing_markers(self, data_frame, time_col="TimeStamp",
+                                     method="linear"):
         """Returns the data frame with all missing markers replaced by some
         interpolated value."""
 
-        # pandas 0.13.0 will have all the SciPy interpolation functions
+        # Pandas 0.13.0 will have all the SciPy interpolation functions
         # built in. But for now, we've got to do this manually.
-        # should use pandas default methods and also a spline fit
 
-        for time_series in data_frame:
-            clean = time_series.dropna()
-            f = interpolate.interp1d(clean.index.values.astype(float),
-                                     clean, kind=method)
-            interpolated_values = f(time_series[time_series.is_null()].values)
-            time_series[time_series.isnull()] = interpolated_values
+        # TODO : DataFrame.apply() might clean this code up.
+
+        # TODO : Interpolate the HBM columns if they are loaded from file.
+
+        for marker_label in self._marker_column_labels(self.mocap_column_labels):
+            time_series = data_frame[marker_label]
+            if any(time_series.isnull()):
+                without_na = time_series.dropna()
+                time = data_frame[time_col][time_series.notnull()]
+                f = interp1d(time, without_na, kind=method)
+                interpolated_values = f(time_series[time_series.isnull()])
+                time_series[time_series.isnull()] = interpolated_values
 
         return data_frame
 
-    def _load_mocap_data(self):
-        """Returns a data frame generated from the tsv mocap file."""
-        return pandas.read_csv(self.mocap_tsv_path, delimiter='\t')
+    def _load_mocap_data(self, ignore_hbm=False):
+        """Returns a data frame generated from the tsv mocap file.
 
-    def _compute_missing_value_statistics(self, data_frame):
-        """Returns a report of missing values in the marker columns."""
+        Parameters
+        ----------
+        ignore_hbm : boolean, optional, default=True
+            If true, the columns associated with D-Flow's real time human
+            body model computations will not be loaded. If false, the
+            columns will be loaded with all '0.000000' strings in the HBM
+            columns replaced with NaN.
+
+        """
+        if ignore_hbm is True:
+            return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
+                                   usecols=self.non_hbm_indices)
+        else:
+            hbm_na_values = {k: self.hbm_na for k in self.hbm_column_labels}
+            return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
+                                   na_values=hbm_na_values)
+
+    def missing_value_statistics(self, data_frame):
+        """Returns a report of missing values in the marker and/or HBM
+        columns."""
         pass
 
     def _extract_events_from_record_file(self):
@@ -213,70 +269,141 @@ class DFlowData(object):
 
         # The record module file is tab delimited and may have events
         # interspersed in between the rows which are commenting out by
-        # hashes.
+        # hashes. We must dropna to remove commented lines from the
+        # resutling data frame, only if all values in a row are NA.
         return pandas.read_csv(self.record_tsv_path, delimiter='\t',
-                               comment='#', index_col="Time")
+                               comment='#').dropna(how='all').reset_index(drop=True)
 
     def _resample_record_data(self, data_frame):
         """Resamples the raw data from the record file at the sample rate of
         the mocap file."""
-        # Now resample the record module data at the D-Flow time stamp
-        # stored in the mocap file and then rewrite the index to the cortex
-        # time stamp.
-        record_data = interpolate(data_frame, self.mocap_data['TimeStamp'])
-        record_data.index = self.cortex_time
-        return record_data
+
+        # The 'TimeStamp' column in the mocap data is the time at which
+        # D-Flow recieves the Cortex data. Each of which corresponds to a
+        # Cortex time stamp. The 'Time' column from the record module is the
+        # D-Flow time which corresponds to the D-Flow variable frame rate.
+        # The purpose of this code is to find interpolated values from each
+        # column in the record data at the Cortex time stamp.
+
+        # Combine the D-Flow times from each data frame and sort them.
+        all_times = np.hstack((data_frame['Time'],
+                               self.mocap_data['TimeStamp']))
+        all_times_sort_indices = np.argsort(all_times)
+
+        # Create a dictionary which has each column from the record data
+        # frame, but NaNs in the rows corresponding to the mocap 'TimeStamp'
+        # in all columns but the new 'Time' column.
+        total = {}
+        for label, series in data_frame.iteritems():
+            all_values = np.hstack((series, np.nan *
+                                    np.ones(len(self.mocap_data))))
+            total[label] = all_values[all_times_sort_indices]
+        total['Time'] = np.sort(all_times)
+        total = pandas.DataFrame(total)
+
+        def linear_time_interpolate(series):
+            # Note : scipy.interpolate.interp1d does not extrapolate, so it
+            # failed here, but the general spline class does extropolate so
+            # the following seems to work.
+            f = InterpolatedUnivariateSpline(data_frame['Time'].values,
+                                             series[series.notnull()].values,
+                                             k=1)
+            return f(self.mocap_data['TimeStamp'])
+
+        new_record = {}
+        for label, series in total.iteritems():
+            if label != 'Time':
+                new_record[label] = linear_time_interpolate(series)
+        new_record['Time'] = self.cortex_time
+
+        return pandas.DataFrame(new_record)
+
+    def _compensate_forces(self):
+        """Computes the forces and moments which are due to the lateral and
+        pitching motions of the treadmill and subtracts them from the
+        measured forces and moments based on linear acceleration
+        measurements of the treadmill."""
+        # If you accelerate the treadmill there will be forces and moments
+        # measured by the force plates that simply come from the motion.
+        # When external loads are applied to the force plates, you must
+        # subtract these inertial forces from the measured forces to get
+        # correct estimates of the body fixed externally applied forces.
+        # TODO : Implement this.
+        raise NotImplementedError()
+
+    def _express_forces_in_treadmill_reference_frame(self):
+        """Re-expresses the forces and moments measured by the treadmill to
+        the earth inertial reference frame."""
+        # The markers are measured with respect to the camera's inertial
+        # reference frame, earth, but the treadmill forces are measured with
+        # respect to the treadmill's laterally and rotationaly moving
+        # reference frame. We need both to be expressed in the same inertial
+        # reference frame for ease of future computations.
+        # TODO : Implement this.
+        raise NotImplementedError()
 
     def _inverse_dynamics(self):
         """Returns a data frame with joint angles, rates, and torques based
         on the measured marker positions and force plate forces."""
-
         # TODO : Add some method of generating joint angles, rates, and
-        # torques.
+        # torques. Note that if the treadmill is in motion (laterally,
+        # pitch), then one must compensate for the interial forces and deal
+        # with reexpressing in the treadmill reference frame before
+        # computing the inverse dynamics.
         raise NotImplementedError()
 
     def clean_data(self):
         """Loads and processes the data."""
 
+        if self.meta_yml_path is not None:
+            self._parse_meta_data_file()
+
         if self.mocap_tsv_path is not None:
-            self._get_mocap_column_labels()
-            raw_mocap_data_frame = self._load_mocap_data()
-            mocap_data_frame = self._remove_hbm_columns(raw_mocap_data_frame)
-            mocap_data_frame = self._identify_missing_markers(mocap_data_frame)
+            self._store_mocap_column_labels()
+            self._store_hbm_column_labels(self.mocap_column_labels)
+            raw_mocap_data_frame = self._load_mocap_data(ignore_hbm=True)
+            mocap_data_frame = self._identify_missing_markers(raw_mocap_data_frame)
             mocap_data_frame = \
-                self._generate_cortex_timestamp(mocap_data_frame)
+                self._generate_cortex_time_stamp(mocap_data_frame)
             mocap_data_frame = \
                 self._interpolate_missing_markers(mocap_data_frame)
             self.mocap_data = mocap_data_frame
 
         if self.record_tsv_path is not None:
+            # TODO : A record file that has events but no event mapping in
+            # given in a meta file should do some default event handling
+            # behavior. Keep in mind that D-Flow only allows a certain
+            # number of events (A through F) and multiple counts for the
+            # events.
             self._extract_events_from_record_file()
-            raw_record_data_frame = self._load_record_data()
+            self.raw_record_data_frame = self._load_record_data()
 
         if self.mocap_tsv_path is not None and self.record_tsv_path is not None:
-
             self.record_data = \
-                self._resample_record_data(raw_record_data_frame)
+                self._resample_record_data(self.raw_record_data_frame)
             self.data = self.mocap_data.join(self.record_data)
-
         elif self.mocap_tsv_path is None and self.record_tsv_path is not None:
-
-            self.data = self.raw_record_data
-
+            self.data = self.raw_record_data_frame
         elif self.mocap_tsv_path is not None and self.record_tsv_path is None:
-
             self.data = self.mocap_data
 
-    def extract_data(self, event=None, measurements=None, interpolate=None):
+        return self.data
+
+    def extract_data(self, event=None, columns=None, **kwargs):
         """Returns a data frame which may be a subject of the master data
         frame."""
-        pass
+        if columns is None:
+            return self.data
+        else:
+            return self.data[columns]
 
     def write_dflow_tsv(self, filename):
 
         # This must preserve the mocap column order and can only append the
-        # record or hbm stuff to the rigth most columns.
-        pass
+        # record or inverse dynamics stuff to the right most columns.
+
+        self.data.to_csv(filename, sep='\t', float_format='%1.6f',
+                         index=False, cols=self.mocap_column_labels)
 
 
 class WalkingData(object):

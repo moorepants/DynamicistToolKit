@@ -9,7 +9,6 @@ import numpy as np
 from numpy import testing
 import pandas
 from nose.tools import assert_raises
-# TODO : Add yaml to the walk module dependencies
 import yaml
 
 # local
@@ -66,15 +65,15 @@ class TestDFlowData():
     input
     -----
 
-    mocap module file: times series of markers, force plate stuff, analog
-    measurements this is basically at 100 hz, but not exactly
+    mocap module file path (or handle): times series of markers, force plate
+    stuff, analog measurements this is basically at 100 hz, but not exactly
 
-    record module file: variable sample rate of treadmill motions (or any
-    other variables from dflow) and events
+    record module file path (or handle): variable sample rate of treadmill
+    motions (or any other variables from dflow) and events
 
-    mocap file with no loads for compensation
+    mocap compensation file path: with no loads for compensation
 
-    meta data file(s)
+    meta data file path (or handle)
 
     output
     ------
@@ -120,18 +119,31 @@ class TestDFlowData():
 
     """
 
-    dflow_start_time = 51.687
     cortex_start_frame = 2375
-    cortex_nominal_sample_period = 0.01
-    dflow_max_period_deviation = 0.0012
+    cortex_sample_period = 0.01
     cortex_number_of_samples = 501
-    cortex_marker_labels = ['T10.PosX', 'T10.PosY', 'T10.PosZ']
-    cortex_analog_labels = ['FP1.ForX', 'FP1.MomX']
-    dflow_hbm_labels = ['RKneeFlexion.Ang', 'RKneeFlexion.Mom']
 
-    dflow_max_sample_period = 1.0 / 10.0
-    dflow_min_sample_period = 1.0 / 300.0
-    dflow_number_of_samples = 1000
+    dflow_start_time = 51.687
+    dflow_mocap_max_period_deviation = 0.0012
+    dflow_record_max_sample_period = 1.0 / 10.0
+    dflow_record_min_sample_period = 1.0 / 300.0
+    dflow_record_number_of_samples = 1000
+
+    cortex_marker_labels = ['T10.PosX',
+                            'T10.PosY',
+                            'T10.PosZ']
+    cortex_analog_labels = ['FP1.ForX',
+                            'FP1.MomX',
+                            'Channel1.Anlg',
+                            'Channel2.Anlg']
+    dflow_hbm_labels = ['RKneeFlexion.Ang',
+                        'RKneeFlexion.Mom',
+                        'R_PectoralisMajorTH1',
+                        'L_RectusFemoris']
+    mocap_labels_without_hbm = (['TimeStamp', 'FrameNumber'] +
+                                cortex_marker_labels + cortex_analog_labels)
+    mocap_labels_with_hbm = mocap_labels_without_hbm + dflow_hbm_labels
+    record_labels = ['Time', 'RightBeltSpeed', 'LeftBeltSpeed']
 
     path_to_mocap_data_file = 'example_mocap_tsv_file.txt'
     path_to_record_data_file = 'example_record_tsv_file.txt'
@@ -144,8 +156,8 @@ class TestDFlowData():
                             'B': 'Walking',
                             'C': 'Relaxing'},
                  }
-    # TODO : add names for analog columns because you can't name analog
-    # signals uniquely in dflow
+    # TODO : Add names for analog columns in DFlow because you can't name
+    # analog signals uniquely in dflow
     """
     Treamdill reference frame
     X: points to the right
@@ -196,26 +208,32 @@ class TestDFlowData():
         delimited file. The first line is the header. The header contains
         the `TimeStamp` column which is the system time on the DFlow
         computer when it receives the Cortex frame and is thus not exactly
-        at 100 hz, it has a light variation. The next column is the
-        `FrameNumber` column which is the Cortex frame number. Cortex
+        at 100 hz, it has a light variable sample rate. The next column is
+        the `FrameNumber` column which is the Cortex frame number. Cortex
         samples at 100hz and the frame numbers start at some positive
-        integer value. The remaining columns are samples of the analog
-        signals (force plate forces/moments) and the computed marker
-        positions at each Cortex frame. The analog signals are simply
-        voltages that have been scaled by some calibration function and they
-        should have a reading at each frame. The markers sometimes go
-        missing (i.e. can't been seen by the cameras. When a marker goes
-        missing DFlow outputs the last non-missing value in all three axes
-        until the marker is visible again.
+        integer value. The remaining columns are samples of the computed
+        marker positions at each Cortex frame and the analog signals (force
+        plate forces/moments, EMG, accelerometers, etc). The analog signals
+        are simply voltages that have been scaled by some calibration
+        function and they should have a reading at each frame. The markers
+        sometimes go missing (i.e. can't been seen by the cameras. When a
+        marker goes missing DFlow outputs the last non-missing value in all
+        three axes until the marker is visible again. The mocap file can
+        also contain variables computed by the real time implementation of
+        the Human Body Model (HBM). If the HBM computation fails at a D-Flow
+        sample period, strings of zeros, '0.000000', are inserted for
+        missing values. Note that the order of the "essential" measurements
+        in the file must be retained if you expect to run the file back into
+        D-Flow for playback.
 
         """
 
         # This generates the slightly variable sampling periods seen in the
         # time stamp column.
-        deviations = (self.dflow_max_period_deviation *
+        deviations = (self.dflow_mocap_max_period_deviation *
                       np.random.choice([-1.0, 1.0]) *
                       np.random.random(self.cortex_number_of_samples))
-        variable_periods = (self.cortex_nominal_sample_period *
+        variable_periods = (self.cortex_sample_period *
                             np.ones(self.cortex_number_of_samples) +
                             deviations)
 
@@ -253,10 +271,7 @@ class TestDFlowData():
         self.mocap_data_frame = pandas.DataFrame(mocap_data)
         self.mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
                                      float_format='%1.6f', index=False,
-                                     cols=['TimeStamp', 'FrameNumber'] +
-                                     self.cortex_marker_labels +
-                                     self.cortex_analog_labels +
-                                     self.dflow_hbm_labels)
+                                     cols=self.mocap_labels_with_hbm)
 
     def create_sample_meta_data_file(self):
         """We will have an optional YAML file containing meta data for
@@ -274,31 +289,33 @@ class TestDFlowData():
         The sample rate can be as high as 300 hz. The file also records
         """
 
-        variable_periods = (self.dflow_min_sample_period +
-                            (self.dflow_max_sample_period -
-                                self.dflow_min_sample_period) *
-                            np.random.random(self.dflow_number_of_samples))
+        variable_periods = (self.dflow_record_min_sample_period +
+                            (self.dflow_record_max_sample_period -
+                             self.dflow_record_min_sample_period) *
+                            np.random.random(self.dflow_record_number_of_samples))
 
         record_data = {}
-        record_data['Time'] = \
-            self.dflow_start_time + np.cumsum(variable_periods)
+        self.record_time = self.dflow_start_time + np.cumsum(variable_periods)
+        record_data['Time'] = self.record_time
         record_data['LeftBeltSpeed'] = \
-            np.random.random(self.dflow_number_of_samples)
+            np.random.random(self.dflow_record_number_of_samples)
         record_data['RightBeltSpeed'] = \
-            np.random.random(self.dflow_number_of_samples)
+            np.random.random(self.dflow_record_number_of_samples)
 
         self.record_data_frame = pandas.DataFrame(record_data)
         self.record_data_frame.to_csv(self.path_to_record_data_file,
-                                        sep='\t', float_format='%1.6f',
-                                        index=False, cols=['Time',
-                                                            'LeftBeltSpeed',
-                                                            'RightBeltSpeed'])
+                                      sep='\t', float_format='%1.6f',
+                                      index=False, cols=['Time',
+                                                         'LeftBeltSpeed',
+                                                         'RightBeltSpeed'])
 
         event_template = "#\n# EVENT {} - COUNT {}\n#\n"
 
-        event_times = {'A': np.random.choice(record_data['Time']),
-                       'B': np.random.choice(record_data['Time']),
-                       'C': np.random.choice(record_data['Time'])}
+        time = self.record_data_frame['Time']
+
+        event_times = {'A': np.random.choice(time),
+                       'B': np.random.choice(time),
+                       'C': np.random.choice(time)}
 
         # This loops through the record file and inserts the events.
         new_lines = ''
@@ -315,10 +332,8 @@ class TestDFlowData():
                     if '{:1.6f}'.format(value) == time_string:
                         new_lines += event_template.format(key, '1')
 
-        # TODO: Add comments at the end of the file that show the event
-        # count numbers.
-
-        new_lines += "# EVENT A occured 1 time\n# EVENT B occured 1 time\n# EVENT C occured 1 time"
+        new_lines += "\n".join("# EVENT {} occured 1 time".format(letter)
+                               for letter in ['A', 'B', 'C'])
 
         with open(self.path_to_record_data_file, 'w') as f:
             f.write(new_lines)
@@ -376,33 +391,39 @@ class TestDFlowData():
 
         assert dflow_data.meta == self.meta_data
 
-    def test_get_mocap_column_labels(self):
+    def test_store_mocap_column_labels(self):
 
         dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
 
-        dflow_data._get_mocap_column_labels()
+        dflow_data._store_mocap_column_labels()
 
-        expected_columns = (['TimeStamp', 'FrameNumber'] +
-                            self.cortex_marker_labels +
-                            self.cortex_analog_labels +
-                            self.dflow_hbm_labels)
+        assert dflow_data.mocap_column_labels == self.mocap_labels_with_hbm
 
-        assert dflow_data.mocap_column_labels == expected_columns
+    def test_marker_column_labels(self):
 
-    def test_remove_hbm_column_labels(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+
+        labels = dflow_data._marker_column_labels(self.mocap_data_frame)
+
+        assert labels == self.cortex_marker_labels
+
+    def test_remove_hbm_columns(self):
+
         dflow_data = DFlowData(self.path_to_mocap_data_file)
 
         data = pandas.DataFrame({'RKnee.Ang': range(5),
                                  'RKnee.Mom': range(5),
                                  'RKnee.PosX': range(5)})
 
-        data = dflow_data._remove_hmb_columns(data)
+        data = dflow_data._remove_hbm_columns(data)
 
         assert any(col not in data.columns for col in ['RKnee.Ang',
                                                        'RKnee.Mom'])
 
     def test_identify_missing_markers(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
+        dflow_data._store_mocap_column_labels()
+        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         data_frame = pandas.read_csv(dflow_data.mocap_tsv_path,
                                      delimiter='\t')
         identified = dflow_data._identify_missing_markers(data_frame)
@@ -411,14 +432,25 @@ class TestDFlowData():
             np.random.randint(0, high=self.cortex_number_of_samples, size=5)
         self.length_missing = np.random.randint(1, high=10, size=5)
 
-        for index in self.missing_marker_start_indices:
+        for i, index in enumerate(self.missing_marker_start_indices):
             for suffix in ['.PosX', '.PosY', '.PosZ']:
-                assert all(identified['T10' + suffix][index:self.length_missing].isnull())
+                assert all(identified['T10' + suffix][index:self.length_missing[i]].isnull())
+
+    def test_generate_cortex_time_stamp(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+        data = dflow_data._generate_cortex_time_stamp(self.mocap_data_frame)
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data['Cortex Time'], expected_time)
 
     def test_interpolate_missing_markers(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
+        dflow_data._store_mocap_column_labels()
+        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
 
         with_missing = pandas.DataFrame({
+            'TimeStamp': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            'FP1.ForX': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
             'T10.PosX': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0],
             'T10.PosY': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0],
             'T10.PosZ': [1.0, np.nan, np.nan, np.nan, 5.0, 6.0, 7.0]})
@@ -426,42 +458,186 @@ class TestDFlowData():
         interpolated = dflow_data._interpolate_missing_markers(with_missing)
 
         without_missing = pandas.DataFrame({
+            'TimeStamp': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            'FP1.ForX': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
             'T10.PosX': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
             'T10.PosY': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
             'T10.PosZ': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]})
 
         assert interpolated == without_missing
 
-
     def test_load_mocap_data(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
+        dflow_data._store_mocap_column_labels()
+        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         raw_mocap_data = dflow_data._load_mocap_data()
 
-        assert raw_mocap_data == self.mocap_data_frame
+        assert (raw_mocap_data.sort(axis=1) ==
+                self.mocap_data_frame.sort(axis=1))
+
+        # TODO : Add some missing values into the HBM columns of
+        # self.mocap_data_frame and make sure they get replaced with NaN.
+
+        raw_mocap_data = dflow_data._load_mocap_data(ignore_hbm=True)
+
+        expected = self.mocap_data_frame[self.mocap_labels_without_hbm]
+
+        assert raw_mocap_data.sort(axis=1) == expected.sort(axis=1)
+
+    def test_extract_events_from_record_file(self):
+        pass
 
     def test_load_record_data(self):
         dflow_data = DFlowData(record_tsv_path=self.path_to_record_data_file)
         raw_record_data = dflow_data._load_record_data()
 
-        assert data.raw_record_data == self.record_data_frame
+        assert (raw_record_data.sort(axis=1) ==
+                self.record_data_frame.sort(axis=1))
 
-    def test_extract_events(self):
-        pass
+    def test_resample_record_data(self):
+        dflow_data = DFlowData(self.path_to_mocap_data_file,
+                               self.path_to_record_data_file)
+        dflow_data.mocap_data = self.mocap_data_frame
+        dflow_data._generate_cortex_time_stamp(self.mocap_data_frame)
+        record_data = dflow_data._resample_record_data(self.record_data_frame)
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+
+        testing.assert_allclose(record_data['Time'], expected_time)
+        # TODO : Test that the values are correct. How?
+
+    def test_clean_data(self):
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                         record_tsv_path=self.path_to_record_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+
+        data.clean_data()
+
+        # TODO : Check for an events dictionary if the record file included
+        # events.
+
+        assert not pandas.isnull(data.data).any().any()
+        assert (data._marker_column_labels(data.mocap_column_labels) ==
+                self.cortex_marker_labels)
+        expected_columns = self.mocap_labels_without_hbm + \
+            self.record_labels + ['Cortex Time', 'D-Flow Time']
+        for col in data.data.columns:
+            assert col in expected_columns
+            assert col not in self.dflow_hbm_labels
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data.data['Cortex Time'], expected_time)
+
+        try:
+            data.meta
+        except AttributeError:
+            assert False
+
+        # Without the record file.
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+        data.clean_data()
+
+        assert not pandas.isnull(data.data).any().any()
+        assert (data._marker_column_labels(data.mocap_column_labels) ==
+                self.cortex_marker_labels)
+        expected_columns = self.mocap_labels_without_hbm + ['Cortex Time',
+                                                            'D-Flow Time']
+        for col in data.data.columns:
+            assert col in expected_columns
+            assert col not in self.dflow_hbm_labels
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data.data['Cortex Time'], expected_time)
+
+        try:
+            data.meta
+        except AttributeError:
+            assert False
+
+        assert_raises(AttributeError, lambda: data.record_data)
+
+        # Without the mocap file.
+        data = DFlowData(record_tsv_path=self.path_to_record_data_file,
+                         meta_yml_path=self.path_to_meta_data_file)
+        data.clean_data()
+
+        assert not pandas.isnull(data.data).any().any()
+        assert_raises(AttributeError, lambda: data.mocap_column_labels)
+
+        expected_columns = self.record_labels
+        for col in data.data.columns:
+            assert col in expected_columns
+            assert col not in ['TimeStamp', 'Cortex Time', 'D-Flow Time',
+                               'FrameNumber']
+            assert col not in self.dflow_hbm_labels
+            assert col not in self.mocap_labels_with_hbm
+            assert col not in self.cortex_analog_labels
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data.data['Time'], self.record_time)
+
+        try:
+            data.meta
+        except AttributeError:
+            assert False
+
+        assert_raises(AttributeError, lambda: data.mocap_data)
+
+        # Without record file and meta data.
+        data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
+        data.clean_data()
+
+        assert not pandas.isnull(data.data).any().any()
+        assert (data._marker_column_labels(data.mocap_column_labels) ==
+                self.cortex_marker_labels)
+        expected_columns = self.mocap_labels_without_hbm + ['Cortex Time',
+                                                            'D-Flow Time']
+        for col in data.data.columns:
+            assert col in expected_columns
+            assert col not in self.dflow_hbm_labels
+            assert col not in ['Time', 'RightBeltSpeed', 'LeftBeltSpeed',
+                               self.dflow_hbm_labels]
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data.data['Cortex Time'], expected_time)
+
+        assert_raises(AttributeError, lambda: data.meta)
+        assert_raises(AttributeError, lambda: data.record_data)
+
+        # Without mocap file and meta data.
+        data = DFlowData(record_tsv_path=self.path_to_record_data_file)
+        data.clean_data()
+
+        assert not pandas.isnull(data.data).any().any()
+        assert_raises(AttributeError, lambda: data.mocap_column_labels)
+
+        expected_columns = self.record_labels
+        for col in data.data.columns:
+            assert col in expected_columns
+            assert col not in ['Cortex Time', 'D-Flow Time']
+            assert col not in self.mocap_labels_with_hbm
+        expected_time = time_vector(self.cortex_number_of_samples, 1.0 /
+                                    self.cortex_sample_period)
+        testing.assert_allclose(data.data['Time'], self.record_time)
+
+        assert_raises(AttributeError, lambda: data.meta)
+        assert_raises(AttributeError, lambda: data.mocap_data)
 
     def test_extract_data(self):
         dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
                                record_tsv_path=self.path_to_record_data_file,
                                meta_yml_path=self.path_to_meta_data_file)
+        dflow_data.clean_data()
+
         # returns all signals with time stamp as the index for the whole
         # measurement
         full_run_data_frame = dflow_data.extract_data()
 
-        # returns a data frame that has the time series for a single event
-        zeroing_data_frame = \
-            dflow_data.extract_data(event='Zeroing',
-                                    measurements=['RKnee.Angle',
-                                                    'LKnee.Angle'],
-                                    interpolate=100)
+    def teardown(self):
+        os.remove(self.path_to_mocap_data_file)
+        os.remove(self.path_to_record_data_file)
+        os.remove(self.path_to_meta_data_file)
 
 
 class TestWalkingData():

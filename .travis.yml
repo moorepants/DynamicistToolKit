@@ -5,7 +5,7 @@ virtualenv:
   system_site_packages: true
 before_install:
   - sudo apt-get install -y -qq python-setuptools python-numpy python-scipy python-matplotlib python-nose python-coverage
-  - pip install cython
+  - pip install cython pyyaml
   - git clone git://github.com/pydata/pandas.git
   - cd pandas && git checkout v0.11.0 && python setup.py install && cd ..
   - pip freeze
