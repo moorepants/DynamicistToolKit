@@ -24,6 +24,7 @@ except ImportError:
 else:
     set_trace = Tracer()
 
+
 def test_find_constant_speed():
 
     speed_array = np.loadtxt(os.path.join(os.path.dirname(__file__),
@@ -398,7 +399,6 @@ class TestDFlowData():
     def test_interpolate_missing_markers(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
         dflow_data._store_mocap_column_labels()
-        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
 
         with_missing = pandas.DataFrame({
             'TimeStamp': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
@@ -416,7 +416,27 @@ class TestDFlowData():
             'T10.PosY': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
             'T10.PosZ': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]})
 
+        assert not pandas.isnull(interpolated).any().any()
         assert interpolated == without_missing
+
+        dflow_data = DFlowData(self.path_to_mocap_data_file)
+        dflow_data._store_mocap_column_labels()
+        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
+        mocap_data_frame = dflow_data._load_mocap_data(ignore_hbm=True)
+        identified = dflow_data._identify_missing_markers(mocap_data_frame)
+        interpolated = dflow_data._interpolate_missing_markers(identified)
+
+        assert not pandas.isnull(interpolated).any().any()
+
+        testing.assert_allclose(interpolated['T10.PosX'].values,
+                                np.sin(interpolated['TimeStamp']).values,
+                                atol=1e-3)
+        testing.assert_allclose(interpolated['T10.PosY'].values,
+                                np.sin(interpolated['TimeStamp']).values,
+                                atol=1e-3)
+        testing.assert_allclose(interpolated['T10.PosZ'].values,
+                                np.sin(interpolated['TimeStamp']).values,
+                                atol=1e-3)
 
     def test_load_mocap_data(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)

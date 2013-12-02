@@ -219,25 +219,31 @@ class DFlowData(object):
         return data_frame
 
     def _interpolate_missing_markers(self, data_frame, time_col="TimeStamp",
-                                     method="linear"):
+                                     order=1):
         """Returns the data frame with all missing markers replaced by some
         interpolated value."""
 
         # Pandas 0.13.0 will have all the SciPy interpolation functions
         # built in. But for now, we've got to do this manually.
 
-        # TODO : DataFrame.apply() might clean this code up.
-
         # TODO : Interpolate the HBM columns if they are loaded from file.
 
-        for marker_label in self._marker_column_labels(self.mocap_column_labels):
+        # TODO : DataFrame.apply() might clean this code up.
+
+        markers = self._marker_column_labels(self.mocap_column_labels)
+        for marker_label in markers:
             time_series = data_frame[marker_label]
-            if any(time_series.isnull()):
-                without_na = time_series.dropna()
-                time = data_frame[time_col][time_series.notnull()]
-                f = interp1d(time, without_na, kind=method)
-                interpolated_values = f(time_series[time_series.isnull()])
-                time_series[time_series.isnull()] = interpolated_values
+            is_null = time_series.isnull()
+            if any(is_null):
+                time = data_frame[time_col]
+                without_na = time_series.dropna().values
+                time_at_valid = time[time_series.notnull()].values
+
+                interpolate = InterpolatedUnivariateSpline(time_at_valid,
+                                                           without_na,
+                                                           k=order)
+                interpolated_values = interpolate(time[is_null].values)
+                data_frame[marker_label][is_null] = interpolated_values
 
         return data_frame
 
