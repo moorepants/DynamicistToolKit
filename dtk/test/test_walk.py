@@ -8,6 +8,7 @@ import os
 import numpy as np
 from numpy import testing
 import pandas
+from pandas.util.testing import assert_frame_equal
 from nose.tools import assert_raises
 import yaml
 
@@ -417,7 +418,7 @@ class TestDFlowData():
             'T10.PosZ': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]})
 
         assert not pandas.isnull(interpolated).any().any()
-        assert interpolated == without_missing
+        assert_frame_equal(interpolated, without_missing)
 
         dflow_data = DFlowData(self.path_to_mocap_data_file)
         dflow_data._store_mocap_column_labels()
@@ -444,8 +445,9 @@ class TestDFlowData():
         dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         raw_mocap_data = dflow_data._load_mocap_data()
 
-        assert (raw_mocap_data.sort(axis=1) ==
-                self.mocap_data_frame.sort(axis=1))
+        testing.assert_allclose(raw_mocap_data.sort(axis=1).values,
+                                self.mocap_data_frame.sort(axis=1).values,
+                                atol=1e-6)
 
         # TODO : Add some missing values into the HBM columns of
         # self.mocap_data_frame and make sure they get replaced with NaN.
@@ -454,7 +456,8 @@ class TestDFlowData():
 
         expected = self.mocap_data_frame[self.mocap_labels_without_hbm]
 
-        assert raw_mocap_data.sort(axis=1) == expected.sort(axis=1)
+        testing.assert_allclose(raw_mocap_data.sort(axis=1).values,
+                                expected.sort(axis=1).values, atol=1e-6)
 
     def test_extract_events_from_record_file(self):
         pass
@@ -463,8 +466,9 @@ class TestDFlowData():
         dflow_data = DFlowData(record_tsv_path=self.path_to_record_data_file)
         raw_record_data = dflow_data._load_record_data()
 
-        assert (raw_record_data.sort(axis=1) ==
-                self.record_data_frame.sort(axis=1))
+        testing.assert_allclose(raw_record_data.sort(axis=1).values,
+                                self.record_data_frame.sort(axis=1).values,
+                                atol=1e-6)
 
     def test_resample_record_data(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file,
