@@ -11,24 +11,23 @@ D-Flow (and Cortex)
 ===================
 
 The walk module includes a class that eases dealing with the data collected
-from a typical D-Flow output.
+from typical D-Flow_ output files.
 
-Motek Medical sells packages which include treadmills with force plate
-measurement capabilities and motion bases, motion capture systems, and other
-sensors for various measurements. Their software D-Flow manages the data
-streams from the various systems and is responsible for displaying interactive
-visuals, sounds, and motions to the subject.
+Motek Medical sells hardware/software packages which include treadmills with
+force plate measurement capabilities and motion bases, motion capture systems,
+and other sensors for various measurements. Their software, D-Flow, manages the
+data streams from the various systems and is responsible for displaying
+interactive visuals, sounds, and motions to the subject.
 
 The Human Motion and Control Lab at Cleveland State University has such a
 system. Our system includes:
 
-- A ForceLink R-Mill (http://www.forcelink.nl/index.php/product/r-mill/) which
-  has dual 6 DoF force plates, independent belts for each foot, and
-  lateral and pitch motion capabilities.
-- A 10 Camera Motion Analysis motion capture system which includes the Cortex
+- A ForceLink R-Mill_ which has dual 6 DoF force plates, independent belts for
+  each foot, and lateral and pitch motion capabilities.
+- A 10 Camera `Motion Analysis`_ motion capture system which includes the Cortex
   software and hardware for collecting analog and camera data simultaneously.
+- Delsys_ wireless EMG + 3D Accelerometers.
 - Motek Medical's D-Flow software and visual display system.
-- Delsys wireless EMG + 3D Accelerometers.
 
 Cortex alone is capable of delivering data from the cameras, force plates, and
 analog sensors (EMG, Acclerometer), but D-Flow is required to collect data from
@@ -39,6 +38,12 @@ The treadmill's local coordinate system is such that the X coordinate points to
 the right, the Y coordinate points upwards, and the Z coordinate follows from
 the right-hand-rule, i.e. points backwards. The camera's coordinate system is
 aligned to the treamdmill's frame during camera calibration.
+
+.. _D-Flow: http://www.motekmedical.com/products/d-flow-software/
+.. _R-Mill: http://www.forcelink.nl/index.php/product/r-mill/
+.. _Motion Analysis: http://www.motionanalysis.com
+.. _Delsys: http://delsys.com
+.. _Cortex: http://www.motionanalysis.com/html/movement/cortex.html
 
 Mocap Module
 ------------
@@ -78,7 +83,7 @@ Marker Coordinates
    The columns that correspond to marker coordinates have one of three
    suffixes: '.PosX', '.PosY', '.PosZ'. The prefix is the marker name which is
    set by providing a name to the marker in Cortex. There are specific names
-   which are required for D-Flow's Human Body Model's computations.:wq
+   which are required for D-Flow's Human Body Model's computations.
 
 Treamdill reference frame
 X: points to the right
