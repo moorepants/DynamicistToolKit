@@ -16,6 +16,13 @@ from ..walk import (find_constant_speed, interpolate, SimpleControlSolver,
                     WalkingData, DFlowData)
 from ..process import time_vector
 
+# debugging
+try:
+    from IPython.core.debugger import Tracer
+except ImportError:
+    pass
+else:
+    set_trace = Tracer()
 
 def test_find_constant_speed():
 
@@ -122,6 +129,8 @@ class TestDFlowData():
     cortex_start_frame = 2375
     cortex_sample_period = 0.01
     cortex_number_of_samples = 501
+    missing_marker_start_indices = [78, 158, 213, 401, 478]
+    length_missing = [2, 5, 8, 10, 12]
 
     dflow_start_time = 51.687
     dflow_mocap_max_period_deviation = 0.0012
@@ -158,49 +167,6 @@ class TestDFlowData():
                  }
     # TODO : Add names for analog columns in DFlow because you can't name
     # analog signals uniquely in dflow
-    """
-    Treamdill reference frame
-    X: points to the right
-    Y: points upwards
-    Z: point backwards
-    The first 12 are raw voltage signals of the force plate measurements.
-    TODO : Need to figure out what these mean, would be nice to store the
-    calibration matrix from voltages to forces/momements also.
-    Channel1.Anlg
-    Channel2.Anlg
-    Channel3.Anlg
-    Channel4.Anlg
-    Channel5.Anlg
-    Channel6.Anlg
-    Channel7.Anlg
-    Channel8.Anlg
-    Channel9.Anlg
-    Channel10.Anlg
-    Channel11.Anlg
-    Channel12.Anlg
-    # the arrow on the accelerometers which aligns with the local X axis diretion is
-    # always pointing forward (i.e. aligned with the negative z direction)
-    # Front left
-    Channel13.Anlg : EMG
-    Channel14.Anlg : AccX
-    Channel15.Anlg : AccY
-    Channel16.Anlg : AccZ
-    # Back left
-    Channel17.Anlg : EMG
-    Channel18.Anlg : AccX
-    Channel19.Anlg : AccY
-    Channel20.Anlg : AccZ
-    # Front right
-    Channel21.Anlg : EMG
-    Channel22.Anlg : AccX
-    Channel23.Anlg : AccY
-    Channel24.Anlg : AccZ
-    # Back right
-    Channel25.Anlg : EMG
-    Channel26.Anlg : AccX
-    Channel27.Anlg : AccY
-    Channel28.Anlg : AccZ
-    """
 
     def create_sample_mocap_file(self):
         """
@@ -253,22 +219,13 @@ class TestDFlowData():
         for label in self.dflow_hbm_labels:
             mocap_data[label] = np.cos(mocap_data['TimeStamp'])
 
-        # Generate some indices when markers start to go missing and the
-        # number of frames each marker goes missing.
-        self.missing_marker_start_indices = \
-            np.random.randint(0, high=self.cortex_number_of_samples, size=5)
-        self.length_missing = np.random.randint(1, high=10, size=5)
-
-        # TODO: If the missing marker start indice is too close the the end
-        # of the array or too close the start of the next missing marker
-        # then another should be selected.
-
-        for index in self.missing_marker_start_indices:
-            for i, signal in enumerate(self.cortex_marker_labels):
-                mocap_data[signal][index:index + self.length_missing[i]] = \
-                    mocap_data[signal][index]
-
         self.mocap_data_frame = pandas.DataFrame(mocap_data)
+
+        for j, index in enumerate(self.missing_marker_start_indices):
+            for signal in self.cortex_marker_labels:
+                self.mocap_data_frame[signal][index:index + self.length_missing[j]] = \
+                    self.mocap_data_frame[signal][index]
+
         self.mocap_data_frame.to_csv(self.path_to_mocap_data_file, sep='\t',
                                      float_format='%1.6f', index=False,
                                      cols=self.mocap_labels_with_hbm)
@@ -424,17 +381,12 @@ class TestDFlowData():
         dflow_data = DFlowData(self.path_to_mocap_data_file)
         dflow_data._store_mocap_column_labels()
         dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
-        data_frame = pandas.read_csv(dflow_data.mocap_tsv_path,
-                                     delimiter='\t')
+        data_frame = dflow_data._load_mocap_data(ignore_hbm=True)
         identified = dflow_data._identify_missing_markers(data_frame)
-
-        self.missing_marker_start_indices = \
-            np.random.randint(0, high=self.cortex_number_of_samples, size=5)
-        self.length_missing = np.random.randint(1, high=10, size=5)
 
         for i, index in enumerate(self.missing_marker_start_indices):
             for suffix in ['.PosX', '.PosY', '.PosZ']:
-                assert all(identified['T10' + suffix][index:self.length_missing[i]].isnull())
+                assert all(identified['T10' + suffix][index + 1:index + self.length_missing[i]].isnull())
 
     def test_generate_cortex_time_stamp(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)

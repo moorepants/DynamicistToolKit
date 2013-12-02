@@ -17,6 +17,14 @@ import yaml
 # local libraries
 import process
 
+# debugging
+try:
+    from IPython.core.debugger import Tracer
+except ImportError:
+    pass
+else:
+    set_trace = Tracer()
+
 
 def _to_percent(value, position):
     """Returns a string representation of a percentage for matplotlib
@@ -188,7 +196,7 @@ class DFlowData(object):
                 are_constant[col] = \
                     are_constant[single_marker_cols].all(axis=1)
 
-        data_frame[marker_coordinate_col_names][are_constant] = np.nan
+        data_frame[are_constant] = np.nan
 
         return data_frame
 
