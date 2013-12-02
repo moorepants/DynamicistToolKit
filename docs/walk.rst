@@ -69,9 +69,14 @@ Time Stamp
    The ``TimeStamp`` column records the D-Flow system time when it receives a
    "frame" from Cortex in seconds since D-Flow was started. This is
    approximately at 100 hz (Cortex's sample rate), but has slight variability
-   per sample period, something like +/- 0.0012 s or so.  This column can be
+   per sample period, something like +/- 0.002 s or so.  This column can be
    used synchronize with other D-Flow output files which include a D-Flow time
-   stamp, e.g. the output of the record module.
+   stamp, e.g. the output of the record module. The following figure shows the
+   difference, ``.diff()``, of the D-Flow time stamp, giving the variability in
+   periods at each measurement instance.
+
+.. image:: d-flow-time-stamp-diff.png
+
 Frame Number
    The ``FrameNumber`` column gives a positive integer to count the frame
    numbers delivered by Cortex. It seems as though, none of the frames are
