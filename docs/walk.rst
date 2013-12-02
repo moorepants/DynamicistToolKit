@@ -391,3 +391,44 @@ other application.
 .. code::
 
    dflowdata -m trial_01_mocap.txt -r trial_01_record.txt -y trial_01_meta.yml trial_01_clean.txt
+
+Examples
+--------
+
+This shows how to compare the raw marker data with the new interpolated data,
+in this case a simple linear interpolation.
+
+.. code::
+
+   import pandas
+   import maplotlib.pyplot as plt
+
+   data = DFlowData('mocap-module-01.txt', 'record-module-01.txt')
+   data.clean_data()
+   unclean = pandas.read_csv('mocap-module-01.txt', delimiter='\t')
+   fig, axes = plt.subplots(3, 1, sharex=True)
+
+   axes[0].plot(data.data['TimeStamp'], data.data['RHEE.PosX'],
+                unclean['TimeStamp'], unclean['RHEE.PosX'], '.')
+   axes[1].plot(data.data['TimeStamp'], data.data['RHEE.PosY'],
+                unclean['TimeStamp'], unclean['RHEE.PosY'], '.')
+   axes[2].plot(data.data['TimeStamp'], data.data['RHEE.PosZ'],
+                unclean['TimeStamp'], unclean['RHEE.PosZ'], '.')
+
+   axes[0].legend(['Interpolated', 'Raw'])
+   axes[1].legend(['Interpolated', 'Raw'])
+   axes[2].legend(['Interpolated', 'Raw'])
+
+   axes[0].set_ylabel('RHEE.PosX [m]')
+   axes[1].set_ylabel('RHEE.PosY [m]')
+   axes[2].set_ylabel('RHEE.PosZ [m]')
+
+   axes[2].set_xlabel('Time')
+
+   axes[0].legend(['Interpolated', 'Raw'], fontsize=8)
+   axes[1].legend(['Interpolated', 'Raw'], fontsize=8)
+   axes[2].legend(['Interpolated', 'Raw'], fontsize=8)
+
+   fig.show()
+
+.. image:: linear-interpolation.png
