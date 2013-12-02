@@ -21,7 +21,7 @@ output files, but particularly designed with our hardware in mind.
 The Human Motion and Control Lab at Cleveland State University has such a
 system. Our system includes:
 
-- A ForceLink R-Mill_ which has dual 6 DoF force plates, independent belts for
+- A ForceLink_ R-Mill_ which has dual 6 DoF force plates, independent belts for
   each foot, and lateral and pitch motion capabilities.
 - A 10 Camera `Motion Analysis`_ motion capture system which includes the
   Cortex_ software and hardware for collecting analog and camera data
@@ -39,6 +39,7 @@ the right, the Y coordinate points upwards, and the Z coordinate follows from
 the right-hand-rule, i.e. points backwards. The camera's coordinate system is
 aligned to the treadmill's frame during camera calibration.
 
+.. _ForceLink: http://www.forcelink.nl/
 .. _D-Flow: http://www.motekmedical.com/products/d-flow-software/
 .. _R-Mill: http://www.forcelink.nl/index.php/product/r-mill/
 .. _Motion Analysis: http://www.motionanalysis.com
@@ -88,7 +89,7 @@ Force Plate Kinetics
    ``.For[XYZ]``, ``.Mom[XYZ]``, or ``.Cop[XYZ]``. The force plate voltages are
    sampled at a much higher frequency than the cameras. A force/moment
    calibration matrix stored in Cortex converts the voltages to forces and
-   moments before sending it to D-Flow[#]_. The center of pressure is computed
+   moments before sending it to D-Flow [#]_. The center of pressure is computed
    from the forces, moments, and force plate dimensions.
 Analog Channels
    Cortex can sample additional analog channels. These columns have headers
@@ -132,9 +133,9 @@ Human Body Model
    joint angle headers end in ``.Ang``, the joint moments in ``.Mom``, the join
    power ``.Pow`` and the muscle forces are prefixed with ``R_`` or ``L``.
 
-.. [#] Cortex currently does not output anything for the My momemnt on force
-   plate ?. So D-Flow records the raw voltages from Cortex and applies the
-   calibration matrix in D-Flow to get correct values.
+.. [#] Cortex currently does not output anything for the ``.MomY`` momemt on
+   force plate ?. So D-Flow records the raw voltages from Cortex and applies
+   the calibration matrix in D-Flow to get correct values.
 
 Missing Values
 ~~~~~~~~~~~~~~
