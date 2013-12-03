@@ -12,11 +12,12 @@ D-Flow (and Cortex)
 
 Motek Medical sells hardware/software packages which include treadmills with
 force plate measurement capabilities and motion bases, motion capture systems,
-and other sensors for various measurements. Their software, D-Flow, manages the
-data streams from the various systems and is responsible for displaying
-interactive visuals, sounds, and motions to the subject. The walk module
-includes a class that eases processing the data collected from typical D-Flow_
-output files, but particularly designed with our hardware in mind.
+visual displays, and other sensors for various measurements. Their software,
+D-Flow_, manages the data streams from the various systems and is responsible
+for displaying interactive visuals, sounds, and motions to the subject. The
+``walk`` module includes a class that eases processing the data collected from
+typical D-Flow output files, but particularly designed with our hardware in
+mind.
 
 The Human Motion and Control Lab at Cleveland State University has such a
 system. Our system includes:
@@ -49,19 +50,23 @@ aligned to the treadmill's frame during camera calibration.
 Mocap Module
 ------------
 
-D-Flow's Mocap Module has a file tab which allows you to export the time series
-data collected from Cortex in two different file formats: tab separated values
-(tsv) and the C3D format (see http://www.c3d.org). For now, we only deal with
-the tsv file format.
+D-Flow's mocap module has a file tab which allows you to export the time series
+data collected from Cortex in two different file formats: `tab separated
+values`_ (TSV) and the C3D format (see http://www.c3d.org). The TSV files are
+approximately twice the size of the C3D files, don't maintain machine
+precision, and do not allow for meta data storage. But for now, we only deal
+with the TSV file format.
 
-The tsv file output from the mocap module in DFlow is a tab delimited file.
+.. _tab seperated values: http://en.wikipedia.org/wiki/Tab-separated_values
+
+The text file output from the mocap module in DFlow is a tab delimited file.
 The first line is the header and contains a time stamp column, frame number
 column, marker position columns, force plate force/moment columns, force plate
 center of pressure columns, other analog columns, and potentially results from
 the real time `Human Body Model`_ which is included with the D-Flow software.
 These are detailed below. The numerical values of the measurements provided in
 decimal floating point notation with 6 decimals of precision, e.g.
-'123456.123456' [`%1.6f`].
+``123456.123456`` [``%1.6f``].
 
 .. _Human Body Model: http://dx.doi.org/10.1007/s11517-013-1076-z
 
@@ -69,8 +74,8 @@ Time Stamp
    The ``TimeStamp`` column records the D-Flow system time when it receives a
    "frame" from Cortex in seconds since D-Flow was started. This is
    approximately at 100 hz (Cortex's sample rate), but has slight variability
-   per sample period, something like +/- 0.002 s or so.  This column can be
-   used synchronize with other D-Flow output files which include a D-Flow time
+   per sample period, something like +/- 0.002 s or so. This column can be used
+   to synchronize with other D-Flow output files which include a D-Flow time
    stamp, e.g. the output of the record module. The following figure shows the
    difference, ``.diff()``, of the D-Flow time stamp, giving the variability in
    periods at each measurement instance.
@@ -92,16 +97,18 @@ Force Plate Kinetics
    plates. The prefix for these columns is either ``FP1`` or ``FP2`` and
    represents either force plate 1 (left) or 2 (right). The suffixes are either
    ``.For[XYZ]``, ``.Mom[XYZ]``, or ``.Cop[XYZ]``. The force plate voltages are
-   sampled at a much higher frequency than the cameras. A force/moment
-   calibration matrix stored in Cortex converts the voltages to forces and
-   moments before sending it to D-Flow [#]_. The center of pressure is computed
-   from the forces, moments, and force plate dimensions.
+   sampled at a much higher frequency than the cameras, but delivered at the
+   Cortex camera sample rate, 100 Hz. A force/moment calibration matrix stored
+   in Cortex converts the voltages to forces and moments before sending it to
+   D-Flow [#]_. The center of pressure is computed from the forces, moments,
+   and force plate dimensions.
 Analog Channels
    Cortex can sample additional analog channels. These columns have headers
-   like ``Channel[1-99].Anlg`` and the names are fixed to the channels in the
-   National Instruments DAQ box. The first twelve of these are reserved for the
-   force plate voltage measurements. These correspond to the voltages of the
-   force sensors in the two force plates and are as follows (channels 1-12)::
+   which take this form ``Channel[1-99].Anlg`` and the names are fixed to
+   correspond to the channels in the National Instruments DAQ box which samples
+   the analog sensors. The first twelve of these are reserved for the force
+   plate voltage measurements. These correspond to the voltages of the force
+   sensors in the two force plates and are as follows (channels 1-12)::
 
       1. F1Y1
       2. F1Y2
@@ -130,26 +137,27 @@ Analog Channels
       |         Y3 | Y1          |
       |            |             |
       ----------------------------
-   The remaining analogy channels are often used for the EMG and accelerometer
+   The remaining analog channels are often used for EMG and/or accelerometer
    measurements.
 Human Body Model
    The mocap tsv file can also contain joint angles, joint moments, joint
    power, and muscle forces computed by the real time Human Body model. The
-   joint angle headers end in ``.Ang``, the joint moments in ``.Mom``, the join
-   power ``.Pow`` and the muscle forces are prefixed with ``R_`` or ``L``.
+   joint angle headers end in ``.Ang``, the joint moments in ``.Mom``, the
+   joint power ``.Pow`` and the muscle forces are prefixed with ``R_`` or
+   ``L_``.
 
 .. [#] Cortex currently does not output anything for the ``.MomY`` momemt on
-   force plate ?. So D-Flow records the raw voltages from Cortex and applies
-   the calibration matrix in D-Flow to get correct values.
+   both of the force plates. So D-Flow records the raw voltages from Cortex and
+   applies the calibration matrix in D-Flow to get correct values.
 
 Missing Values
 ~~~~~~~~~~~~~~
 
-D-Flow handles missing values to perform well with their real time
+D-Flow handles missing values internally to perform well with their real time
 computations, but there are some important issues to note when dealing with the
-data outputs from D-Flow with regards to missing values. And depending on how
-many markers were used, where they were placed, and what analysis is used,
-different techniques can be used to fill in the gaps.
+data outputs from D-Flow with regards to missing values. Depending on how many
+markers were used, where they were placed, and what analysis is used, different
+techniques can be used to fill in the gaps.
 
 Firstly, the markers sometimes go missing (i.e. can't been seen by the cameras)
 which is typical of motion capture systems. Care must be taken that all markers
@@ -160,9 +168,9 @@ example:
 
 .. image:: constant-markers.png
 
-The mocap file can also contain variables computed by the real time
+The mocap output file can also contain variables computed by the real time
 implementation of the Human Body Model (HBM). If the HBM computation fails at a
-D-Flow sample period, strings of zeros, '0.000000', are inserted for missing
+D-Flow sample period, strings of zeros, ``0.000000``, are inserted for missing
 values. The following figure shows the resulting HBM output with zeros:
 
 .. image:: hbm-missing.png
@@ -172,8 +180,8 @@ Notice that failed HBM computations don't always correspond to missing markers.
 The HBM software only handles zero values for marker coordinates. If markers
 are zero, then HBM ignores them and tries to compute the inverse dynamics with
 a reduced set of markers. So if you playback recordings which have missing
-markers stored as constant values, you will likely get incorrect inverse
-dynamics.
+markers stored as constant values in D-Flow, you will likely get incorrect
+inverse dynamics.
 
 Other
 ~~~~~
@@ -266,16 +274,28 @@ occurrences are counted::
    # EVENT D occured 1 time
    # EVENT E occured 1 time
 
+Treadmill
+~~~~~~~~~
+
+The right and left belt speeds can be measured with the record module. You must
+select a check box in the treadmill module to ensure that the actual speed is
+recorded and not the desired speed. It does not seem possible to measure the
+pitch angle nor the lateral position of the treadmill using the record module,
+it only records the desired (the input) to each.
+
 Meta Data
 ---------
 
-D-Flow does not have any way to store meta data about the recordings. The
-DFlowData class has the option to include a meta data file with the other data
-files that can record arbitrary data about the trial. Things like subject id,
-subject body segment parameter info, trial description, etc can and should be
-included. This data will be available for output to the C3D format or other
-data storage formats and will be used for internal algorithms in further
-analysis.
+D-Flow does not have any way to store meta data with its output. This is
+unfortunate because the C3D format has full support for meta data. It is also
+possible to add meta data into the header of text files, but it is not the
+cleanest solution. So we've implemented our own method to track this
+information. The ``DFlowData`` class has the option to include a meta data file
+with the other data files that can record arbitrary data about the trial.
+Things like subject id, subject body segment parameter info, trial description,
+etc can and should be included. This data will be available for output to the
+C3D format or other data storage formats and can be used for internal
+algorithms in further analysis.
 
 The meta data file must conform to the YAML_ format, which is a common human
 readable data serialization format. As time progresses the structure of the
@@ -284,56 +304,78 @@ requirements.
 
 .. _YAML: http://en.wikipedia.org/wiki/YAML
 
+Basics
+~~~~~~
+
+There are some standard meta data that should be collected with every trial.
+
+::
+
+   subject:
+       id: 567
+       age: 28
+       weight: 70
+   study:
+       id: 58
+       name: Control Identification
+       description: Perturb the subject during walking and running.
+   trial:
+       id: 5
+       datetime: !!timestamp 2013-12-03
+   files:
+       - mocap-module-01.txt
+       - record-module-01.txt
+
 Analog Channel Names
 ~~~~~~~~~~~~~~~~~~~~
 
-Since D-Flow doesn't allow you to set the names of the analog channels, the
-meta data file should include mappings, so that useful measurement names will
-be available for future use, for example::
+Since D-Flow doesn't allow you to set the names of the analog channels in the
+mocap module, the meta data file should include mappings, so that useful
+measurement names will be available for future use, for example::
 
-  analog-channel-map:
-      Channel1.Anlg: F1Y1
-      Channel2.Anlg: F1Y2
-      Channel3.Anlg: F1Y3
-      Channel4.Anlg: F1X1
-      Channel5.Anlg: F1X2
-      Channel6.Anlg: F1Z1
-      Channel7.Anlg: F2Y1
-      Channel8.Anlg: F2Y2
-      Channel9.Anlg: F2Y3
-      Channel10.Anlg: F2X1
-      Channel11.Anlg: F2X2
-      Channel12.Anlg: F2Z1
-      Channel13.Anlg: Front_Left_EMG
-      Channel14.Anlg: Front_Left_AccX
-      Channel15.Anlg: Front_Left_AccY
-      Channel16.Anlg: Front_Left_AccZ
-      Channel17.Anlg: Back_Left_EMG
-      Channel18.Anlg: Back_Left_AccX
-      Channel19.Anlg: Back_Left_AccY
-      Channel20.Anlg: Back_Left_AccZ
-      Channel21.Anlg: Front_Right_EMG
-      Channel22.Anlg: Front_Right_AccX
-      Channel23.Anlg: Front_Right_AccY
-      Channel24.Anlg: Front_Right_AccZ
-      Channel25.Anlg: Back_Right_EMG
-      Channel26.Anlg: Back_Right_AccX
-      Channel27.Anlg: Back_Right_AccY
-      Channel28.Anlg: Back_Right_AccZ
+   trial:
+       analog-channel-map:
+           Channel1.Anlg: F1Y1
+           Channel2.Anlg: F1Y2
+           Channel3.Anlg: F1Y3
+           Channel4.Anlg: F1X1
+           Channel5.Anlg: F1X2
+           Channel6.Anlg: F1Z1
+           Channel7.Anlg: F2Y1
+           Channel8.Anlg: F2Y2
+           Channel9.Anlg: F2Y3
+           Channel10.Anlg: F2X1
+           Channel11.Anlg: F2X2
+           Channel12.Anlg: F2Z1
+           Channel13.Anlg: Front_Left_EMG
+           Channel14.Anlg: Front_Left_AccX
+           Channel15.Anlg: Front_Left_AccY
+           Channel16.Anlg: Front_Left_AccZ
+           Channel17.Anlg: Back_Left_EMG
+           Channel18.Anlg: Back_Left_AccX
+           Channel19.Anlg: Back_Left_AccY
+           Channel20.Anlg: Back_Left_AccZ
+           Channel21.Anlg: Front_Right_EMG
+           Channel22.Anlg: Front_Right_AccX
+           Channel23.Anlg: Front_Right_AccY
+           Channel24.Anlg: Front_Right_AccZ
+           Channel25.Anlg: Back_Right_EMG
+           Channel26.Anlg: Back_Right_AccX
+           Channel27.Anlg: Back_Right_AccY
+           Channel28.Anlg: Back_Right_AccZ
 
 Events
 ~~~~~~
 
-D-Flow doesn't allow you to give names to events and auto-names up to 6 events
-A-F. You can specify and event name map that will be used to automatically
-segment your data into events::
+D-Flow doesn't allow you to define names to events and auto-names up to 6
+events A-F. You can specify an event name map that will be used to
+automatically segment your data into more memorable names events::
 
-   event-map:
-       A: force plate zeroing begins
-       B: walking begins
-       C: walking with lateral perturbations begins
-
-TODO : Need to retain the order of events and the name.
+   trial:
+      event-map:
+          A: force plate zeroing begins
+          B: walking begins
+          C: walking with lateral perturbations begins
 
 Usage
 -----
@@ -363,7 +405,7 @@ Python API
 ~~~~~~~~~~
 
 The ``DFlowData`` class gives a simple Python API for working with the
-DFlowData.
+D-Flow file outputs.
 
 .. code::
 
@@ -378,7 +420,7 @@ DFlowData.
    # depending on the optional keyword arguments.
    data.clean_data()
 
-   # The followign command returns a Pandas DataFrame of all the measurements
+   # The following command returns a Pandas DataFrame of all the measurements
    # for the time period matching the event.
    perturbed_walking = data.extract_Data(event='walking with perturbation')
 
