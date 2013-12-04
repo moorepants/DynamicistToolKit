@@ -314,7 +314,8 @@ There are some standard meta data that should be collected with every trial.
    subject:
        id: 567
        age: 28
-       weight: 70
+       mass: 70
+       mass-units: kilogram
    study:
        id: 58
        name: Control Identification
@@ -325,6 +326,25 @@ There are some standard meta data that should be collected with every trial.
    files:
        - mocap-module-01.txt
        - record-module-01.txt
+
+Units
+~~~~~
+
+The units of the measurements are not specified by D-Flow so they should be
+included in the meta data. Would be nice to take a regular expression or the
+explicit column name.
+
+::
+
+   units:
+       *.PosX: meters
+       *.PosY: meters
+       *.PosZ: meters
+       *.Ang: degrees
+       *.Mom: newton-meter
+       *.Pow: watts
+       L_*: newtons
+       R_*: newtons
 
 Analog Channel Names
 ~~~~~~~~~~~~~~~~~~~~
@@ -372,7 +392,7 @@ events A-F. You can specify an event name map that will be used to
 automatically segment your data into more memorable names events::
 
    trial:
-      event-map:
+      event:
           A: force plate zeroing begins
           B: walking begins
           C: walking with lateral perturbations begins
