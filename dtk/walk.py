@@ -143,7 +143,8 @@ class DFlowData(object):
         self.hbm_column_labels = []
         reg_exps = [re.compile('^[LR]_.*'),
                     re.compile('.*\.Mom$'),
-                    re.compile('.*\.Ang$')]
+                    re.compile('.*\.Ang$'),
+                    re.compile('.*\.Pow$')]
         for i, label in enumerate(mocap_column_labels):
             if any(exp.match(label) for exp in reg_exps):
                 self.hbm_indices.append(i)

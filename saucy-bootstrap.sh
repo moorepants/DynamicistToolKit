@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# This works for Ubuntu 13.10, Saucy Salamander.
+# This script installs all of the dependencies necessary to run the software on
+# Ubuntu 13.10, Saucy Salamander.
 
 apt-get update
 # installation
@@ -11,6 +12,8 @@ apt-get install -y python-numpy python-scipy python-matplotlib python-pandas
 apt-get install -y python-nose python-coverage
 # documentation
 apt-get install -y python-sphinx python-numpydoc
+# other
+apt-get install -y ipython
 
 # Test and install current branch stored on local machine with the VM
 cd /vagrant

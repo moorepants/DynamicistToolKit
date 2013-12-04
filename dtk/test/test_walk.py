@@ -3,6 +3,7 @@
 
 # builtin
 import os
+from time import strptime
 
 # external
 import numpy as np
@@ -24,6 +25,17 @@ except ImportError:
     pass
 else:
     set_trace = Tracer()
+
+
+def compare_data_frames(actual, expected, rtol=1e-7, atol=0.0):
+    """Compares two data frames column by column for numerical
+    equivalence."""
+
+    # Make sure all columns are present.
+    assert sorted(list(expected.columns)) == sorted(list(actual.columns))
+
+    for col in expected.columns:
+        testing.assert_allclose(actual[col], expected[col], rtol, atol)
 
 
 def test_find_constant_speed():
@@ -68,65 +80,6 @@ def test_interpolate():
 
 
 class TestDFlowData():
-    """we need class that deals with d flow data and running the hbm command
-    line program
-
-    input
-    -----
-
-    mocap module file path (or handle): times series of markers, force plate
-    stuff, analog measurements this is basically at 100 hz, but not exactly
-
-    record module file path (or handle): variable sample rate of treadmill
-    motions (or any other variables from dflow) and events
-
-    mocap compensation file path: with no loads for compensation
-
-    meta data file path (or handle)
-
-    output
-    ------
-    pandas data frame with all measurements from both files at 100 hertz,
-    missing values set at NA,
-
-    time start from 0 for all?
-
-    event times?
-
-    actions
-    -------
-
-    look for metadata in directory of the files (search up the hierarchy?)
-    parse meta data
-    store meta data as a dictionary
-
-    parse record file for event times
-    load time series from record file into data frame
-    interpolate data in record file at 100 hertz
-
-    load time series from mocap file into data frame
-    identify missing markers
-
-    load the compensation file
-    compute the compensatation for the forces
-
-    generate hbm output with the mocap file
-    load hbm outputs into data frames
-    interpolate at 100 hertz
-
-    join all off the data frames in to one data frame at 100 hz sample rate
-    with the time stamp starting at zero as the index
-
-    attributes
-    ----------
-
-    record module data path (or file handle)
-    mocap module data path (or file handle)
-    meta data file path (or file handle)
-    hbmtest configuration details
-
-
-    """
 
     cortex_start_frame = 2375
     cortex_sample_period = 0.01
@@ -149,6 +102,7 @@ class TestDFlowData():
                             'Channel2.Anlg']
     dflow_hbm_labels = ['RKneeFlexion.Ang',
                         'RKneeFlexion.Mom',
+                        'RKneeFlexion.Pow',
                         'R_PectoralisMajorTH1',
                         'L_RectusFemoris']
     mocap_labels_without_hbm = (['TimeStamp', 'FrameNumber'] +
@@ -160,15 +114,58 @@ class TestDFlowData():
     path_to_record_data_file = 'example_record_tsv_file.txt'
     path_to_meta_data_file = 'example_meta_data_file.yml'
 
-    meta_data = {'date': '2013-10-3',
-                 'trial number': 5,
-                 'project': 'projecta',
+    meta_data = {'trial': {'id': 5,
+                           'datetime': strptime('2013-10-03', "%Y-%m-%d")},
+                 'subject': {'id': 234,
+                             'age': 28,
+                             'mass': 70,
+                             'mass-units': 'kilogram'},
+                 'study': {'id': 12,
+                           'name': 'Human Locomotion Control Identification',
+                           'description': 'Perturbations during walking and running.'},
+                 'files': [path_to_mocap_data_file,
+                           path_to_record_data_file],
                  'events': {'A': 'Zeroing',
                             'B': 'Walking',
                             'C': 'Relaxing'},
+                 'units': {
+                     '.*\.Pos[XYZ]$': 'meters',
+                     '^[LR]_.*': 'newtons',
+                     '.*\.Mom$': 'newton-meters',
+                     '.*\.Ang$': 'degrees',
+                     '.*\.Pow$': 'watts'
+                     },
+                 'analog-channel-names': {
+                    "Channel1.Anlg": "F1Y1",
+                    "Channel2.Anlg": "F1Y2",
+                    "Channel3.Anlg": "F1Y3",
+                    "Channel4.Anlg": "F1X1",
+                    "Channel5.Anlg": "F1X2",
+                    "Channel6.Anlg": "F1Z1",
+                    "Channel7.Anlg": "F2Y1",
+                    "Channel8.Anlg": "F2Y2",
+                    "Channel9.Anlg": "F2Y3",
+                    "Channel10.Anlg": "F2X1",
+                    "Channel11.Anlg": "F2X2",
+                    "Channel12.Anlg": "F2Z1",
+                    "Channel13.Anlg": "Front_Left_EMG",
+                    "Channel14.Anlg": "Front_Left_AccX",
+                    "Channel15.Anlg": "Front_Left_AccY",
+                    "Channel16.Anlg": "Front_Left_AccZ",
+                    "Channel17.Anlg": "Back_Left_EMG",
+                    "Channel18.Anlg": "Back_Left_AccX",
+                    "Channel19.Anlg": "Back_Left_AccY",
+                    "Channel20.Anlg": "Back_Left_AccZ",
+                    "Channel21.Anlg": "Front_Right_EMG",
+                    "Channel22.Anlg": "Front_Right_AccX",
+                    "Channel23.Anlg": "Front_Right_AccY",
+                    "Channel24.Anlg": "Front_Right_AccZ",
+                    "Channel25.Anlg": "Back_Right_EMG",
+                    "Channel26.Anlg": "Back_Right_AccX",
+                    "Channel27.Anlg": "Back_Right_AccY",
+                    "Channel28.Anlg": "Back_Right_AccZ",
+                    }
                  }
-    # TODO : Add names for analog columns in DFlow because you can't name
-    # analog signals uniquely in dflow
 
     def create_sample_mocap_file(self):
         """
@@ -199,8 +196,9 @@ class TestDFlowData():
         # This generates the slightly variable sampling periods seen in the
         # time stamp column.
         deviations = (self.dflow_mocap_max_period_deviation *
-                      np.random.choice([-1.0, 1.0]) *
-                      np.random.random(self.cortex_number_of_samples))
+                      np.random.uniform(-1.0, 1.0,
+                                        self.cortex_number_of_samples))
+
         variable_periods = (self.cortex_sample_period *
                             np.ones(self.cortex_number_of_samples) +
                             deviations)
@@ -262,19 +260,20 @@ class TestDFlowData():
             np.random.random(self.dflow_record_number_of_samples)
 
         self.record_data_frame = pandas.DataFrame(record_data)
+        # TODO : Pandas 0.11.0 does not have a cols argument.
+        # http://pandas.pydata.org/pandas-docs/version/0.10.1/generated/pandas.Series.to_csv.html
         self.record_data_frame.to_csv(self.path_to_record_data_file,
                                       sep='\t', float_format='%1.6f',
                                       index=False, cols=['Time',
                                                          'LeftBeltSpeed',
                                                          'RightBeltSpeed'])
-
         event_template = "#\n# EVENT {} - COUNT {}\n#\n"
 
         time = self.record_data_frame['Time']
 
-        event_times = {'A': np.random.choice(time),
-                       'B': np.random.choice(time),
-                       'C': np.random.choice(time)}
+        event_times = {'A': time[333],
+                       'B': time[784],
+                       'C': time[955]}
 
         # This loops through the record file and inserts the events.
         new_lines = ''
@@ -445,9 +444,7 @@ class TestDFlowData():
         dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         raw_mocap_data = dflow_data._load_mocap_data()
 
-        testing.assert_allclose(raw_mocap_data.sort(axis=1).values,
-                                self.mocap_data_frame.sort(axis=1).values,
-                                atol=1e-6)
+        compare_data_frames(raw_mocap_data, self.mocap_data_frame, atol=1e-6)
 
         # TODO : Add some missing values into the HBM columns of
         # self.mocap_data_frame and make sure they get replaced with NaN.
@@ -456,8 +453,7 @@ class TestDFlowData():
 
         expected = self.mocap_data_frame[self.mocap_labels_without_hbm]
 
-        testing.assert_allclose(raw_mocap_data.sort(axis=1).values,
-                                expected.sort(axis=1).values, atol=1e-6)
+        compare_data_frames(raw_mocap_data, expected, atol=1e-6)
 
     def test_extract_events_from_record_file(self):
         pass
@@ -466,9 +462,8 @@ class TestDFlowData():
         dflow_data = DFlowData(record_tsv_path=self.path_to_record_data_file)
         raw_record_data = dflow_data._load_record_data()
 
-        testing.assert_allclose(raw_record_data.sort(axis=1).values,
-                                self.record_data_frame.sort(axis=1).values,
-                                atol=1e-6)
+        compare_data_frames(raw_record_data, self.record_data_frame,
+                            atol=1e-6)
 
     def test_resample_record_data(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file,

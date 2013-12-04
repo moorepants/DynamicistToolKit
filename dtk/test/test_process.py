@@ -20,8 +20,8 @@ def test_coefficient_of_determination():
     # define a simple line with some measured data points
     num_samples = 100
     x = np.arange(num_samples)
-    slope = np.random.choice([-1.0, 1.0]) * float(np.random.randint(1, 100))
-    intercept = np.random.choice([-1.0, 1.0]) * float(np.random.randint(1, 100))
+    slope = np.random.uniform(-100, 100)
+    intercept = np.random.uniform(-100, 100)
     y = slope * x + intercept
     # add some noise to each to create fake measurements
     x_measured = x + 0.001 * np.random.random(num_samples)
