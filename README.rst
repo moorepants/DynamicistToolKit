@@ -88,9 +88,15 @@ numpydoc::
 Release Notes
 =============
 
+0.3.0
+-----
+
+- Removed pandas dependency.
+- Improved time vector function.
 - Removed gait analysis code (walk.py), now at
   http://github.com/csu-hmc/Gait-Analysis-Toolkit.
-- TravisCI tests now run.
+- TravisCI tests now run, added image to readme.
+- Added documentation at ReadTheDocs.
 
 0.2.0
 -----
