@@ -7,8 +7,7 @@ apt-get update
 # installation
 apt-get install -y python-setuptools python-pip
 # main dependencies
-apt-get install -y python-numpy python-scipy python-matplotlib python-pandas
-pip install pandas==0.12.0
+apt-get install -y python-numpy python-scipy python-matplotlib
 # testing
 apt-get install -y python-nose python-coverage
 # documentation

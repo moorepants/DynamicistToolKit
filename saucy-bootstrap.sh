@@ -7,7 +7,7 @@ apt-get update
 # installation
 apt-get install -y python-setuptools
 # main dependencies
-apt-get install -y python-numpy python-scipy python-matplotlib python-pandas
+apt-get install -y python-numpy python-scipy python-matplotlib
 # testing
 apt-get install -y python-nose python-coverage
 # documentation
