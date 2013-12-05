@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/moorepants/DynamicistToolKit.png?branch=master
+   :target: http://travis-ci.org/moorepants/DynamicistToolKit
+
 Introduction
 ============
 
