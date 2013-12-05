@@ -14,8 +14,6 @@ Modules
    Various functions for calculating and manipulating inertial quantities.
 **process**
    Various tools for common signal processing tasks.
-**walk**
-   Tools for working with gait data and walking models.
 
 Installation
 ============
@@ -87,6 +85,8 @@ numpydoc::
 Release Notes
 =============
 
+- Removed gait analysis code (walk.py), now at
+  http://github.com/csu-hmc/Gait-Analysis-Toolkit.
 - TravisCI tests now run.
 
 0.2.0
