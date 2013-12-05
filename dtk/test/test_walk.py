@@ -311,12 +311,28 @@ class TestDFlowData():
         assert data.record_tsv_path == self.path_to_record_data_file
         assert data.meta_yml_path == self.path_to_meta_data_file
 
+        for attr in ['meta', 'mocap_column_labels', 'marker_column_labels',
+                     'hbm_column_labels', 'hbm_column_indices',
+                     'non_hbm_column_indices']:
+            try:
+                getattr(data, attr)
+            except AttributeError:
+                assert False
+
         data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
                          meta_yml_path=self.path_to_meta_data_file)
 
         assert data.mocap_tsv_path == self.path_to_mocap_data_file
         assert data.record_tsv_path is None
         assert data.meta_yml_path == self.path_to_meta_data_file
+
+        for attr in ['meta', 'mocap_column_labels', 'marker_column_labels',
+                     'hbm_column_labels', 'hbm_column_indices',
+                     'non_hbm_column_indices']:
+            try:
+                getattr(data, attr)
+            except AttributeError:
+                assert False
 
         data = DFlowData(record_tsv_path=self.path_to_record_data_file,
                          meta_yml_path=self.path_to_meta_data_file)
@@ -325,11 +341,25 @@ class TestDFlowData():
         assert data.record_tsv_path == self.path_to_record_data_file
         assert data.meta_yml_path == self.path_to_meta_data_file
 
+        for attr in ['meta']:
+            try:
+                getattr(data, attr)
+            except AttributeError:
+                assert False
+
         data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
 
         assert data.mocap_tsv_path == self.path_to_mocap_data_file
         assert data.record_tsv_path is None
         assert data.meta_yml_path is None
+
+        for attr in ['mocap_column_labels', 'marker_column_labels',
+                     'hbm_column_labels', 'hbm_column_indices',
+                     'non_hbm_column_indices']:
+            try:
+                getattr(data, attr)
+            except AttributeError:
+                assert False
 
         data = DFlowData(record_tsv_path=self.path_to_record_data_file)
 
@@ -342,46 +372,38 @@ class TestDFlowData():
     def test_parse_meta_data_file(self):
 
         dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file,
-                               record_tsv_path=self.path_to_record_data_file,
                                meta_yml_path=self.path_to_meta_data_file)
 
-        dflow_data._parse_meta_data_file()
+        assert self.meta_data == dflow_data._parse_meta_data_file()
 
-        assert dflow_data.meta == self.meta_data
-
-    def test_store_mocap_column_labels(self):
+    def test_mocap_column_labels(self):
 
         dflow_data = DFlowData(mocap_tsv_path=self.path_to_mocap_data_file)
 
-        dflow_data._store_mocap_column_labels()
-
-        assert dflow_data.mocap_column_labels == self.mocap_labels_with_hbm
+        assert self.mocap_labels_with_hbm == dflow_data._mocap_column_labels()
 
     def test_marker_column_labels(self):
 
         dflow_data = DFlowData(self.path_to_mocap_data_file)
-
-        labels = dflow_data._marker_column_labels(self.mocap_data_frame)
+        all_labels = dflow_data.mocap_column_labels
+        labels = dflow_data._marker_column_labels(all_labels)
 
         assert labels == self.cortex_marker_labels
 
-    def test_remove_hbm_columns(self):
+    def test_hbm_column_labels(self):
 
         dflow_data = DFlowData(self.path_to_mocap_data_file)
+        all_labels = dflow_data.mocap_column_labels
 
-        data = pandas.DataFrame({'RKnee.Ang': range(5),
-                                 'RKnee.Mom': range(5),
-                                 'RKnee.PosX': range(5)})
+        hbm_lab, hbm_i, non_hbm_i = dflow_data._hbm_column_labels(all_labels)
 
-        data = dflow_data._remove_hbm_columns(data)
-
-        assert any(col not in data.columns for col in ['RKnee.Ang',
-                                                       'RKnee.Mom'])
+        assert self.dflow_hbm_labels == hbm_lab
+        assert hbm_i == range(len(self.mocap_labels_without_hbm),
+                              len(self.mocap_labels_with_hbm))
+        assert non_hbm_i == range(len(self.mocap_labels_without_hbm))
 
     def test_identify_missing_markers(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
-        dflow_data._store_mocap_column_labels()
-        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         data_frame = dflow_data._load_mocap_data(ignore_hbm=True)
         identified = dflow_data._identify_missing_markers(data_frame)
 
@@ -398,7 +420,6 @@ class TestDFlowData():
 
     def test_interpolate_missing_markers(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
-        dflow_data._store_mocap_column_labels()
 
         with_missing = pandas.DataFrame({
             'TimeStamp': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
@@ -420,8 +441,6 @@ class TestDFlowData():
         assert_frame_equal(interpolated, without_missing)
 
         dflow_data = DFlowData(self.path_to_mocap_data_file)
-        dflow_data._store_mocap_column_labels()
-        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         mocap_data_frame = dflow_data._load_mocap_data(ignore_hbm=True)
         identified = dflow_data._identify_missing_markers(mocap_data_frame)
         interpolated = dflow_data._interpolate_missing_markers(identified)
@@ -440,8 +459,6 @@ class TestDFlowData():
 
     def test_load_mocap_data(self):
         dflow_data = DFlowData(self.path_to_mocap_data_file)
-        dflow_data._store_mocap_column_labels()
-        dflow_data._store_hbm_column_labels(dflow_data.mocap_column_labels)
         raw_mocap_data = dflow_data._load_mocap_data()
 
         compare_data_frames(raw_mocap_data, self.mocap_data_frame, atol=1e-6)

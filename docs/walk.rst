@@ -143,8 +143,16 @@ Human Body Model
    The mocap tsv file can also contain joint angles, joint moments, joint
    power, and muscle forces computed by the real time Human Body model. The
    joint angle headers end in ``.Ang``, the joint moments in ``.Mom``, the
-   joint power ``.Pow`` and the muscle forces are prefixed with ``R_`` or
+   joint power ``.Pow``, and the muscle forces are prefixed with ``R_`` or
    ``L_``.
+Segment Rotations
+   D-Flow outputs segment rotations for visualization. These headers in in
+   ``.Rot[XYZ]``. The definition of the rotations is unclear and it is unclear
+   what they are used for.
+
+TODO: There is HBM.COM.Z
+TODO: There seems to be both positive and negative zero values in the HBM
+output '0.000000' and '-0.000000'.
 
 .. [#] Cortex currently does not output anything for the ``.MomY`` momemt on
    both of the force plates. So D-Flow records the raw voltages from Cortex and

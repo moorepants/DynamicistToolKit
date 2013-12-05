@@ -81,88 +81,129 @@ class DFlowData(object):
     D-Flow software."""
 
     coordinate_labels = ['X', 'Y', 'Z']
-
     marker_coordinate_suffixes = ['.Pos' + c for c in coordinate_labels]
-    # D-Flow outputs real time computed values of the joint torques, joint
-    # angles, and the muscle forces. The joint torques end in '.Mom', the
-    # joint angles end in '.Ang', and the muscle forces seem to fit this
-    # Python regular expression '[LR]_.*'.
-    hbm_column_suffix = ['.Mom', '.Ang']  # Acc Rate Pow ?
+    marker_coordinate_regex = '.*\.Pos[XYZ]$'
+    hbm_column_regexes = ['^[LR]_.*', '.*\.Mom$', '.*\.Ang$', '.*\.Pow$']
+    # TODO: There are also .Rot[XYZ] and .COM.X values. Need to determine
+    # what they are.
     force_plate_names = ['FP1', 'FP2']  # FP1 : left, FP2 : right
     force_plate_suffix = [suffix_beg + end for end in coordinate_labels for
                           suffix_beg in ['.For', '.Mom', '.Cop']]
 
     cortex_sample_rate = 100  # Hz
     constant_marker_tolerance = 1e-16
-    hbm_na = '0.000000'
+    hbm_na = ['0.000000', '-0.000000']
 
     def __init__(self, mocap_tsv_path=None, record_tsv_path=None,
                  meta_yml_path=None):
         """Sets the data file paths."""
 
-        self.mocap_tsv_path = mocap_tsv_path
-        self.record_tsv_path = record_tsv_path
-        self.meta_yml_path = meta_yml_path
-
         if mocap_tsv_path is None and record_tsv_path is None:
             raise ValueError("You must supply at least a D-Flow mocap file "
                              + "or a D-Flow record file.")
 
+        self.mocap_tsv_path = mocap_tsv_path
+        self.record_tsv_path = record_tsv_path
+        self.meta_yml_path = meta_yml_path
+
+        if self.meta_yml_path is not None:
+            self.meta = self._parse_meta_data_file()
+
+        if self.mocap_tsv_path is not None:
+
+            self.mocap_column_labels = self._mocap_column_labels()
+
+            self.marker_column_labels = \
+                self._marker_column_labels(self.mocap_column_labels)
+
+            (self.hbm_column_labels, self.hbm_column_indices,
+             self.non_hbm_column_indices) = \
+                self._hbm_column_labels(self.mocap_column_labels)
+
     def _parse_meta_data_file(self):
         """Returns a dictionary containing the meta data stored in the
         optional meta data file."""
-        if self.meta_yml_path is not None:
-            with open(self.meta_yml_path, 'r') as f:
-                self.meta = yaml.load(f)
 
-    def _store_mocap_column_labels(self):
-        """Stores a list of the motion capture file's column labels as an
-        attribute. The list is in the same order as in the mocap tsv
+        with open(self.meta_yml_path, 'r') as f:
+            meta = yaml.load(f)
+
+        return meta
+
+    def _mocap_column_labels(self):
+        """Retruns a list of strings containing the motion capture file's
+        column labels.  The list is in the same order as in the mocap tsv
         file."""
         with open(self.mocap_tsv_path, 'r') as f:
-            self.mocap_column_labels = f.readline().strip().split('\t')
+            mocap_column_labels = f.readline().strip().split('\t')
 
-    def _marker_column_labels(self, mocap_column_labels):
+        return mocap_column_labels
+
+    def _marker_column_labels(self, labels):
         """Returns a list of column labels that correpsond to markers, i.e.
-        ones that end in '.PosX', '.PosY', or '.PosZ', given a master
-        list."""
+        ones that end in '.PosX', '.PosY', or '.PosZ', given a master list.
 
-        marker_coordinate_col_names = []
-        for col in mocap_column_labels:
-            if any(col.endswith(x) for x in self.marker_coordinate_suffixes):
-                marker_coordinate_col_names.append(col)
+        Parameters
+        ----------
+        labels : list of strings
+            This should be a superset of column labels, some of which may be
+            marker column labels.
 
-        return marker_coordinate_col_names
+        Returns
+        -------
+        marker_labels : list of strings
+            The labels of columns of marker time series in the order found
+            in `labels`.
 
-    def _store_hbm_column_labels(self, mocap_column_labels):
-        """Stores a list of human body model column labels, the indices of
+        """
+
+        reg_exp = re.compile(self.marker_coordinate_regex)
+
+        marker_labels = []
+        for i, label in enumerate(labels):
+            if reg_exp.match(label):
+                marker_labels.append(label)
+
+        return marker_labels
+
+    def _hbm_column_labels(self, labels):
+        """Returns a list of human body model column labels, the indices of
         the labels, and the indices of the non-hbm labels in relation to the
-        rest of the header."""
-        self.hbm_indices = []
-        self.non_hbm_indices = []
-        self.hbm_column_labels = []
-        reg_exps = [re.compile('^[LR]_.*'),
-                    re.compile('.*\.Mom$'),
-                    re.compile('.*\.Ang$'),
-                    re.compile('.*\.Pow$')]
-        for i, label in enumerate(mocap_column_labels):
+        rest of the header.
+
+        Parameters
+        ----------
+        labels : list of strings
+            This should be a superset of column labels, some of which may be
+            human body model results.
+
+        Returns
+        -------
+        hbm_labels : list of strings
+            The labels of columns of HBM data time series in the order found
+            in `labels`.
+        hbm_indices : list of integers
+            The indices of the HBM columns with respect to the indices of
+            `labels`.
+        non_hbm_indices : list of integers
+            The indices of the non-HBM columns with respect to the indices
+            of `labels`.
+
+        """
+
+        hbm_labels = []
+        hbm_indices = []
+        non_hbm_indices = []
+
+        reg_exps = [re.compile(regex) for regex in self.hbm_column_regexes]
+
+        for i, label in enumerate(labels):
             if any(exp.match(label) for exp in reg_exps):
-                self.hbm_indices.append(i)
-                self.hbm_column_labels.append(label)
+                hbm_indices.append(i)
+                hbm_labels.append(label)
             else:
-                self.non_hbm_indices.append(i)
+                non_hbm_indices.append(i)
 
-    def _remove_hbm_columns(self, data_frame):
-        """Returns the provided data frame with all columns computed by the
-        human body model removed. These are based on D-Flow's naming scheme,
-        i.e. any column that ends in '.Ang' or '.Mom'."""
-
-        hbm_cols = []
-        for col in data_frame.columns:
-            if any(col.endswith(x) for x in self.hbm_column_suffix):
-                hbm_cols.append(col)
-
-        return data_frame.drop(hbm_cols, axis=1)
+        return hbm_labels, hbm_indices, non_hbm_indices
 
     def _identify_missing_markers(self, data_frame):
         """Returns the data frame in which all marker columns (ends with
@@ -262,7 +303,7 @@ class DFlowData(object):
         """
         if ignore_hbm is True:
             return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
-                                   usecols=self.non_hbm_indices)
+                                   usecols=self.non_hbm_column_indices)
         else:
             hbm_na_values = {k: self.hbm_na for k in self.hbm_column_labels}
             return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
@@ -370,12 +411,7 @@ class DFlowData(object):
     def clean_data(self):
         """Loads and processes the data."""
 
-        if self.meta_yml_path is not None:
-            self._parse_meta_data_file()
-
         if self.mocap_tsv_path is not None:
-            self._store_mocap_column_labels()
-            self._store_hbm_column_labels(self.mocap_column_labels)
             raw_mocap_data_frame = self._load_mocap_data(ignore_hbm=True)
             mocap_data_frame = self._identify_missing_markers(raw_mocap_data_frame)
             mocap_data_frame = \
