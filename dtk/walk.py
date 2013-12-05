@@ -289,25 +289,32 @@ class DFlowData(object):
 
         return data_frame
 
-    def _load_mocap_data(self, ignore_hbm=False):
+    def _load_mocap_data(self, ignore_hbm=False, id_hbm_na=False):
         """Returns a data frame generated from the tsv mocap file.
 
         Parameters
         ----------
-        ignore_hbm : boolean, optional, default=True
+        ignore_hbm : boolean, optional, default=False
             If true, the columns associated with D-Flow's real time human
-            body model computations will not be loaded. If false, the
-            columns will be loaded with all '0.000000' strings in the HBM
+            body model computations will not be loaded.
+        id_hbm_na : boolean, optional, default=False
+            If true and `ignore_hbm` is false, then the HBM columns will be
+            loaded with all '0.000000' and '-0.000000' strings in the HBM
             columns replaced with NaN.
 
         """
+
         if ignore_hbm is True:
             return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
                                    usecols=self.non_hbm_column_indices)
         else:
-            hbm_na_values = {k: self.hbm_na for k in self.hbm_column_labels}
-            return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
-                                   na_values=hbm_na_values)
+            if id_hbm_na is True:
+                hbm_na_values = {k: self.hbm_na for k in
+                                 self.hbm_column_labels}
+                return pandas.read_csv(self.mocap_tsv_path, delimiter='\t',
+                                       na_values=hbm_na_values)
+            else:
+                return pandas.read_csv(self.mocap_tsv_path, delimiter='\t')
 
     def missing_value_statistics(self, data_frame):
         """Returns a report of missing values in the marker and/or HBM
