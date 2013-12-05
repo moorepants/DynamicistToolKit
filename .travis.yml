@@ -4,7 +4,7 @@ python:
 virtualenv:
   system_site_packages: true
 before_install:
-        - sudo apt-get install -y -qq python-setuptools python-numpy python-scipy python-matplotlib python-nose python-coverage
+  - sudo apt-get install -y -qq python-setuptools python-numpy python-scipy python-matplotlib python-nose python-coverage
   - pip freeze
 install:
   - python setup.py install
