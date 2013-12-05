@@ -57,7 +57,7 @@ approximately twice the size of the C3D files, don't maintain machine
 precision, and do not allow for meta data storage. But for now, we only deal
 with the TSV file format.
 
-.. _tab seperated values: http://en.wikipedia.org/wiki/Tab-separated_values
+.. _tab separated values: http://en.wikipedia.org/wiki/Tab-separated_values
 
 The text file output from the mocap module in DFlow is a tab delimited file.
 The first line is the header and contains a time stamp column, frame number
@@ -77,10 +77,10 @@ Time Stamp
    per sample period, something like +/- 0.002 s or so. This column can be used
    to synchronize with other D-Flow output files which include a D-Flow time
    stamp, e.g. the output of the record module. The following figure shows the
-   difference, ``.diff()``, of the D-Flow time stamp, giving the variability in
-   periods at each measurement instance.
+   difference, ``.diff()``, of an example D-Flow time stamp, giving the
+   variability in periods at each measurement instance.
 
-.. image:: d-flow-time-stamp-diff.png
+   .. image:: d-flow-time-stamp-diff.png
 
 Frame Number
    The ``FrameNumber`` column gives a positive integer to count the frame
@@ -91,39 +91,41 @@ Marker Coordinates
    suffixes: ``.PosX``, ``.PosY``, ``.PosZ``. The prefix is the marker name
    which is set by providing a name to the marker in Cortex. There are specific
    names which are required for D-Flow's Human Body Model's computations. The
-   marker coordinates are given in meters.
-Force Plate Kinetics
+   marker coordinates are given in meters. See below for some additional
+   virtualForce Plate Kinetics
    There are three forces and three moments recorded by each of the two force
-   plates. The prefix for these columns is either ``FP1`` or ``FP2`` and
-   represents either force plate 1 (left) or 2 (right). The suffixes are either
-   ``.For[XYZ]``, ``.Mom[XYZ]``, or ``.Cop[XYZ]``. The force plate voltages are
+   plates in Newtons and Newton-Meters, respectively. The prefix for these
+   columns is either ``FP1`` or ``FP2`` and represents either force plate 1
+   (left) or 2 (right). The suffixes are either ``.For[XYZ]``, ``.Mom[XYZ]``
+   for the forces and moments, respectively.The force plate voltages are
    sampled at a much higher frequency than the cameras, but delivered at the
    Cortex camera sample rate, 100 Hz. A force/moment calibration matrix stored
    in Cortex converts the voltages to forces and moments before sending it to
-   D-Flow [#]_. The center of pressure is computed from the forces, moments,
-   and force plate dimensions.
+   D-Flow [#]_. Cortex also computes the center of pressure from the forces,
+   moments, and force plate dimensions. These have the same prefixes for the
+   plate number, have the suffix ``.Cop[XYZ]``, and are in meters.
 Analog Channels
    Cortex can sample additional analog channels. These columns have headers
    which take this form ``Channel[1-99].Anlg`` and the names are fixed to
    correspond to the channels in the National Instruments DAQ box which samples
    the analog sensors. The first twelve of these are reserved for the force
    plate voltage measurements. These correspond to the voltages of the force
-   sensors in the two force plates and are as follows (channels 1-12)::
+   sensors in the two force plates and are as follows (channels 1-12).
 
-      1. F1Y1
-      2. F1Y2
-      3. F1Y3
-      4. F1X1
-      5. F1X2
-      6. F1Z1
-      7. F2Y1
-      8. F2Y2
-      9. F2Y3
-      10. F2X1
-      11. F2X2
-      12. F2Z1
+   1. F1Y1
+   2. F1Y2
+   3. F1Y3
+   4. F1X1
+   5. F1X2
+   6. F1Z1
+   7. F2Y1
+   8. F2Y2
+   9. F2Y3
+   10. F2X1
+   11. F2X2
+   12. F2Z1
 
-      Top View of treadmill surface showing location of the Y sensors.
+   Top View of treadmill surface showing location of the Y sensors::
 
       ----------------------------
       |    FP1     |     FP2     |
@@ -131,32 +133,63 @@ Analog Channels
       |         Y2 | Y2          |
       |            |             |
       |            |             |
-      | Y1         |          Y3 |    |----> X
+      | Y1         |          Y3 |    ----> X
       |            |             |    |
-      |            |             |    V  Z
-      |         Y3 | Y1          |
+      |            |             |    V
+      |         Y3 | Y1          |    Z
       |            |             |
       ----------------------------
-   The remaining analog channels are often used for EMG and/or accelerometer
-   measurements.
-Human Body Model
-   The mocap tsv file can also contain joint angles, joint moments, joint
-   power, and muscle forces computed by the real time Human Body model. The
-   joint angle headers end in ``.Ang``, the joint moments in ``.Mom``, the
-   joint power ``.Pow``, and the muscle forces are prefixed with ``R_`` or
-   ``L_``.
-Segment Rotations
-   D-Flow outputs segment rotations for visualization. These headers in in
-   ``.Rot[XYZ]``. The definition of the rotations is unclear and it is unclear
-   what they are used for.
 
-TODO: There is HBM.COM.Z
-TODO: There seems to be both positive and negative zero values in the HBM
-output '0.000000' and '-0.000000'.
+   The remaining analog channels are connected to the 16 Delsys
+   EMG/Accelerometers measurements. Each sensor has four signals: EMG, AccX,
+   AccY, and AccZ. The are ordered in the remaining channels as:
+
+   13. EMG1
+   14. ACCX1
+   15. ACCY1
+   16. ACCZ1
+   17. EMG2
+   18. ACCX2
+   19. ACCY2
+   20. ACCZ2
+   21. etc.
+
+   **Note that all of the signals are in volts!**. You must scale them
+   yourself.
+Human Body Model
+   The mocap TSV file can also contain joint angles [degrees], joint moments
+   [Newton-Meters], joint power [Watts], and muscle forces [Newtons] computed
+   by the real time Human Body model. The joint angle headers end in ``.Ang``,
+   the joint moments in ``.Mom``, the joint power ``.Pow``, and the muscle
+   forces are prefixed with ``R_`` or ``L_``. D-Flow also outputs the centor of
+   mass in meters of the person in the ``HBM.COM.[XYZ]`` columns.
+Segment Positions and Rotations
+   D-Flow also outputs positional and rotational information about body
+   segments. There are virtual markers with suffixes ``.Pos[XYZ]`` And there
+   are also segment rotations in degrees. These header labels end in
+   ``.Rot[XYZ]``. The definition of the positions and rotations is unclear and
+   it is unclear what they are used for. The following list gives the prefixes:
+
+   - ``pelvis``
+   - ``thorax``
+   - ``spine``
+   - ``pelvislegs``
+   - ``lfemur``
+   - ``ltibia``
+   - ``lfoot``
+   - ``toes``
+   - ``rfemur``
+   - ``rtibia``
+   - ``rfoot``
+   - ``rtoes``
+
+   .. todo::
+      There are probably more of these for the upper body.
 
 .. [#] Cortex currently does not output anything for the ``.MomY`` momemt on
    both of the force plates. So D-Flow records the raw voltages from Cortex and
-   applies the calibration matrix in D-Flow to get correct values.
+   applies the calibration matrix in D-Flow to get correct values using an ``.idc``
+   file.
 
 Missing Values
 ~~~~~~~~~~~~~~
@@ -178,8 +211,9 @@ example:
 
 The mocap output file can also contain variables computed by the real time
 implementation of the Human Body Model (HBM). If the HBM computation fails at a
-D-Flow sample period, strings of zeros, ``0.000000``, are inserted for missing
-values. The following figure shows the resulting HBM output with zeros:
+D-Flow sample period, strings of zeros, either ``0.000000`` or ``-0.000000``,
+are inserted for missing values. The following figure shows the resulting HBM
+output with zeros:
 
 .. image:: hbm-missing.png
 
@@ -197,7 +231,12 @@ Other
 Note that the order of the "essential" measurements in the file must be
 retained if you expect to run the file back into D-Flow for playback. I think
 the essential measurements are the time stamp, frame number, marker
-coordinates, and force plate kinetics.
+coordinates, and force plate kinetics, and analog channels [#]_ (maybe because of
+the IDC file.
+
+.. [#] The first twelve analog channels may only be required because we use the
+   ``.idc`` file to work around the fact that the ``.MomY`` force plate moments
+   are not correctly collected by D-Flow from Cortex.
 
 Inertial Compensation
 ~~~~~~~~~~~~~~~~~~~~~
@@ -247,6 +286,9 @@ always pointing forward (i.e. aligned with the negative z direction).
    Channel28.Anlg : AccZ
 
 This information will be stored in the meta data file, see below.
+
+Location of of accels and markers should stay the same between unloaded and
+loaded trials, but position doesn't matter other wise.
 
 Record Module
 -------------
@@ -319,21 +361,44 @@ There are some standard meta data that should be collected with every trial.
 
 ::
 
+   study:
+       id: 58
+       name: Control Identification
+       description: Perturb the subject during walking and running.
    subject:
        id: 567
        age: 28
        mass: 70
        mass-units: kilogram
-   study:
-       id: 58
-       name: Control Identification
-       description: Perturb the subject during walking and running.
+       height: 1.82
+       height-units: meters
+       gender: male/female # for body seg calcs in hbm
    trial:
-       id: 5
-       datetime: !!timestamp 2013-12-03
+       id: 1
+       datetime: !!timestamp 2013-12-03 05:06:00
+       notes: text to give anomalies
+       nominal-speed: 5
+       nominal-speed: m/s
+       stationary-platform: True/False
+       pitch: True
+       sway: True
+       marker-set: full/lower/NA
+   hardware-settings:
+       high-performance: True/False
    files:
        - mocap-module-01.txt
        - record-module-01.txt
+       - cortex-01.cap
+       - gait-01.mox
+
+.. todo::
+   HBM requires some measurements of the person and that can be found in the
+   HBM tab of the mocap module. We should include those here. ankle width, knee
+   with, cuttoff frequency.
+
+.. todo::
+   We need to store the scaling factors/matrices for the analog signals
+   in the meta data.
 
 Units
 ~~~~~
@@ -353,6 +418,10 @@ explicit column name.
        *.Pow: watts
        L_*: newtons
        R_*: newtons
+
+.. todo::
+
+   This can probably be hard coded because the units are always the same.
 
 Analog Channel Names
 ~~~~~~~~~~~~~~~~~~~~
@@ -391,6 +460,8 @@ measurement names will be available for future use, for example::
            Channel26.Anlg: Back_Right_AccX
            Channel27.Anlg: Back_Right_AccY
            Channel28.Anlg: Back_Right_AccZ
+
+12 accelerometers in order starting at Channel13. EMG, X, Y, Z order
 
 Events
 ~~~~~~
