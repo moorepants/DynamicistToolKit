@@ -7,7 +7,6 @@ Contents:
    :maxdepth: 2
 
    dtk
-   walk
    references
 
 .. include:: ../README.rst

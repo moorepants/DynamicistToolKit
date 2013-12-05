@@ -24,11 +24,3 @@ dtk Package
     :members:
     :undoc-members:
     :show-inheritance:
-
-:mod:`walk` Module
----------------------
-
-.. automodule:: dtk.walk
-    :members:
-    :undoc-members:
-    :show-inheritance:
