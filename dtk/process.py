@@ -458,13 +458,13 @@ def freq_spectrum(data, sampleRate):
     return frequency, amplitude
 
 
-def butterworth(data, cutoff, samplerate, order=2, axis=-1):
+def butterworth(data, cutoff, samplerate, order=2, axis=-1, **kwargs):
     """Returns the filtered data for a low pass Butterworth filter.
 
     Parameters
     ----------
     data : ndarray
-        The data to filter.
+        The data to filter. Only handles 1D and 2D arrays.
     cutoff : float or int
         The cutoff frequency in hertz.
     samplerate : float or int
@@ -473,6 +473,8 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1):
         The order of the Butterworth filter.
     axis : int
         The axis to filter along.
+    kwargs : keyword value pairs
+        These get passed to scipy.signal.filtfilt
 
     Returns
     -------
@@ -484,6 +486,8 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1):
     This does a forward and backward Butterworth filter.
 
     """
+    if len(data.shape) > 2:
+        raise ValueError('Only works with 1D or 2D arrays.')
 
     b, a = butter(order, float(cutoff) / float(samplerate) / 2.)
 
@@ -494,13 +498,21 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1):
     nine = LooseVersion('0.9.0')
     ten = LooseVersion('0.10.0')
     current = LooseVersion(scipy_version)
+
     if current >= nine and current < ten:
-        if axis != -1:
-            print('SciPy 0.9.0 only supports 1D filtfilt, your axis ' +
-                  'argument has been disregarded.')
-        return filtfilt(b, a, data)
+        print('SciPy 0.9.0 only supports 1D filtfilt, ' +
+              'so you get a slow version.')
+        if axis == 0:
+            data = data.T
+        filtered = np.zeros_like(data)
+        for i, vector in enumerate(data):
+            filtered[i] = filtfilt(b, a, vector)
+        if axis == 0:
+            return filtered.T
+        else:
+            return filtered
     elif current >= ten:
-        return filtfilt(b, a, data, axis=axis)
+        return filtfilt(b, a, data, axis=axis, **kwargs)
 
 
 def subtract_mean(sig, hasNans=False):
