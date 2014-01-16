@@ -3,5 +3,5 @@ Make release notes in README.rst
 git commit
 git tag -a vX.X.X -m "Version X.X.X"
 git push --tags
-python setup.py regsiter sdist upload
+python setup.py register sdist upload
 Make sure the latest version is available on readthedocs.org
