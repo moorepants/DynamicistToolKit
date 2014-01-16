@@ -88,6 +88,11 @@ numpydoc::
 Release Notes
 =============
 
+0.3.2
+-----
+
+- Fixed bug in butterworth function and added tests.
+
 0.3.1
 -----
 
