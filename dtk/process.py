@@ -502,15 +502,18 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, **kwargs):
     if current >= nine and current < ten:
         print('SciPy 0.9.0 only supports 1D filtfilt, ' +
               'so you get a slow version.')
-        if axis == 0:
-            data = data.T
-        filtered = np.zeros_like(data)
-        for i, vector in enumerate(data):
-            filtered[i] = filtfilt(b, a, vector)
-        if axis == 0:
-            return filtered.T
+        if len(data.shape) == 2:
+            if axis == 0:
+                data = data.T
+            filtered = np.zeros_like(data)
+            for i, vector in enumerate(data):
+                filtered[i] = filtfilt(b, a, vector)
+            if axis == 0:
+                return filtered.T
+            else:
+                return filtered
         else:
-            return filtered
+            return filtfilt(b, a, data)
     elif current >= ten:
         return filtfilt(b, a, data, axis=axis, **kwargs)
 

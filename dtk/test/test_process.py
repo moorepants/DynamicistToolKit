@@ -16,23 +16,35 @@ from .. import process
 
 def test_butterworth():
 
+    nine = LooseVersion('0.9.0')
+    ten = LooseVersion('0.10.0')
+    current = LooseVersion(scipy_version)
+
+    # setup
     time = np.linspace(0.0, 1.0, 2001)
     sample_rate = 1.0 / np.diff(time).mean()
 
     low_freq = np.sin(5.0 * 2.0 * np.pi * time)  # 5 Hz * 2 * pi
     high_freq = np.sin(250.0 * 2.0 * np.pi * time)  # 250 Hz * 2 * pi
 
-    # N x 2
+    # shape(n,)
+    filtered = process.butterworth(low_freq + high_freq, 125.0, sample_rate,
+                                   order=2, axis=0, padlen=150)
+
+    if current >= nine and current < ten:
+        # SciPy 0.9.0 can't handle the end points.
+        testing.assert_allclose(filtered[50:-50], low_freq[50:-50],
+                                rtol=0.01, atol=0.01)
+    else:
+        testing.assert_allclose(filtered, low_freq, rtol=1e-3, atol=1e-3)
+
+    # shape(n,2)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq)).T
 
     filtered = process.butterworth(data, 125.0, sample_rate, order=2,
                                    axis=0, padlen=150)
 
     expected = np.vstack((low_freq, low_freq)).T
-
-    nine = LooseVersion('0.9.0')
-    ten = LooseVersion('0.10.0')
-    current = LooseVersion(scipy_version)
 
     if current >= nine and current < ten:
         # SciPy 0.9.0 can't handle the end points.
@@ -41,17 +53,13 @@ def test_butterworth():
     else:
         testing.assert_allclose(filtered, expected, rtol=1e-3, atol=1e-3)
 
-    # 2 x N
+    # shape(2,n)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq))
 
     filtered = process.butterworth(data, 125.0, sample_rate, order=2,
                                    padlen=150)
 
     expected = np.vstack((low_freq, low_freq))
-
-    nine = LooseVersion('0.9.0')
-    ten = LooseVersion('0.10.0')
-    current = LooseVersion(scipy_version)
 
     if current >= nine and current < ten:
         # SciPy 0.9.0 can't handle the end points.
@@ -60,16 +68,6 @@ def test_butterworth():
     else:
         testing.assert_allclose(filtered, expected, rtol=1e-3, atol=1e-3)
 
-    filtered = process.butterworth(low_freq + high_freq, 125.0, sample_rate,
-                                   order=2, axis=0, padlen=150)
-    expected = low_freq
-
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[50:-50], expected[50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, expected, rtol=1e-3, atol=1e-3)
 
 
 def test_coefficient_of_determination():
