@@ -88,6 +88,11 @@ numpydoc::
 Release Notes
 =============
 
+0.3.1
+-----
+
+- Fixed butterworth to work with SciPy 0.9.0. [PR #18]
+
 0.3.0
 -----
 

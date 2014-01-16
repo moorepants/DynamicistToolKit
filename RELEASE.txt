@@ -1,5 +1,6 @@
 Bump the version in dtk/__init__.py
 Make release notes in README.rst
+git commit
 git tag -a vX.X.X -m "Version X.X.X"
 git push --tags
 python setup.py regsiter sdist upload
