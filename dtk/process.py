@@ -458,43 +458,46 @@ def freq_spectrum(data, sampleRate):
     return frequency, amplitude
 
 
-def butterworth(data, cutoff, samplerate, order=2, axis=-1, **kwargs):
-    """Returns the filtered data for a low pass Butterworth filter.
+def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
+                **kwargs):
+    """Returns the data filtered by a forward/backward pass Butterworth
+    filter.
 
     Parameters
     ----------
-    data : ndarray
+    data : ndarray, shape(n,) or shape(n,m)
         The data to filter. Only handles 1D and 2D arrays.
-    cutoff : float or int
-        The cutoff frequency in hertz.
-    samplerate : float or int
-        The sample rate in hertz.
+    cutoff : float
+        The filter cutoff frequency in hertz.
+    samplerate : float
+        The sample rate of the data in hertz.
     order : int
         The order of the Butterworth filter.
     axis : int
         The axis to filter along.
     kwargs : keyword value pairs
-        These get passed to scipy.signal.filtfilt
+        Any extra arguments to get passed to scipy.signal.filtfilt.
 
     Returns
     -------
-    filteredData : ndarray
+    filtered_data : ndarray
         The low pass filtered version of data.
-
-    Notes
-    -----
-    This does a forward and backward Butterworth filter.
 
     """
     if len(data.shape) > 2:
-        raise ValueError('Only works with 1D or 2D arrays.')
+        raise ValueError('This function only works with 1D or 2D arrays.')
 
-    b, a = butter(order, float(cutoff) / float(samplerate) / 2.)
+    nyquist_frequency = 0.5 * samplerate
+
+    # Wn is the ratio of the cutoff frequency to the Nyquist frequency.
+    Wn = cutoff / nyquist_frequency
+
+    b, a = butter(order, Wn)
 
     # SciPy 0.9.0 has a simple filtfilt, with no optional arguments. SciPy
     # 0.10.0 introduced the axis argument. So, to stay compatible with
     # 0.9.0, which is the SciPy installed on Ubuntu 12.04 LTS, we check the
-    # version.
+    # version. The version in SciPy 0.9.0 doesn't have kwargs either.
     nine = LooseVersion('0.9.0')
     ten = LooseVersion('0.10.0')
     current = LooseVersion(scipy_version)
