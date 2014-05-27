@@ -29,19 +29,19 @@ def test_butterworth():
 
     # shape(n,)
     filtered = process.butterworth(low_freq + high_freq, 125.0, sample_rate,
-                                   order=2, axis=0, padlen=150)
+                                   order=8, axis=0, padlen=150)
 
     if current >= nine and current < ten:
         # SciPy 0.9.0 can't handle the end points.
         testing.assert_allclose(filtered[50:-50], low_freq[50:-50],
                                 rtol=0.01, atol=0.01)
     else:
-        testing.assert_allclose(filtered, low_freq, rtol=1e-3, atol=1e-3)
+        testing.assert_allclose(filtered, low_freq, rtol=1e-5, atol=1e-5)
 
     # shape(n,2)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq)).T
 
-    filtered = process.butterworth(data, 125.0, sample_rate, order=2,
+    filtered = process.butterworth(data, 125.0, sample_rate, order=8,
                                    axis=0, padlen=150)
 
     expected = np.vstack((low_freq, low_freq)).T
@@ -51,12 +51,12 @@ def test_butterworth():
         testing.assert_allclose(filtered[50:-50], expected[50:-50],
                                 rtol=0.01, atol=0.01)
     else:
-        testing.assert_allclose(filtered, expected, rtol=1e-3, atol=1e-3)
+        testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-5)
 
     # shape(2,n)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq))
 
-    filtered = process.butterworth(data, 125.0, sample_rate, order=2,
+    filtered = process.butterworth(data, 125.0, sample_rate, order=8,
                                    padlen=150)
 
     expected = np.vstack((low_freq, low_freq))
@@ -66,8 +66,7 @@ def test_butterworth():
         testing.assert_allclose(filtered[:, 50:-50], expected[:, 50:-50],
                                 rtol=0.01, atol=0.01)
     else:
-        testing.assert_allclose(filtered, expected, rtol=1e-3, atol=1e-3)
-
+        testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-3)
 
 
 def test_coefficient_of_determination():
