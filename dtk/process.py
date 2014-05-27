@@ -475,6 +475,8 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
         The order of the Butterworth filter.
     axis : int
         The axis to filter along.
+    btype : {'lowpass'|'highpass'|'bandpass'|'bandstop'}
+        The type of filter. Default is 'lowpass'.
     kwargs : keyword value pairs
         Any extra arguments to get passed to scipy.signal.filtfilt.
 
@@ -492,7 +494,7 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     # Wn is the ratio of the cutoff frequency to the Nyquist frequency.
     Wn = cutoff / nyquist_frequency
 
-    b, a = butter(order, Wn)
+    b, a = butter(order, Wn, btype=btype)
 
     # SciPy 0.9.0 has a simple filtfilt, with no optional arguments. SciPy
     # 0.10.0 introduced the axis argument. So, to stay compatible with
