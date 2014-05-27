@@ -88,6 +88,11 @@ numpydoc::
 Release Notes
 =============
 
+0.3.3
+-----
+
+- Fixed bug in normalized cutoff frequency calculation. [PR #21]
+
 0.3.2
 -----
 
