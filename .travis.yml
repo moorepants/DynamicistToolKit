@@ -1,9 +1,11 @@
 language: python
 python:
   - "2.7"
+# Make sure the Ubuntu 12.04 system packages are installed for the tests.
 virtualenv:
   system_site_packages: true
 before_install:
+  - pip uninstall -y numpy
   - sudo apt-get install -y -qq python-setuptools python-numpy python-scipy python-matplotlib python-nose python-coverage
   - pip freeze
 install:
