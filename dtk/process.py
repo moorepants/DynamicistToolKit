@@ -247,8 +247,8 @@ def coefficient_of_determination(measured, predicted):
     Notes
     -----
 
-    The coefficient of determination (also referred to as R^2 and VAF
-    (variance accounted for) is computed either of these two ways::
+    The coefficient of determination [also referred to as R^2 and VAF
+    (variance accounted for)] is computed either of these two ways::
 
             sum( [predicted - mean(measured)] ** 2 )
       R^2 = ----------------------------------------
@@ -262,9 +262,10 @@ def coefficient_of_determination(measured, predicted):
 
 
     """
+    # 2-norm => np.sqrt(np.sum(measured - predicted)**2))
 
-    numerator = np.linalg.norm(measured - predicted)
-    denominator = np.linalg.norm(measured - measured.mean())
+    numerator = np.linalg.norm(measured - predicted) ** 2
+    denominator = np.linalg.norm(measured - measured.mean()) ** 2
 
     r_squared = 1.0 - numerator / denominator
 

@@ -91,15 +91,15 @@ def test_coefficient_of_determination():
     y_predicted = np.dot(A, xhat)
 
     # find R^2 the linear algebra way
-    expected_r_squared = 1.0 - sums_of_squares_of_residuals / \
-        np.linalg.norm(b - b.mean())
+    expected_r_squared = (1.0 - sums_of_squares_of_residuals /
+                          np.linalg.norm(b - b.mean()) ** 2)
 
     # find R^2 the statistics way
     residuals = np.dot(A, xhat) - b
     expected_error_sum_of_squares = np.sum(residuals ** 2)
     expected_total_sum_of_squares = np.sum((b - b.mean()) ** 2)
-    second_expected_r_squared = 1.0 - expected_error_sum_of_squares / \
-        expected_total_sum_of_squares
+    second_expected_r_squared = (1.0 - expected_error_sum_of_squares /
+                                 expected_total_sum_of_squares)
 
     # find R^2 another statistics way
     r_squared, error_sum_of_squares, total_sum_of_squares, regression_sum_of_squares = \
@@ -111,7 +111,7 @@ def test_coefficient_of_determination():
 
     testing.assert_allclose(xhat, [slope, intercept], rtol=0.0, atol=0.3)
 
-    # It seems that numpy.linalg.lstsq doesn't output a fery high precision
+    # It seems that numpy.linalg.lstsq doesn't output a very high precision
     # value for the residual sum of squares, so I set the tolerance here to
     # pass.
     testing.assert_allclose(error_sum_of_squares,
@@ -124,16 +124,10 @@ def test_coefficient_of_determination():
 
     testing.assert_allclose(total_sum_of_squares,
                             expected_total_sum_of_squares)
-
-    # This precision issue carryies through to these compuations.
-    testing.assert_allclose(r_squared, expected_r_squared, rtol=0.0,
-                            atol=5e-6)
-    # This passes with default tolerances
+    testing.assert_allclose(r_squared, expected_r_squared)
     testing.assert_allclose(r_squared, second_expected_r_squared)
-    testing.assert_allclose(second_r_squared, expected_r_squared, rtol=0.0,
-                            atol=2e-5)
-    testing.assert_allclose(second_r_squared, second_expected_r_squared,
-                            rtol=0.0, atol=2e-5)
+    testing.assert_allclose(second_r_squared, expected_r_squared)
+    testing.assert_allclose(second_r_squared, second_expected_r_squared)
 
 
 def test_least_squares_variance():
