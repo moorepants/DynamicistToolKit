@@ -1,3 +1,7 @@
+.. image:: https://pypip.in/version/DynamicistToolKit/badge.svg
+    :target: https://pypi.python.org/pypi/DynamicistToolKit/
+    :alt: Latest Version
+
 .. image:: https://travis-ci.org/moorepants/DynamicistToolKit.png?branch=master
    :target: http://travis-ci.org/moorepants/DynamicistToolKit
 
