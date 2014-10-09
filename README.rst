@@ -92,6 +92,11 @@ numpydoc::
 Release Notes
 =============
 
+0.3.5
+-----
+
+- Fixed bug in coefficient_of_determination. [PR #23]
+
 0.3.4
 -----
 
