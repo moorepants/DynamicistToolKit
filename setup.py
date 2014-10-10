@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-from dtk import __version__
+exec(open('dtk/version.py').read())
 
 setup(name='DynamicistToolKit',
       author='Jason K. Moore',
