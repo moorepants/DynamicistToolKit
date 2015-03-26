@@ -572,47 +572,112 @@ def normalize(sig, hasNans=False):
     return normSig
 
 
-def derivative(x, y, method='forward'):
-    '''Returns the derivative of y with respect to x.
+def derivative(x, y, method='forward', padding=None):
+    """Returns the derivative of y with respect to x.
 
     Parameters
     ----------
     x : ndarray, shape(n,)
-    y : ndarray, shape(n,)
+        The monotonically increasing independent variable.
+    y : ndarray, shape(n,) or shape(n, m)
+        The dependent variable(s).
     method : string, optional
         'forward'
-           Use the forward difference method.
-        'central'
-          Use the central difference method.
+            Use the forward difference method.
         'backward'
-          Use the backward difference method.
+            Use the backward difference method.
+        'central'
+            Use the central difference method.
         'combination'
-          Use forward on the first point, backward on the last and central
-          on the rest.
+            Use second order forward difference on the first point, second
+            order backward difference on the last point, and central
+            difference on the rest. The padding argument is ignored with
+            this option.
+    padding : None, float, or 'adjacent', optional
+        The default, None, will result in the derivative vector being n-a in
+        length where a=1 for forward and backward, a=2 for central, and a=0
+        for combination. If you provide a float this value will be used to
+        pad the result so that len(dydx) == n. If 'adjacent' is used, the
+        nearest neighbor will be used for padding.
 
     Returns
     -------
     dydx : ndarray, shape(n,) or shape(n-1,)
         for combination else shape(n-1,)
 
-    '''
-    if method == 'forward':
-        return np.diff(y) / np.diff(x)
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    if method == 'forward' or method == 'backward':
+
+        if len(y.shape) == 1:
+            deriv = np.diff(y) / np.diff(x)
+        else:
+            deriv = (np.diff(y.T) / np.diff(x)).T
+
+    elif method == 'central':
+
+        if len(y.shape) == 1:
+            deriv = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
+        else:
+            deriv = ((y[2:] - y[:-2]).T / (x[2:] - x[:-2])).T
+
     elif method == 'combination':
-        dxdy = np.zeros_like(y)
-        for i, yi in enumerate(y[:]):
-            if i == 0:
-                dxdy[i] = (-3 * y[0] + 4 * y[1] - y[2])\
-                          / 2 / (x[1] - x[0])
-            elif i == len(y) - 1:
-                dxdy[-1] = (3 * y[-1] - 4 * y[-2] + y[-3])\
-                           / 2 / (x[-1] - x[-2])
-            else:
-                dxdy[i] = (y[i + 1] - y[i - 1]) / 2 / (x[i] - x[i - 1])
-        return dxdy
+
+        dydx = np.zeros_like(y)
+
+        dydx[0] = (-3.0*y[0] + 4.0*y[1] - y[2]) / 2.0 / (x[1] - x[0])
+        dydx[-1] = (3.0*y[-1] - 4.0*y[-2] + y[-3]) / 2.0 / (x[-1] - x[-2])
+
+        if len(y.shape) == 1:
+            dydx[1:-1] = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
+        else:
+            dydx[1:-1] = ((y[2:] - y[:-2]).T / (x[2:] - x[:-2])).T
+
+        return dydx
+
     else:
-        raise NotImplementedError("There is no %s method here! Only 'forward'\
-            and 'combination' are currently available." % method)
+
+        msg = ("There is no {} method here! Try 'forward', 'backward', "
+               "'central', or 'combination'.").format(method)
+        raise NotImplementedError(msg)
+
+    if padding is None:
+
+        dydx = deriv
+
+    else:
+
+        if padding == 'adjacent':
+
+            if method == 'forward':
+                pad_val_end = deriv[-1]
+            elif method == 'backward':
+                pad_val_beg = deriv[0]
+            elif method == 'central':
+                pad_val_beg = deriv[0]
+                pad_val_end = deriv[-1]
+
+        else:
+
+            pad_val_beg = padding
+            pad_val_end = padding
+
+        dydx = np.zeros_like(y)
+
+        if method == 'forward':
+            dydx[:-1] = deriv
+            dydx[-1] = pad_val_end
+        elif method == 'backward':
+            dydx[1:] = deriv
+            dydx[0] = pad_val_beg
+        elif method == 'central':
+            dydx[1:-1] = deriv
+            dydx[0] = pad_val_beg
+            dydx[-1] = pad_val_end
+
+    return dydx
 
 
 def time_vector(num_samples, sample_rate, start_time=0.0):
