@@ -95,6 +95,12 @@ numpydoc::
 Release Notes
 =============
 
+0.3.6
+-----
+
+- Made the numerical derivative function more robust and featureful. [PR #27]
+
+
 0.3.5
 -----
 

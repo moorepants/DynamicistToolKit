@@ -14,6 +14,114 @@ from scipy import __version__ as scipy_version
 from .. import process
 
 
+def test_derivative():
+
+    x = [0.0, 1.0, 2.0, 3.0, 5.0]
+    y = [1.0, 4.0, 9.0, 10.0, 17.0]
+
+    expected_dydx = np.array([3.0, 5.0, 1.0, 3.5])
+    dydx = process.derivative(x, y, method='forward')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([0.0, 3.0, 5.0, 1.0, 3.5])
+    dydx = process.derivative(x, y, method='backward', padding=0.0)
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([2.0, 4.0, 3.0, 8.0 / 3.0, 5.0])
+    dydx = process.derivative(x, y, method='combination')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    y = [[1.0, 2.0],
+         [4.0, 5.0],
+         [9.0, 10.0],
+         [10.0, 11.0],
+         [17.0, 18.0]]
+
+    expected_dydx = np.array([[3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5]])
+    dydx = process.derivative(x, y, method='forward')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5],
+                              [0.0, 0.0]])
+    dydx = process.derivative(x, y, method='forward', padding=0.0)
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5],
+                              [3.5, 3.5]])
+    dydx = process.derivative(x, y, method='forward', padding='adjacent')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5]])
+    dydx = process.derivative(x, y, method='backward')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[0.0, 0.0],
+                              [3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5]])
+    dydx = process.derivative(x, y, method='backward', padding=0.0)
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[3.0, 3.0],
+                              [3.0, 3.0],
+                              [5.0, 5.0],
+                              [1.0, 1.0],
+                              [3.5, 3.5]])
+    dydx = process.derivative(x, y, method='backward', padding='adjacent')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[4.0, 4.0],
+                              [3.0, 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0]])
+    dydx = process.derivative(x, y, method='central')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[0.0, 0.0],
+                              [4.0, 4.0],
+                              [3.0, 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0],
+                              [0.0, 0.0]])
+    dydx = process.derivative(x, y, method='central', padding=0.0)
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[4.0, 4.0],
+                              [4.0, 4.0],
+                              [3.0, 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0]])
+
+    dydx = process.derivative(x, y, method='central', padding='adjacent')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[2.0, 2.0],
+                              [4.0, 4.0],
+                              [3.0, 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0],
+                              [5.0, 5.0]])
+    dydx = process.derivative(x, y, method='combination')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    x = np.linspace(0.0, 10.0, num=1000)
+    y = np.vstack((np.sin(x), x**2)).T
+    expected_dydx = np.vstack((np.cos(x), 2.0 * x)).T
+
+    dydx = process.derivative(x, y, method='combination')
+    testing.assert_allclose(dydx, expected_dydx, rtol=1e-4)
+
+
 def test_butterworth():
 
     nine = LooseVersion('0.9.0')
