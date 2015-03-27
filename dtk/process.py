@@ -609,33 +609,37 @@ def derivative(x, y, method='forward', padding=None):
     x = np.asarray(x)
     y = np.asarray(y)
 
+    if len(x.shape) > 1:
+        raise ValueError('x must be have shape(n,).')
+
+    if len(y.shape) > 2:
+        raise ValueError('y can at most have two dimensions.')
+
+    if x.shape[0] != y.shape[0]:
+        raise ValueError('x and y must have the same first dimension.')
+
     if method == 'forward' or method == 'backward':
+
+        if x.shape[0] < 2:
+            raise ValueError('x must have a length of at least 2.')
 
         if len(y.shape) == 1:
             deriv = np.diff(y) / np.diff(x)
         else:
             deriv = (np.diff(y.T) / np.diff(x)).T
 
-    elif method == 'central':
+    elif method == 'central' or method == 'combination':
+
+        if x.shape[0] < 3:
+            raise ValueError('x must have a length of at least 3.')
 
         if len(y.shape) == 1:
             deriv = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
         else:
             deriv = ((y[2:] - y[:-2]).T / (x[2:] - x[:-2])).T
 
-    elif method == 'combination':
-
-        dydx = np.zeros_like(y)
-
-        dydx[0] = (-3.0*y[0] + 4.0*y[1] - y[2]) / 2.0 / (x[1] - x[0])
-        dydx[-1] = (3.0*y[-1] - 4.0*y[-2] + y[-3]) / 2.0 / (x[-1] - x[-2])
-
-        if len(y.shape) == 1:
-            dydx[1:-1] = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
-        else:
-            dydx[1:-1] = ((y[2:] - y[:-2]).T / (x[2:] - x[:-2])).T
-
-        return dydx
+        if method == 'combination':
+            padding = method
 
     else:
 
@@ -649,33 +653,37 @@ def derivative(x, y, method='forward', padding=None):
 
     else:
 
+        dydx = np.zeros_like(y)
+
         if padding == 'adjacent':
 
             if method == 'forward':
-                pad_val_end = deriv[-1]
+                dydx[0] = np.nan
+                dydx[-1] = deriv[-1]
             elif method == 'backward':
-                pad_val_beg = deriv[0]
+                dydx[0] = deriv[0]
+                dydx[-1] = np.nan
             elif method == 'central':
-                pad_val_beg = deriv[0]
-                pad_val_end = deriv[-1]
+                dydx[0] = deriv[0]
+                dydx[-1] = deriv[-1]
+
+        elif padding == 'combination':
+
+            dydx[0] = ((-3.0*y[0] + 4.0*y[1] - y[2]) / 2.0 / (x[1] - x[0]))
+            dydx[-1] = ((3.0*y[-1] - 4.0*y[-2] + y[-3]) / 2.0 /
+                        (x[-1] - x[-2]))
 
         else:
 
-            pad_val_beg = padding
-            pad_val_end = padding
-
-        dydx = np.zeros_like(y)
+            dydx[0] = padding
+            dydx[-1] = padding
 
         if method == 'forward':
             dydx[:-1] = deriv
-            dydx[-1] = pad_val_end
         elif method == 'backward':
             dydx[1:] = deriv
-            dydx[0] = pad_val_beg
-        elif method == 'central':
+        elif method == 'central' or method == 'combination':
             dydx[1:-1] = deriv
-            dydx[0] = pad_val_beg
-            dydx[-1] = pad_val_end
 
     return dydx
 

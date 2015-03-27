@@ -9,6 +9,7 @@ from distutils.version import LooseVersion
 import numpy as np
 from numpy import testing
 from scipy import __version__ as scipy_version
+from nose.tools import assert_raises
 
 # local libraries
 from .. import process
@@ -120,6 +121,36 @@ def test_derivative():
 
     dydx = process.derivative(x, y, method='combination')
     testing.assert_allclose(dydx, expected_dydx, rtol=1e-4)
+
+    with assert_raises(ValueError):
+        x = np.ones((5, 2))
+        y = np.arange(5)
+        process.derivative(x, y)
+
+    with assert_raises(ValueError):
+        x = np.ones(4)
+        y = np.ones((5, 3))
+        process.derivative(x, y)
+
+    with assert_raises(ValueError):
+        x = np.ones(5)
+        y = np.ones((5, 3, 2))
+        process.derivative(x, y)
+
+    with assert_raises(ValueError):
+        x = np.ones(1)
+        y = np.ones((1, 3))
+        process.derivative(x, y)
+
+    with assert_raises(ValueError):
+        x = np.ones(2)
+        y = np.ones((2, 3))
+        process.derivative(x, y, method='central')
+
+    with assert_raises(NotImplementedError):
+        x = np.ones(2)
+        y = np.ones((2, 3))
+        process.derivative(x, y, method='booger')
 
 
 def test_butterworth():
