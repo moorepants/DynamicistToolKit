@@ -461,8 +461,7 @@ def freq_spectrum(data, sampleRate):
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
                 **kwargs):
-    """Returns the data filtered by a forward/backward pass Butterworth
-    filter.
+    """Returns the data filtered by a forward/backward Butterworth filter.
 
     Parameters
     ----------
@@ -486,14 +485,37 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     filtered_data : ndarray
         The low pass filtered version of data.
 
+    Notes
+    -----
+    The provided cutoff frequency is corrected by a multiplicative factor to
+    ensure the double pass filter cutoff frequency matches that of a single
+    pass filter, see [Winter2009]_.
+
+    References
+    ----------
+    .. [Winter2009] David A. Winter (2009) Biomechanics and motor control of
+       human movement. 4th edition. Hoboken: Wiley.
+
     """
     if len(data.shape) > 2:
         raise ValueError('This function only works with 1D or 2D arrays.')
 
     nyquist_frequency = 0.5 * samplerate
 
-    # Wn is the ratio of the cutoff frequency to the Nyquist frequency.
-    Wn = cutoff / nyquist_frequency
+    # Since we use filtfilt below, we correct the cutoff frequency to ensure
+    # the filter**2 crosses the -3 dB line at the cutoff frequency.
+    # |H(w)| = sqrt(1 / (1 + (w / wc)**(2n)))
+    # wc : cutoff frequency
+    # n : Butterworth filter order
+    # |H**2(w)| = 1 / (1 + (w / wc)**(2n))
+    # |H**2(wc)| = 1 / (1 + (wc / wa)**(2n)) = 1 / sqrt(2) = -3 dB
+    # wa : adjusted cutoff frequency for double filter
+    # wa = (np.sqrt(2.0) - 1.0) ** (-1.0 / (2.0 * n))
+    correction_factor = (np.sqrt(2.0) - 1.0) ** (-1.0 / (2.0 * order))
+
+    # Wn is the ratio of the corrected cutoff frequency to the Nyquist
+    # frequency.
+    Wn = correction_factor * cutoff / nyquist_frequency
 
     b, a = butter(order, Wn, btype=btype)
 

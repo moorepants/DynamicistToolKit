@@ -99,6 +99,8 @@ Release Notes
 -----
 
 - Made the numerical derivative function more robust and featureful. [PR #27]
+- ``butterworth`` now uses a corrected cutoff frequency to adjust for the
+  double filtering.
 
 
 0.3.5
