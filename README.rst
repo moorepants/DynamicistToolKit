@@ -103,9 +103,10 @@ Release Notes
 0.4.0
 -----
 
-- Made the numerical derivative function more robust and featureful. [PR #27_]
+- Made the numerical derivative function more robust and featureful. [PR
+  `#27`_]
 - ``butterworth`` now uses a corrected cutoff frequency to adjust for the
-  double filtering. [PR #28_]
+  double filtering. [PR `#28`_]
 
 .. _#27: https://github.com/moorepants/DynamicistToolKit/pull/27
 .. _#28: https://github.com/moorepants/DynamicistToolKit/pull/28
@@ -113,14 +114,14 @@ Release Notes
 0.3.5
 -----
 
-- Fixed bug in coefficient_of_determination. [PR #23_]
+- Fixed bug in coefficient_of_determination. [PR `#23`_]
 
 .. _#23: https://github.com/moorepants/DynamicistToolKit/pull/23
 
 0.3.4
 -----
 
-- Fixed bug in normalized cutoff frequency calculation. [PR #21_]
+- Fixed bug in normalized cutoff frequency calculation. [PR `#21`_]
 
 .. _#21: https://github.com/moorepants/DynamicistToolKit/pull/21
 
@@ -132,7 +133,7 @@ Release Notes
 0.3.1
 -----
 
-- Fixed butterworth to work with SciPy 0.9.0. [PR #18_]
+- Fixed butterworth to work with SciPy 0.9.0. [PR `#18`_]
 
 .. _#18: https://github.com/moorepants/DynamicistToolKit/pull/18
 
