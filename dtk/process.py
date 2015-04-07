@@ -611,16 +611,16 @@ def derivative(x, y, method='forward', padding=None):
         'central'
             Use the central difference method.
         'combination'
-            Use second order forward difference on the first point, second
-            order backward difference on the last point, and central
-            difference on the rest. The padding argument is ignored with
-            this option.
-    padding : None, float, or 'adjacent', optional
+            This is equivalent to ``method='central', padding='second
+            order'`` and is in place for backwards compatibility. Selecting
+            this method will ignore and user supplied padding settings.
+    padding : None, float, 'adjacent' or 'second order', optional
         The default, None, will result in the derivative vector being n-a in
-        length where a=1 for forward and backward, a=2 for central, and a=0
-        for combination. If you provide a float this value will be used to
-        pad the result so that len(dydx) == n. If 'adjacent' is used, the
-        nearest neighbor will be used for padding.
+        length where a=1 for forward and backward and a=2 for central. If
+        you provide a float this value will be used to pad the result so
+        that len(dydx) == n. If 'adjacent' is used, the nearest neighbor
+        will be used for padding. If 'second order' is chosen second order
+        foward and backward difference are used to pad the end points.
 
     Returns
     -------
@@ -630,6 +630,10 @@ def derivative(x, y, method='forward', padding=None):
     """
     x = np.asarray(x)
     y = np.asarray(y)
+
+    if method == 'combination':
+        method = 'central'
+        padding = 'second order'
 
     if len(x.shape) > 1:
         raise ValueError('x must be have shape(n,).')
@@ -650,7 +654,7 @@ def derivative(x, y, method='forward', padding=None):
         else:
             deriv = (np.diff(y.T) / np.diff(x)).T
 
-    elif method == 'central' or method == 'combination':
+    elif method == 'central':
 
         if x.shape[0] < 3:
             raise ValueError('x must have a length of at least 3.')
@@ -659,9 +663,6 @@ def derivative(x, y, method='forward', padding=None):
             deriv = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
         else:
             deriv = ((y[2:] - y[:-2]).T / (x[2:] - x[:-2])).T
-
-        if method == 'combination':
-            padding = method
 
     else:
 
@@ -679,17 +680,10 @@ def derivative(x, y, method='forward', padding=None):
 
         if padding == 'adjacent':
 
-            if method == 'forward':
-                dydx[0] = np.nan
-                dydx[-1] = deriv[-1]
-            elif method == 'backward':
-                dydx[0] = deriv[0]
-                dydx[-1] = np.nan
-            elif method == 'central':
-                dydx[0] = deriv[0]
-                dydx[-1] = deriv[-1]
+            dydx[0] = deriv[0]
+            dydx[-1] = deriv[-1]
 
-        elif padding == 'combination':
+        elif padding == 'second order':
 
             dydx[0] = ((-3.0*y[0] + 4.0*y[1] - y[2]) / 2.0 / (x[1] - x[0]))
             dydx[-1] = ((3.0*y[-1] - 4.0*y[-2] + y[-3]) / 2.0 /
@@ -704,7 +698,7 @@ def derivative(x, y, method='forward', padding=None):
             dydx[:-1] = deriv
         elif method == 'backward':
             dydx[1:] = deriv
-        elif method == 'central' or method == 'combination':
+        elif method == 'central':
             dydx[1:-1] = deriv
 
     return dydx
