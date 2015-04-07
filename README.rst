@@ -29,11 +29,16 @@ Installation
 ============
 
 You will need Python 2.7 and setuptools to install the packages. Its best to
-install the dependencies first (NumPy, SciPy, matplotlib, Pandas).  The SciPy
+install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The SciPy
 Stack instructions are helpful for this: http://www.scipy.org/stackspec.html.
 
-You can install using pip (or easy_install). Pip will theoretically [#]_ get
-the dependencies for you (or at least check if you have them)::
+We recommend installing with conda so that dependency installation is not an
+issue::
+
+   $ conda install -c moorepants dynamicisttoolkit
+
+You can install using pip. Pip will theoretically [#]_ get the dependencies for
+you (or at least check if you have them)::
 
    $ pip install DynamicistToolKit
 
@@ -95,23 +100,29 @@ numpydoc::
 Release Notes
 =============
 
-0.3.6
+0.4.0
 -----
 
-- Made the numerical derivative function more robust and featureful. [PR #27]
+- Made the numerical derivative function more robust and featureful. [PR #27_]
 - ``butterworth`` now uses a corrected cutoff frequency to adjust for the
-  double filtering.
+  double filtering. [PR #28_]
 
+.. _#27: https://github.com/moorepants/DynamicistToolKit/pull/27
+.. _#28: https://github.com/moorepants/DynamicistToolKit/pull/28
 
 0.3.5
 -----
 
-- Fixed bug in coefficient_of_determination. [PR #23]
+- Fixed bug in coefficient_of_determination. [PR #23_]
+
+.. _#23: https://github.com/moorepants/DynamicistToolKit/pull/23
 
 0.3.4
 -----
 
-- Fixed bug in normalized cutoff frequency calculation. [PR #21]
+- Fixed bug in normalized cutoff frequency calculation. [PR #21_]
+
+.. _#21: https://github.com/moorepants/DynamicistToolKit/pull/21
 
 0.3.2
 -----
@@ -121,7 +132,9 @@ Release Notes
 0.3.1
 -----
 
-- Fixed butterworth to work with SciPy 0.9.0. [PR #18]
+- Fixed butterworth to work with SciPy 0.9.0. [PR #18_]
+
+.. _#18: https://github.com/moorepants/DynamicistToolKit/pull/18
 
 0.3.0
 -----
