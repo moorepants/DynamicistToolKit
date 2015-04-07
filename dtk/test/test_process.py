@@ -29,6 +29,10 @@ def test_derivative():
     testing.assert_allclose(dydx, expected_dydx)
 
     expected_dydx = np.array([2.0, 4.0, 3.0, 8.0 / 3.0, 5.0])
+    dydx = process.derivative(x, y, method='central', padding='second order')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([2.0, 4.0, 3.0, 8.0 / 3.0, 5.0])
     dydx = process.derivative(x, y, method='combination')
     testing.assert_allclose(dydx, expected_dydx)
 
@@ -105,6 +109,14 @@ def test_derivative():
                               [8.0 / 3.0, 8.0 / 3.0]])
 
     dydx = process.derivative(x, y, method='central', padding='adjacent')
+    testing.assert_allclose(dydx, expected_dydx)
+
+    expected_dydx = np.array([[2.0, 2.0],
+                              [4.0, 4.0],
+                              [3.0, 3.0],
+                              [8.0 / 3.0, 8.0 / 3.0],
+                              [5.0, 5.0]])
+    dydx = process.derivative(x, y, method='central', padding='second order')
     testing.assert_allclose(dydx, expected_dydx)
 
     expected_dydx = np.array([[2.0, 2.0],

@@ -1,4 +1,5 @@
-Bump the version in dtk/__init__.py
+Bump the version in dtk/version.py
+Update copyright dates in docs/conf.py
 Make release notes in README.rst
 git commit
 git tag -a vX.X.X -m "Version X.X.X"
