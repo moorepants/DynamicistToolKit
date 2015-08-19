@@ -34,8 +34,7 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None, show
     """
 
     figs = []
-    lw = range(1, len(components) + 1)
-    lw.reverse()
+    lw = range(len(components), 0, -1)
     for i, eVal in enumerate(eigenvalues):
         figs.append(plt.figure())
         ax = figs[-1].add_subplot(1, 1, 1, polar=True)
@@ -170,7 +169,7 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
                'cmap': plt.cm.gist_rainbow,
                'edgecolors': 'none'}
     for k, v in default.items():
-        if k not in kwargs.keys():
+        if k not in kwargs:
             kwargs[k] = v
 
     x = eigenvalues.real
@@ -595,7 +594,7 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
         fig.ax1.legend()
 
     if color:
-        print color
+        print(color)
         plt.setp(fig.ax1.lines, color=color)
         plt.setp(fig.ax2.lines, color=color)
 

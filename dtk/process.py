@@ -141,7 +141,7 @@ def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
         tau0 = guess
 
 
-    print "The minimun of the error landscape is {}.".format(tau0)
+    print("The minimun of the error landscape is {}.".format(tau0))
 
     tau, fval = fmin(sync_error, tau0, args=(signal1, signal2, time),
                      full_output=True, disp=True)[0:2]

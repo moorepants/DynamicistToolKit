@@ -18,10 +18,10 @@ def test_euler_rotation(display=False):
                    [0., np.cos(a[0]), np.sin(a[0])],
                    [0., -np.sin(a[0]), np.cos(a[0])]])
     if display:
-        print "body-three 1-2-3"
-        print R
-        print C
-        print '-' * 79
+        print("body-three 1-2-3")
+        print(R)
+        print(C)
+        print('-' * 79)
 
     testing.assert_almost_equal(R, C)
 
@@ -44,10 +44,10 @@ def test_euler_rotation(display=False):
                    [s2, -s1 * c2, c1 * c2]])
 
     if display:
-        print "body-three 1-2-3"
-        print R
-        print C
-        print '-' * 79
+        print("body-three 1-2-3")
+        print(R)
+        print(C)
+        print('-' * 79)
 
     testing.assert_almost_equal(R, C)
 
@@ -70,10 +70,10 @@ def test_euler_rotation(display=False):
                    [-s1 * c2 * c3 - s3 * c1, c1 * c2 * c3 - s3 * s1, s2 * c3],
                    [s1 * s2, -c1 * s2, c2]])
     if display:
-        print "body-two 3-1-"
-        print R
-        print C
-        print '-' * 79
+        print("body-two 3-1-")
+        print(R)
+        print(C)
+        print('-' * 79)
 
     testing.assert_almost_equal(R, C)
 
@@ -97,10 +97,10 @@ def test_euler_rotation(display=False):
                    [c2 * s3, c1 * s2 * s3 - c3 * s1, s1 * s2 * s3 + c3 * c1]])
 
     if display:
-        print '-' * 79
-        print "body-three 1-3-2"
-        print R
-        print C
+        print('-' * 79)
+        print("body-three 1-3-2")
+        print(R)
+        print(C)
 
     testing.assert_almost_equal(R, C)
 
@@ -124,8 +124,8 @@ def test_euler_rotation(display=False):
                    [s1 * c2, -s2, c1 * c2]])
 
     if display:
-        print '-' * 79
-        print "body-three 2-1-3"
-        print R
-        print C
+        print('-' * 79)
+        print("body-three 2-1-3")
+        print(R)
+        print(C)
     testing.assert_almost_equal(R, C)

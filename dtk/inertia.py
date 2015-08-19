@@ -386,7 +386,7 @@ def euler_rotation(angles, order):
 
     # check the length of both inputs
     if len(angles) != 3 or len(order) != 3:
-        raise StandardError('The length of angles and order should be 3')
+        raise Exception('The length of angles and order should be 3')
 
     # make sure the order contains proper values
     for v in order:
