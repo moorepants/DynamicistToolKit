@@ -10,7 +10,7 @@ from scipy.optimize import newton
 from matplotlib.pyplot import figure, rcParams
 
 # local libraries
-from inertia import y_rot
+from .inertia import y_rot
 
 
 def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
@@ -552,7 +552,7 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     mP['l2'] = (bP['xB'] * sin(bP['lam']) + bP['zB'] * cos(bP['lam']) +
         bP['rR'] * cos(bP['lam']))
 
-    if 'xcl' in bP.keys() and 'zcl' in bP.keys():
+    if 'xcl' in bP and 'zcl' in bP:
         mP['d4'] = (bP['xcl'] * cos(bP['lam']) - bP['zcl'] * sin(bP['lam']) -
             bP['rR'] * sin(bP['lam']))
         mP['d5'] = (bP['xcl'] * sin(bP['lam']) + bP['zcl'] * cos(bP['lam']) +

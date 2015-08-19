@@ -17,4 +17,4 @@ def test_basu_to_moore_input():
 
     mooreInput = bicycle.basu_to_moore_input(basu, rr, lam)
     for k, v in mooreInput.items():
-        print k, ':', v
+        print(k, ':', v)
