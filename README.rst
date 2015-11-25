@@ -28,9 +28,10 @@ Modules
 Installation
 ============
 
-You will need Python 2.7 and setuptools to install the packages. Its best to
-install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The SciPy
-Stack instructions are helpful for this: http://www.scipy.org/stackspec.html.
+You will need Python 2.7 or 3.3+ and setuptools to install the packages. Its
+best to install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The
+SciPy Stack instructions are helpful for this:
+http://www.scipy.org/stackspec.html.
 
 We recommend installing with conda so that dependency installation is not an
 issue::
@@ -99,6 +100,14 @@ numpydoc::
 
 Release Notes
 =============
+
+0.5.0
+-----
+
+- Support for Python 3 [PR `#30`_ and `#31_`.
+
+.. _#30: https://github.com/moorepants/DynamicistToolKit/pull/30
+.. _#31: https://github.com/moorepants/DynamicistToolKit/pull/31
 
 0.4.0
 -----
