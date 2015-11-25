@@ -104,7 +104,7 @@ Release Notes
 0.5.0
 -----
 
-- Support for Python 3 [PR `#30`_ and `#32`_.
+- Support for Python 3 [PR `#30`_ and `#32`_].
 
 .. _#30: https://github.com/moorepants/DynamicistToolKit/pull/30
 .. _#32: https://github.com/moorepants/DynamicistToolKit/pull/32
