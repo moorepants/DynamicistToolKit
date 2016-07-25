@@ -19,13 +19,13 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
     Parameters
     ----------
-    M : numpy.Matrix, shape(2,2)
+    M : array_like, shape(2,2)
         The mass matrix.
-    C1 : numpy.Matrix, shape(2,2)
+    C1 : array_like, shape(2,2)
         The speed proportional damping matrix.
-    K0 : numpy.Matrix, shape(2,2)
+    K0 : array_like, shape(2,2)
         The gravity proportional stiffness matrix.
-    K2 : numpy.Matrix, shape(2,2)
+    K2 : array_like, shape(2,2)
         The speed squared proportional stiffness matrix.
     speeds : array_like, shape(n,), optional
         An array of speeds in meters per second at which to compute the state
@@ -42,11 +42,11 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
     Returns
     -------
-    speeds : array_like, shape(n,)
+    speeds : ndarray, shape(n,)
         An array of speeds in meters per second.
-    As : array_like, shape(n,4,4)
+    As : ndarray, shape(n,4,4)
         The state matrices evaluated at each speed in `speeds`.
-    Bs : array_like, shape(n,4,2)
+    Bs : ndarray, shape(n,4,2)
         The input matrices
 
     Notes
@@ -86,7 +86,18 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
 
 def benchmark_parameters():
-    """Returns the benchmark bicycle parameters from [Meijaard2007]_."""
+    """Returns the benchmark bicycle parameters from [Meijaard2007]_.
+
+    References
+    ----------
+
+    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
+       L. Schwab. Linearized dynamics equations for the balance and steer of a
+       bicycle: A benchmark and review. Proceedings of the Royal Society A:
+       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
+       August 2007.
+
+    """
 
     p = {}
 
@@ -121,18 +132,18 @@ def benchmark_parameters():
 
 
 def benchmark_matrices():
-    """Returns the entries to the M, C1, K0, and K2 matrices for the benchmark parameter
-    set printed in [Meijaard2007]_.
+    """Returns the entries to the M, C1, K0, and K2 matrices for the benchmark
+    parameter set printed in [Meijaard2007]_.
 
     Returns
     -------
-    M : numpy.Matrix, shape(2,2)
+    M : ndarray, shape(2,2)
         The mass matrix.
-    C1 : numpy.Matrix, shape(2,2)
+    C1 : ndarray, shape(2,2)
         The speed proportional damping matrix.
-    K0 : numpy.Matrix, shape(2,2)
+    K0 : ndarray, shape(2,2)
         The gravity proportional stiffness matrix.
-    K2 : numpy.Matrix, shape(2,2)
+    K2 : ndarray, shape(2,2)
         The speed squared proportional stiffness matrix.
 
     Notes
@@ -146,15 +157,24 @@ def benchmark_matrices():
     and f = [roll torque,
              steer torque]
 
+    References
+    ----------
+
+    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
+       L. Schwab. Linearized dynamics equations for the balance and steer of a
+       bicycle: A benchmark and review. Proceedings of the Royal Society A:
+       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
+       August 2007.
+
     """
 
-    M = np.matrix([[80.81722, 2.31941332208709],
-                   [2.31941332208709, 0.29784188199686]])
-    C1 = np.matrix([[0., 33.86641391492494],
-                    [-0.85035641456978, 1.68540397397560]])
-    K0 = np.matrix([[-80.95, -2.59951685249872],
-                    [-2.59951685249872, -0.80329488458618]])
-    K2 = np.matrix([[0., 76.59734589573222],
+    M = np.array([[80.81722, 2.31941332208709],
+                  [2.31941332208709, 0.29784188199686]])
+    C1 = np.array([[0., 33.86641391492494],
+                   [-0.85035641456978, 1.68540397397560]])
+    K0 = np.array([[-80.95, -2.59951685249872],
+                   [-2.59951685249872, -0.80329488458618]])
+    K2 = np.array([[0., 76.59734589573222],
                    [0., 2.65431523794604]])
 
     return M, C1, K0, K2
@@ -231,7 +251,19 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
-    width = 4.0 # inches
+    """Returns a figure that matches Figure #4 in [Meijaard2007]_.
+
+    References
+    ----------
+
+    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
+       L. Schwab. Linearized dynamics equations for the balance and steer of a
+       bicycle: A benchmark and review. Proceedings of the Royal Society A:
+       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
+       August 2007.
+
+    """
+    width = 4.0  # inches
     golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
     height = width * golden_ratio
     fig = figure()
@@ -249,7 +281,7 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
     rateAxis = fig.add_subplot(111)
     speedAxis = rateAxis.twinx()
 
-    p1, = rateAxis.plot(time, rollRate, "k--",label="Roll Rate")
+    p1, = rateAxis.plot(time, rollRate, "k--", label="Roll Rate")
     p2, = rateAxis.plot(time, steerRate, "k:", label="Steer Rate")
     p3, = speedAxis.plot(time, speed, "k-", label="Speed")
 
@@ -316,11 +348,12 @@ def moore_to_basu(moore, rr, lam):
     basu['betafd'] = -m['u8']
 
     basu['xdd'] = (rr * (-s3 * s4 * m['u3']**2 + c3 * c4 * m['u3'] * m['u4'] +
-        c3 * s4 * m['u3p'] + c3 * c4 * m['u3'] * m['u4'] - s3 * s4 * m['u4']**2
-        + s3 * c4 * m['u4p']) - m['u1p'])
-    basu['ydd'] = (m['u2p'] - rr * c3 * s4 * m['u3']**2 - rr * s3 * c4 * m['u3']
-        * m['u4'] - rr * s3 * s4 * m['u3p'] - rr * s3 * c4 * m['u3'] * m['u4']
-        - rr * c3 * s4 * m['u4']**2 + rr * c3 * c4 * m['u4p'])
+                         c3 * s4 * m['u3p'] + c3 * c4 * m['u3'] * m['u4'] - s3
+                         * s4 * m['u4']**2 + s3 * c4 * m['u4p']) - m['u1p'])
+    basu['ydd'] = (m['u2p'] - rr * c3 * s4 * m['u3']**2 - rr * s3 * c4 *
+                   m['u3'] * m['u4'] - rr * s3 * s4 * m['u3p'] - rr * s3 * c4 *
+                   m['u3'] * m['u4'] - rr * c3 * s4 * m['u4']**2 + rr * c3 * c4
+                   * m['u4p'])
     basu['zdd'] = -rr * (m['u4p'] * s4 + m['u4']**2 * c4)
     basu['thetadd'] = -m['u3p']
     basu['psidd'] = -m['u4p']
@@ -338,18 +371,19 @@ def basu_sig_figs():
 
     """
     # q, qd, qdd
-    sigFigTable = [[0, 14, 13], # x
-                   [0, 13, 13], # y
-                   [13, 13, 13], # z
-                   [0, 13, 13], # theta
-                   [13, 13, 14], # psi
-                   [14, 12, 13], # phi
-                   [13, 13, 14], # psif
-                   [0, 13, 14], # betar
-                   [0, 14, 13]] # betaf
+    sigFigTable = [[0, 14, 13],  # x
+                   [0, 13, 13],  # y
+                   [13, 13, 13],  # z
+                   [0, 13, 13],  # theta
+                   [13, 13, 14],  # psi
+                   [14, 12, 13],  # phi
+                   [13, 13, 14],  # psif
+                   [0, 13, 14],  # betar
+                   [0, 14, 13]]  # betaf
 
     deriv = ['', 'd', 'dd']
-    coordinates = ['x', 'y', 'z', 'theta', 'psi', 'phi', 'psif', 'betar', 'betaf']
+    coordinates = ['x', 'y', 'z', 'theta', 'psi', 'phi', 'psif', 'betar',
+                   'betaf']
 
     sigFigs = {}
     for i, row in enumerate(sigFigTable):
@@ -441,11 +475,11 @@ def basu_to_moore_input(basu, rr, lam):
 
     # speeds
     moore['u1'] = (rr * basu['psid'] * sin(basu['theta']) * sin(basu['psi']) -
-        rr * basu['thetad'] * cos(basu['theta']) * cos(basu['psi']) -
-        basu['xd'])
+                   rr * basu['thetad'] * cos(basu['theta']) * cos(basu['psi'])
+                   - basu['xd'])
     moore['u2'] = (basu['yd'] + rr * basu['thetad'] * sin(basu['theta']) *
-        cos(basu['psi']) + rr * basu['psid'] * cos(basu['theta']) *
-        sin(basu['psi']))
+                   cos(basu['psi']) + rr * basu['psid'] * cos(basu['theta']) *
+                   sin(basu['psi']))
     moore['u3'] = -basu['thetad']
     moore['u4'] = -basu['psid']
     moore['u5'] = -basu['phid']
@@ -540,23 +574,23 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     # geometry
     mP['rf'] = bP['rF']
     mP['rr'] = bP['rR']
-    mP['d1'] =  cos(bP['lam']) * (bP['c'] + bP['w'] - bP['rR'] * tan(bP['lam']))
+    mP['d1'] = cos(bP['lam']) * (bP['c'] + bP['w'] - bP['rR'] * tan(bP['lam']))
     mP['d3'] = -cos(bP['lam']) * (bP['c'] - bP['rF'] * tan(bP['lam']))
     mP['d2'] = (bP['rR'] + mP['d1'] * sin(bP['lam']) - bP['rF'] + mP['d3'] *
-            sin(bP['lam'])) / cos(bP['lam'])
+                sin(bP['lam'])) / cos(bP['lam'])
 
     # mass center locations
     # bicycle frame
     mP['l1'] = (bP['xB'] * cos(bP['lam']) - bP['zB'] * sin(bP['lam']) -
-        bP['rR'] * sin(bP['lam']))
+                bP['rR'] * sin(bP['lam']))
     mP['l2'] = (bP['xB'] * sin(bP['lam']) + bP['zB'] * cos(bP['lam']) +
-        bP['rR'] * cos(bP['lam']))
+                bP['rR'] * cos(bP['lam']))
 
     if 'xcl' in bP and 'zcl' in bP:
         mP['d4'] = (bP['xcl'] * cos(bP['lam']) - bP['zcl'] * sin(bP['lam']) -
-            bP['rR'] * sin(bP['lam']))
+                    bP['rR'] * sin(bP['lam']))
         mP['d5'] = (bP['xcl'] * sin(bP['lam']) + bP['zcl'] * cos(bP['lam']) +
-            bP['rR'] * cos(bP['lam']))
+                    bP['rR'] * cos(bP['lam']))
 
     # bicycle fork
     if oldMassCenter is True:
@@ -566,62 +600,63 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
         mP['l4'] = mP['d2'] + mP['l4']
     elif oldMassCenter is False:
         # l3 and l4 are with reference to the front wheel center (the new way)
-        mP['l4'] = ((bP['zH'] + bP['rF']) * cos(bP['lam']) + (bP['xH'] - bP['w'])
-            * sin(bP['lam']))
+        mP['l4'] = ((bP['zH'] + bP['rF']) * cos(bP['lam']) + (bP['xH'] -
+                                                              bP['w']) *
+                    sin(bP['lam']))
         mP['l3'] = ((bP['xH'] - bP['w'] - mP['l4'] * sin(bP['lam'])) /
-            cos(bP['lam']))
+                    cos(bP['lam']))
     else:
         raise ValueError('oldMassCenter must be True or False')
 
     # masses
-    mP['mc'] =  bP['mB']
-    mP['md'] =  bP['mR']
-    mP['me'] =  bP['mH']
-    mP['mf'] =  bP['mF']
+    mP['mc'] = bP['mB']
+    mP['md'] = bP['mR']
+    mP['me'] = bP['mH']
+    mP['mf'] = bP['mF']
 
     # inertia
     # rear wheel inertia
-    mP['id11']  =  bP['IRxx']
-    mP['id22']  =  bP['IRyy']
-    mP['id33']  =  bP['IRxx']
+    mP['id11'] = bP['IRxx']
+    mP['id22'] = bP['IRyy']
+    mP['id33'] = bP['IRxx']
 
     # front wheel inertia
-    mP['if11']  =  bP['IFxx']
-    mP['if22']  =  bP['IFyy']
-    mP['if33']  =  bP['IFxx']
+    mP['if11'] = bP['IFxx']
+    mP['if22'] = bP['IFyy']
+    mP['if33'] = bP['IFxx']
 
     # lambda rotation matrix
     R = y_rot(bP['lam'])
 
     # rotate the benchmark bicycle frame inertia through the steer axis tilt,
     # lambda
-    IB =  np.matrix([[bP['IBxx'], 0., bP['IBxz']],
-                     [0., bP['IByy'], 0.],
-                     [bP['IBxz'], 0., bP['IBzz']]])
-    IBrot =  R * IB * R.T
+    IB = np.matrix([[bP['IBxx'], 0., bP['IBxz']],
+                    [0., bP['IByy'], 0.],
+                    [bP['IBxz'], 0., bP['IBzz']]])
+    IBrot = R * IB * R.T
 
     # bicycle frame inertia
-    mP['ic11'] =  IBrot[0, 0]
-    mP['ic12'] =  IBrot[0, 1]
-    mP['ic22'] =  IBrot[1, 1]
-    mP['ic23'] =  IBrot[1, 2]
-    mP['ic31'] =  IBrot[2, 0]
-    mP['ic33'] =  IBrot[2, 2]
+    mP['ic11'] = IBrot[0, 0]
+    mP['ic12'] = IBrot[0, 1]
+    mP['ic22'] = IBrot[1, 1]
+    mP['ic23'] = IBrot[1, 2]
+    mP['ic31'] = IBrot[2, 0]
+    mP['ic33'] = IBrot[2, 2]
 
     # rotate the benchmark bicycle fork inertia through the steer axis tilt,
     # lambda
-    IH =  np.matrix([[bP['IHxx'], 0., bP['IHxz']],
-                     [0., bP['IHyy'], 0.],
-                     [bP['IHxz'], 0., bP['IHzz']]])
-    IHrot =  R * IH * R.T
+    IH = np.matrix([[bP['IHxx'], 0., bP['IHxz']],
+                    [0., bP['IHyy'], 0.],
+                    [bP['IHxz'], 0., bP['IHzz']]])
+    IHrot = R * IH * R.T
 
     # fork/handlebar inertia
-    mP['ie11'] =  IHrot[0, 0]
-    mP['ie12'] =  IHrot[0, 1]
-    mP['ie22'] =  IHrot[1, 1]
-    mP['ie23'] =  IHrot[1, 2]
-    mP['ie31'] =  IHrot[2, 0]
-    mP['ie33'] =  IHrot[2, 2]
+    mP['ie11'] = IHrot[0, 0]
+    mP['ie12'] = IHrot[0, 1]
+    mP['ie22'] = IHrot[1, 1]
+    mP['ie23'] = IHrot[1, 2]
+    mP['ie31'] = IHrot[2, 0]
+    mP['ie33'] = IHrot[2, 2]
 
     # gravity
     mP['g'] = bP['g']
@@ -652,11 +687,20 @@ def lambda_from_abc(rF, rR, a, b, c):
     lam : float
         The steer axis tilt as described in [Meijaard2007]_.
 
+    References
+    ----------
+
+    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
+       L. Schwab. Linearized dynamics equations for the balance and steer of a
+       bicycle: A benchmark and review. Proceedings of the Royal Society A:
+       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
+       August 2007.
+
     '''
     def lam_equality(lam, rF, rR, a, b, c):
         return sin(lam) - (rF - rR + c * cos(lam)) / (a + b)
 
-    guess = atan(c / (a + b)) # guess based on equal wheel radii
+    guess = atan(c / (a + b))  # guess based on equal wheel radii
 
     args = (rF, rR, a, b, c)
 
@@ -720,9 +764,9 @@ def sort_modes(evals, evecs):
         The associated eigenvectors of the caster mode.
 
     This only works on the standard bicycle eigenvalues, not necessarily on any
-    general eigenvalues for the bike model (e.g. there isn't always a distinct weave,
-    capsize and caster). Some type of check unsing the derivative of the curves
-    could make it more robust.
+    general eigenvalues for the bike model (e.g. there isn't always a distinct
+    weave, capsize and caster). Some type of check unsing the derivative of the
+    curves could make it more robust.
 
     '''
     evalsorg = np.zeros_like(evals)
@@ -738,14 +782,16 @@ def sort_modes(evals, evecs):
         used = []
         for j, e in enumerate(speed):
             try:
-                x, y = np.real(evalsorg[i, j].nominal_value), np.imag(evalsorg[i, j].nominal_value)
+                x = np.real(evalsorg[i, j].nominal_value)
+                y = np.imag(evalsorg[i, j].nominal_value)
             except:
                 x, y = np.real(evalsorg[i, j]), np.imag(evalsorg[i, j])
             # for each eigenvalue at the next speed
             dist = np.zeros(4)
             for k, eignext in enumerate(evals[i + 1]):
                 try:
-                    xn, yn = np.real(eignext.nominal_value), np.imag(eignext.nominal_value)
+                    xn = np.real(eignext.nominal_value)
+                    yn = np.imag(eignext.nominal_value)
                 except:
                     xn, yn = np.real(eignext), np.imag(eignext)
                 # distance between points in the real/imag plane
@@ -759,9 +805,9 @@ def sort_modes(evals, evecs):
             evecsorg[i + 1, :, j] = evecs[i + 1, :, np.argmin(dist)]
             # keep track of the indices we've used
             used.append(np.argmin(dist))
-    weave = {'evals' : evalsorg[:, 2:], 'evecs' : evecsorg[:, :, 2:]}
-    capsize = {'evals' : evalsorg[:, 1], 'evecs' : evecsorg[:, :, 1]}
-    caster = {'evals' : evalsorg[:, 0], 'evecs' : evecsorg[:, :, 0]}
+    weave = {'evals': evalsorg[:, 2:], 'evecs': evecsorg[:, :, 2:]}
+    capsize = {'evals': evalsorg[:, 1], 'evecs': evecsorg[:, :, 1]}
+    caster = {'evals': evalsorg[:, 0], 'evecs': evecsorg[:, :, 0]}
     return weave, capsize, caster
 
 
@@ -806,7 +852,7 @@ def benchmark_par_to_canonical(p):
 
     mA = p['mH'] + p['mF']
     xA = (p['xH'] * p['mH'] + p['w'] * p['mF']) / mA
-    zA = (p['zH'] * p['mH'] - p['rF']* p['mF']) / mA
+    zA = (p['zH'] * p['mH'] - p['rF'] * p['mF']) / mA
 
     IAxx = (p['IHxx'] + p['IFxx'] + p['mH'] * (p['zH'] - zA)**2 +
             p['mF'] * (p['rF'] + zA)**2)
@@ -836,7 +882,7 @@ def benchmark_par_to_canonical(p):
     Mdd = IAll + 2 * mu * IAlz + mu**2 * ITzz
     M = np.array([[Mpp, Mpd], [Mdp, Mdd]])
 
-    K0pp = mT * zT # this value only reports to 13 digit precision it seems?
+    K0pp = mT * zT  # this value only reports to 13 digit precision it seems?
     K0pd = -SA
     K0dp = K0pd
     K0dd = -SA * sin(p['lam'])
@@ -860,8 +906,7 @@ def benchmark_par_to_canonical(p):
 
 
 def benchmark_state_space(M, C1, K0, K2, v, g):
-    """
-    Calculate the A and B matrices for the Whipple bicycle model linearized
+    """Calculate the A and B matrices for the Whipple bicycle model linearized
     about the upright configuration.
 
     Parameters
@@ -896,7 +941,7 @@ def benchmark_state_space(M, C1, K0, K2, v, g):
     """
 
     invM = (1. / (M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0]) *
-           np.array([[M[1, 1], -M[0, 1]], [-M[1, 0], M[0, 0]]], dtype=M.dtype))
+            np.array([[M[1, 1], -M[0, 1]], [-M[1, 0], M[0, 0]]], dtype=M.dtype))
 
     a11 = np.zeros((2, 2))
     a12 = np.eye(2)
