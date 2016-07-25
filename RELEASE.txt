@@ -1,6 +1,6 @@
-Bump the version in dtk/version.py
 Update copyright dates in docs/conf.py
 Make release notes in README.rst
+Bump the version in dtk/version.py
 git commit
 git tag -a vX.X.X -m "Version X.X.X"
 git push --tags
