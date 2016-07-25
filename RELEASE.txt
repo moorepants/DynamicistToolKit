@@ -10,6 +10,6 @@ python setup.py register sdist upload
 Copy the last conda recipe dir for the new version.
 Edit the meta.yaml file.
 conda build conda/dynamicisttoolkit-x.x.x
-conda convert -all <first tar ball> -o conda/dynamicisttoolkit-x.x.x/builds/
+conda convert -p all <first tar ball> -o conda/dynamicisttoolkit-x.x.x/builds/
 binstar upload each tar ball.
 Make sure the latest version is available on readthedocs.org
