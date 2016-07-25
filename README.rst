@@ -1,9 +1,9 @@
-.. image:: https://pypip.in/version/DynamicistToolKit/badge.svg
-   :target: https://pypi.python.org/pypi/DynamicistToolKit/
-   :alt: Latest Version
+.. |pypi| image:: https://img.shields.io/pypi/v/DynamicistToolKit.svg
+   :target: https://pypi.python.org/pypi/DynamicistToolKit
+   :alt: Latest Released Version
 
-.. image:: https://binstar.org/moorepants/dynamicisttoolkit/badges/version.svg
-   :target: https://binstar.org/moorepants/dynamicisttoolkit
+.. image:: https://anaconda.org/moorepants/dynamicisttoolkit/badges/version.svg
+   :target: https://anaconda.org/moorepants/dynamicisttoolkit
 
 .. image:: https://travis-ci.org/moorepants/DynamicistToolKit.png?branch=master
    :target: http://travis-ci.org/moorepants/DynamicistToolKit
@@ -104,6 +104,7 @@ Release Notes
 0.5.0
 -----
 
+- bicycle.py functions now output numpy arrays instead of matrices.
 - Support for Python 3 [PR `#30`_ and `#32`_].
 
 .. _#30: https://github.com/moorepants/DynamicistToolKit/pull/30
