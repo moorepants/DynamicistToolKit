@@ -1,4 +1,4 @@
-.. |pypi| image:: https://img.shields.io/pypi/v/DynamicistToolKit.svg
+.. image:: https://img.shields.io/pypi/v/DynamicistToolKit.svg
    :target: https://pypi.python.org/pypi/DynamicistToolKit
    :alt: Latest Released Version
 
