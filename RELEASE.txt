@@ -9,7 +9,7 @@ Checkout tag
 python setup.py register sdist upload
 Copy the last conda recipe dir for the new version.
 Edit the meta.yaml file.
-conda build conda/dynamicisttoolkit-x.x.x
+conda build --python "2.7" --python "3.3" --python "3.4" --python "3.5" conda/dynamicisttoolkit-x.x.x
 conda convert -p all <first tar ball> -o conda/dynamicisttoolkit-x.x.x/builds/
-binstar upload each tar ball.
+find conda/dynamicisttoolkit-x.x.x/builds -name *.bz2 -exec anaconda upload --force -u moorepants {} \;
 Make sure the latest version is available on readthedocs.org
