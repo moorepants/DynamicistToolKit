@@ -1,3 +1,5 @@
+include README.rst
+include UNLICENSE.txt
 include dtk/test/data/*
 include docs/*.rst
 include docs/Makefile
