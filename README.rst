@@ -105,6 +105,11 @@ numpydoc::
 Release Notes
 =============
 
+0.5.2
+-----
+
+- Screwed up pypi upload on 0.5.1, so bumping one more time.
+
 0.5.1
 -----
 
