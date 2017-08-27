@@ -369,15 +369,15 @@ class TestTimeShiftRealData():
         self.sample_rate = int(np.mean(1.0 /
                                        np.diff(self.original_time)))
 
-        start = 1.0 * self.sample_rate
-        stop = 5.0 * self.sample_rate
+        start = 1 * self.sample_rate
+        stop = 5 * self.sample_rate
         test_time = self.grf_array.T[0, start:stop]
         vertical_grf = self.grf_array.T[1, start:stop]
         #self.sample_rate = int(np.mean(1.0 / np.diff(original_time)))
 
         self.tau = -0.1
-        self.base_signal = vertical_grf[abs(self.tau) * self.sample_rate:]
-        self.shifted_signal = vertical_grf[:-abs(self.tau) * self.sample_rate]
+        self.base_signal = vertical_grf[int(abs(self.tau) * self.sample_rate):]
+        self.shifted_signal = vertical_grf[:-int(abs(self.tau) * self.sample_rate)]
         self.truncated_time = test_time[:len(self.base_signal)]
 
     def test_sync_error(self):
