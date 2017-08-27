@@ -105,6 +105,11 @@ numpydoc::
 Release Notes
 =============
 
+0.5.3
+-----
+
+- Added the license and readme to the source distriubtion.
+
 0.5.2
 -----
 
