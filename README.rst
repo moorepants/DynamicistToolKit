@@ -101,6 +101,13 @@ numpydoc::
 Release Notes
 =============
 
+0.5.1
+-----
+
+- Import nanmean from numpy instead of scipy and fix float slices. [PR `#34`_]
+
+.. _#34: https://github.com/moorepants/DynamicistToolKit/pull/34
+
 0.5.0
 -----
 
