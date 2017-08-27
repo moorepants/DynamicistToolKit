@@ -14,8 +14,8 @@ from scipy.optimize import fmin
 from scipy.signal import butter, filtfilt
 try:
     from scipy.stats import nanmean
-except ImportError:
-    from scipy import nanmean
+except ImportError:  # NOTE : nanmean was removed from SciPy in version 0.18.0.
+    from numpy import nanmean
 from scipy import sparse
 import matplotlib.pyplot as plt
 
