@@ -8,6 +8,10 @@
 .. image:: https://travis-ci.org/moorepants/DynamicistToolKit.png?branch=master
    :target: http://travis-ci.org/moorepants/DynamicistToolKit
 
+.. image:: https://readthedocs.org/projects/dynamicisttoolkit/badge/?version=latest
+   :target: http://dynamicisttoolkit.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
 Introduction
 ============
 
