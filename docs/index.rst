@@ -1,3 +1,4 @@
+=============================================
 Welcome to DynamicistToolKit's documentation!
 =============================================
 
@@ -10,7 +11,6 @@ Contents:
    references
 
 .. include:: ../README.rst
-
 
 Indices and tables
 ==================
