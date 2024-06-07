@@ -30,7 +30,7 @@ jobs:
     - name: Build the documentation
       shell: bash -l {0}
       run: |
-        cd doc && make html
+        cd docs && make html
     - name: Install the software
       shell: bash -l {0}
       run: |
