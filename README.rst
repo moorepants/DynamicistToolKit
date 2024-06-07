@@ -1,16 +1,24 @@
-.. image:: https://img.shields.io/pypi/v/DynamicistToolKit.svg
-   :target: https://pypi.python.org/pypi/DynamicistToolKit
-   :alt: Latest Released Version
+=================
+DynamicistToolKit
+=================
 
-.. image:: https://anaconda.org/moorepants/dynamicisttoolkit/badges/version.svg
-   :target: https://anaconda.org/moorepants/dynamicisttoolkit
+.. list-table::
 
-.. image:: https://travis-ci.org/moorepants/DynamicistToolKit.png?branch=master
-   :target: http://travis-ci.org/moorepants/DynamicistToolKit
-
-.. image:: https://readthedocs.org/projects/dynamicisttoolkit/badge/?version=latest
-   :target: http://dynamicisttoolkit.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
+   * - PyPi
+     - .. image:: https://img.shields.io/pypi/v/DynamicistToolKit.svg
+          :target: https://pypi.org/project/DynamicistToolKit
+       .. image:: https://pepy.tech/badge/DynamicistToolKit
+          :target: https://pypi.org/project/DynamicistToolKit
+   * - Anaconda
+     - .. image:: https://anaconda.org/conda-forge/dynamicisttoolkit/badges/version.svg
+          :target: https://anaconda.org/conda-forge/dynamicisttoolkit
+       .. image:: https://anaconda.org/conda-forge/dynamicisttoolkit/badges/downloads.svg
+          :target: https://anaconda.org/conda-forge/dynamicisttoolkit
+   * - Documentation
+     - .. image:: https://readthedocs.org/projects/dynamicisttoolkit/badge/?version=stable
+          :target: http://dynamicisttoolkit.readthedocs.io
+   * - Continous Integration
+     - .. image:: https://github.com/moorepants/DynamicistToolKit/actions/workflows/tests.yml/badge.svg
 
 Introduction
 ============
@@ -32,20 +40,16 @@ Modules
 Installation
 ============
 
-You will need Python 2.7 or 3.3+ and setuptools to install the packages. Its
-best to install the dependencies first (NumPy, SciPy, matplotlib, Pandas). The
-SciPy Stack instructions are helpful for this:
-http://www.scipy.org/stackspec.html.
-
 We recommend installing with conda so that dependency installation is not an
 issue::
 
-   $ conda install -c moorepants dynamicisttoolkit
+   $ conda install -c conda-forge dynamicisttoolkit
 
-You can install using pip. Pip will theoretically [#]_ get the dependencies for
-you (or at least check if you have them)::
+You will need Python 3.8+ and setuptools to install the packages. You can
+install using pip. Pip will theoretically [#]_ get the dependencies for you (or
+at least check if you have them)::
 
-   $ pip install DynamicistToolKit
+   $ python -m pip install DynamicistToolKit
 
 Or download the source with your preferred method and install manually.
 
@@ -77,16 +81,6 @@ Tests
 Run the tests with nose::
 
    $ nosetests
-
-Vagrant
-=======
-
-A vagrant file and provisioning script are included to test the code on an
-Ubuntu 13.10 box. To load the box and run the tests simply type::
-
-  $ vagrant up
-
-See ``bootstrap.sh`` and ``VagrantFile`` to see what's going on.
 
 Documentation
 =============
