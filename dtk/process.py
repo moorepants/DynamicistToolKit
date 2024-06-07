@@ -461,6 +461,69 @@ def freq_spectrum(data, sampleRate):
         #power = abs(Y[1:n/2])**2
     return frequency, amplitude
 
+def pow_spectrum(data, sampleRate):
+    """
+    Return the power spectrum of a dataset.
+    
+    S(f) = |X(f)|^2
+
+    Parameters
+    ----------
+    data : ndarray, shape (m,) or shape(n,m)
+        The array of time signals where n is the number of variables and m is
+        the number of time steps.
+    sampleRate : int
+        The signal sampling rate in hertz.
+
+    Returns
+    -------
+    frequency : ndarray, shape (p,)
+        The frequencies where p is a power of 2 close to m.
+    power : ndarray, shape (p,n)
+        The power at each frequency.
+
+    """
+    frequency, amplitude = freq_spectrum(data, sampleRate)
+    
+    power = amplitude**2    #Power is the square of the amplitude
+    
+    return frequency, power
+    
+def cum_pow_spectrum(data, sampleRate, normalize=True):
+    """
+    Return the power spectrum of a dataset.
+    
+    S(f) = |X(f)|^2
+
+    Parameters
+    ----------
+    data : ndarray, shape (m,) or shape(n,m)
+        The array of time signals where n is the number of variables and m is
+        the number of time steps.
+    sampleRate : int
+        The signal sampling rate in hertz.
+    normalize : bool, optional
+        If True, the returned signal is normalized to the total power. The 
+        default is True. 
+
+    Returns
+    -------
+    frequency : ndarray, shape (p,)
+        The frequencies where p is a power of 2 close to m.
+    cum_power : ndarray, shape (p,n)
+        The cummulative power up to each frequency.
+
+    """
+    frequency, power = pow_spectrum(data, sampleRate)
+    
+    cum_power = np.cumsum(power)
+    
+    #if requested, normalize to the total power.
+    if normalize:
+        cum_power = cum_power / cum_power[-1]
+        
+    return frequency, cum_power
+    
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
                 **kwargs):
