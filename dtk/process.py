@@ -452,14 +452,15 @@ def freq_spectrum(data, sampleRate):
     f = fftfreq(n, d=time)
     #f = sampleRate/2.*linspace(0, 1, n)
     #print 'f =', f, f.shape, type(f)
-    frequency = f[1:n / 2]
+    frequency = f[1:int(n / 2)]
     try:
-        amplitude = 2 * abs(Y[:, 1:n / 2]).T # multiply by 2 because we take half the vector
+        amplitude = 2 * abs(Y[:, 1:int(n / 2)]).T # multiply by 2 because we take half the vector
         #power = abs(Y[:, 1:n/2])**2
     except:
-        amplitude = 2 * abs(Y[1:n / 2])
+        amplitude = 2 * abs(Y[1:int(n / 2)])
         #power = abs(Y[1:n/2])**2
     return frequency, amplitude
+
 
 def pow_spectrum(data, sampleRate):
     """
@@ -489,6 +490,7 @@ def pow_spectrum(data, sampleRate):
     
     return frequency, power
     
+
 def cum_pow_spectrum(data, sampleRate, normalize=True):
     """
     Return the power spectrum of a dataset.
