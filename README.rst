@@ -18,7 +18,7 @@ DynamicistToolKit
      - .. image:: https://readthedocs.org/projects/dynamicisttoolkit/badge/?version=stable
           :target: http://dynamicisttoolkit.readthedocs.io
    * - Continous Integration
-     - .. image:: https://github.com/moorepants/DynamicistToolKit/actions/workflows/tests.yml/badge.svg
+     - .. image:: https://github.com/moorepants/DynamicistToolKit/actions/workflows/test.yml/badge.svg
 
 Introduction
 ============
