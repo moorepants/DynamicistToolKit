@@ -26,7 +26,7 @@ jobs:
       shell: bash -l {0}
       if: ${{ matrix.python != '3.12' }}
       run: |
-        nosetests -v --with-coverage --cover-package=yeadon
+        nosetests -v --with-coverage --cover-package=dtk
     - name: Build the documentation
       shell: bash -l {0}
       run: |
