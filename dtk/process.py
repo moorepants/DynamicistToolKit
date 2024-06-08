@@ -427,6 +427,47 @@ def freq_spectrum(data, sampleRate):
     amplitude : ndarray, shape (p, n)
         Amplitude at each frequency.
 
+    Examples
+    --------
+
+    Create a sum of two sinusoids with the low frequency sinusoid having an
+    amplitude of 2 and frequency of 5 Hz and the high frequency sinusoid having
+    an amplitude of 1 and frequency of 50 Hz. Plot the frequency spectrum of
+    the sum.
+
+    .. plot::
+       :include-source:
+       :context: reset
+
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import freq_spectrum
+
+       sample_rate = 1000
+       duration = 1.0
+       time = np.linspace(0.0, duration, num=int(duration*sample_rate) + 1)
+
+       low_freq = 2.0*np.sin(5.0*2.0*np.pi*time)  # 5 Hz * 2 pi rad / cycle
+       high_freq = np.sin(50.0*2.0*np.pi*time)  # 50 Hz * 2 pi rad / cycle
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.plot(time, low_freq + high_freq)
+       ax.set_xlim((0.0, 0.4))
+       ax.set_xlabel('Time [s]')
+       ax.set_ylabel('Amplitude')
+
+    .. plot::
+       :include-source:
+       :context: close-figs
+
+       freqs, amps = freq_spectrum(low_freq + high_freq, sample_rate)
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.plot(freqs, amps)
+       ax.set_xlim((0.0, 100.0))
+       ax.set_xlabel('Frequency [Hz]')
+       ax.set_ylabel('Amplitude')
+
     """
     def nextpow2(i):
         '''Return the next power of 2 for the given number.'''
@@ -494,6 +535,38 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     ----------
     .. [Winter2009] David A. Winter (2009) Biomechanics and motor control of
        human movement. 4th edition. Hoboken: Wiley.
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+       :context: reset
+
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import butterworth, freq_spectrum
+
+       sample_rate = 1000  # Hz
+       duration = 10.0  # seconds
+       time = np.linspace(0.0, duration, num=int(sample_rate*duration) + 1)
+       white_noise = np.random.normal(0.0, 1.0, size=len(time))
+       cutoff = 200  # Hz
+       order = 4
+       filtered = butterworth(white_noise, cutoff, sample_rate, order=order)
+
+       freq, amp = freq_spectrum(white_noise, sample_rate)
+       freq_filt, amp_filt = freq_spectrum(filtered, sample_rate)
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.plot(freq, amp, label='Unfiltered')
+       ax.plot(freq_filt, amp_filt, alpha=0.75, label='Filtered')
+       ax.axvline(cutoff, color='black')
+       ax.set_ylabel('Amplitude of White Noise with STD=1')
+       ax.set_xlabel('Frequency [Hz]')
+       msg = 'Sample rate: {} Hz, Cutoff: {} Hz, Order: {}'
+       ax.set_title(msg.format(sample_rate, cutoff, order))
+       ax.legend()
 
     """
     if len(data.shape) > 2:
