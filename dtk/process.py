@@ -414,47 +414,46 @@ def freq_spectrum(data, sampleRate):
 
     Parameters
     ----------
-    data : ndarray, shape (m,) or shape(n,m)
-        The array of time signals where n is the number of variables and m is
-        the number of time steps.
+    data : array_like, shape (m, ) or shape(n, m)
+        The array of time signals where ``n`` is the number of variables and
+        ``m`` is the number of time steps.
     sampleRate : int
-        The signal sampling rate in hertz.
+        The signal sampling rate in Hertz.
 
     Returns
     -------
     frequency : ndarray, shape (p,)
-        The frequencies where p is a power of 2 close to m.
-    amplitude : ndarray, shape (p,n)
-        The amplitude at each frequency.
+        Frequencies where ``p`` is a power of 2 close to ``m``, in Hertz.
+    amplitude : ndarray, shape (p, n)
+        Amplitude at each frequency.
 
     """
     def nextpow2(i):
-        '''
-        Return the next power of 2 for the given number.
-
-        '''
+        '''Return the next power of 2 for the given number.'''
         n = 2
-        while n < i: n *= 2
+        while n < i:
+            n *= 2
         return n
 
-    time = 1. / sampleRate # sample time
+    time = 1./sampleRate  # sample time
     try:
-        L = data.shape[1] # length of data if (n, m)
-    except:
-        L = data.shape[0] # length of data if (n,)
+        L = data.shape[1]  # length of data if (n, m)
+    except IndexError:
+        L = data.shape[0]  # length of data if (n,)
     # calculate the closest power of 2 for the length of the data
     n = nextpow2(L)
-    Y = fft(data, n) / L # divide by L for scaling
+    Y = fft(data, n)/L  # divide by L for scaling
     f = fftfreq(n, d=time)
-    #f = sampleRate/2.*linspace(0, 1, n)
-    #print 'f =', f, f.shape, type(f)
+    # f = sampleRate/2.*linspace(0, 1, n)
+    # print 'f =', f, f.shape, type(f)
     frequency = f[1:n//2]
     try:
-        amplitude = 2 * abs(Y[:, 1:n//2]).T # multiply by 2 because we take half the vector
-        #power = abs(Y[:, 1:n/2])**2
-    except:
-        amplitude = 2 * abs(Y[1:n//2])
-        #power = abs(Y[1:n/2])**2
+        # multiply by 2 because we take half the vector
+        amplitude = 2*abs(Y[:, 1:n//2]).T
+        # power = abs(Y[:, 1:n/2])**2
+    except IndexError:
+        amplitude = 2*abs(Y[1:n//2])
+        # power = abs(Y[1:n/2])**2
     return frequency, amplitude
 
 
@@ -517,7 +516,6 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
         cutoff_corrected_hz = samplerate/np.pi*np.arctan(
             cutoff_radps*correction_factor)
     elif btype == 'lowpass':
-        # TODO : Not sure if this is correct for bandpass and bandstop
         cutoff_corrected_hz = samplerate/np.pi*np.arctan(
             cutoff_radps/correction_factor)
     else:
