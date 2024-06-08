@@ -227,6 +227,10 @@ def test_butterworth_white_noise(plot=False):
         ax.plot(freq_double, amp_double, alpha=0.5,
                 label='Double Pass Filtered')
         ax.axvline(cutoff, color='black')
+        ax.set_ylabel('Amplitude of White Noise with STD=1')
+        ax.set_xlabel('Frequency [Hz]')
+        msg = 'Sample rate: {} Hz, Cutoff: {} Hz, Order: {}'
+        ax.set_title(msg.format(sample_rate, cutoff, order))
         ax.legend()
         plt.show()
 
