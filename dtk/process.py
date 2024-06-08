@@ -448,12 +448,12 @@ def freq_spectrum(data, sampleRate):
     f = fftfreq(n, d=time)
     #f = sampleRate/2.*linspace(0, 1, n)
     #print 'f =', f, f.shape, type(f)
-    frequency = f[1:n / 2]
+    frequency = f[1:n//2]
     try:
-        amplitude = 2 * abs(Y[:, 1:n / 2]).T # multiply by 2 because we take half the vector
+        amplitude = 2 * abs(Y[:, 1:n//2]).T # multiply by 2 because we take half the vector
         #power = abs(Y[:, 1:n/2])**2
     except:
-        amplitude = 2 * abs(Y[1:n / 2])
+        amplitude = 2 * abs(Y[1:n//2])
         #power = abs(Y[1:n/2])**2
     return frequency, amplitude
 
@@ -475,7 +475,7 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
         The order of the Butterworth filter.
     axis : int
         The axis to filter along.
-    btype : {'lowpass'|'highpass'|'bandpass'|'bandstop'}
+    btype : {'lowpass'|'highpass'}
         The type of filter. Default is 'lowpass'.
     kwargs
         Any extra arguments to get passed to scipy.signal.sosfiltfilt.
@@ -513,8 +513,15 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
 
     correction_factor = (np.sqrt(2.0) - 1.0)**(1.0/(2.0*order))
     cutoff_radps = np.tan(np.pi*cutoff/samplerate)
-    cutoff_corrected_hz = samplerate/np.pi*np.arctan(
-        cutoff_radps/correction_factor)
+    if btype == 'highpass':
+        cutoff_corrected_hz = samplerate/np.pi*np.arctan(
+            cutoff_radps*correction_factor)
+    elif btype == 'lowpass':
+        # TODO : Not sure if this is correct for bandpass and bandstop
+        cutoff_corrected_hz = samplerate/np.pi*np.arctan(
+            cutoff_radps/correction_factor)
+    else:
+        raise ValueError("btype='{}' not supported.".format(btype))
 
     # Wn is the ratio of the corrected cutoff frequency to the Nyquist
     # frequency.
