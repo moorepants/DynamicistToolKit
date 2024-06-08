@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# standard library
-from distutils.version import LooseVersion
-
 # external dependencies
 import numpy as np
 from numpy.fft import fft, fftfreq
-from scipy import __version__ as scipy_version
 from scipy.integrate import trapz, cumtrapz
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fmin
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, sosfiltfilt
 try:
     from scipy.stats import nanmean
 except ImportError:  # NOTE : nanmean was removed from SciPy in version 0.18.0.
@@ -464,24 +460,25 @@ def freq_spectrum(data, sampleRate):
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
                 **kwargs):
-    """Returns the data filtered by a forward/backward Butterworth filter.
+    """Returns the data filtered by a two-pass (forward/backward) Butterworth
+    filter.
 
     Parameters
     ----------
-    data : ndarray, shape(n,) or shape(n,m)
+    data : array_like, shape(n, ) or shape(n, m)
         The data to filter. Only handles 1D and 2D arrays.
     cutoff : float
-        The filter cutoff frequency in hertz.
+        The filter cutoff frequency in Hertz.
     samplerate : float
-        The sample rate of the data in hertz.
+        The sample rate of the data in Hertz. Sample rate must be constant.
     order : int
         The order of the Butterworth filter.
     axis : int
         The axis to filter along.
     btype : {'lowpass'|'highpass'|'bandpass'|'bandstop'}
         The type of filter. Default is 'lowpass'.
-    kwargs : keyword value pairs
-        Any extra arguments to get passed to scipy.signal.filtfilt.
+    kwargs
+        Any extra arguments to get passed to scipy.signal.sosfiltfilt.
 
     Returns
     -------
@@ -503,50 +500,30 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     if len(data.shape) > 2:
         raise ValueError('This function only works with 1D or 2D arrays.')
 
-    nyquist_frequency = 0.5 * samplerate
+    # NOTE : For details, start in this issue:
+    # https://github.com/moorepants/DynamicistToolKit/issues/37
+    # For a digital Butterworth filter, the cutoff frequency in rad/s is:
+    # wc = tan(pi/fs*fc) where:
+    # fc : cutoff frequency in Hz
+    # fs : sample rate in Hz
+    # wc : cutoff frequency in rad/s
 
-    # Since we use filtfilt below, we correct the cutoff frequency to ensure
-    # the filter**2 crosses the -3 dB line at the cutoff frequency.
-    # |H(w)| = sqrt(1 / (1 + (w / wc)**(2n)))
-    # wc : cutoff frequency
-    # n : Butterworth filter order
-    # |H**2(w)| = 1 / (1 + (w / wc)**(2n))
-    # |H**2(wc)| = 1 / (1 + (wc / wa)**(2n)) = 1 / sqrt(2) = -3 dB
-    # wa : adjusted cutoff frequency for double filter
-    # wa = (np.sqrt(2.0) - 1.0) ** (-1.0 / (2.0 * n))
-    correction_factor = (np.sqrt(2.0) - 1.0) ** (-1.0 / (2.0 * order))
+    # TODO : Figure out if the correction is the same for low and high pass
+    # filters.
+
+    correction_factor = (np.sqrt(2.0) - 1.0)**(1.0/(2.0*order))
+    cutoff_radps = np.tan(np.pi*cutoff/samplerate)
+    cutoff_corrected_hz = samplerate/np.pi*np.arctan(
+        cutoff_radps/correction_factor)
 
     # Wn is the ratio of the corrected cutoff frequency to the Nyquist
     # frequency.
-    Wn = correction_factor * cutoff / nyquist_frequency
+    nyquist_frequency = samplerate/2
+    Wn = cutoff_corrected_hz / nyquist_frequency
 
-    b, a = butter(order, Wn, btype=btype)
+    sos = butter(order, Wn, btype=btype, output='sos')
 
-    # SciPy 0.9.0 has a simple filtfilt, with no optional arguments. SciPy
-    # 0.10.0 introduced the axis argument. So, to stay compatible with
-    # 0.9.0, which is the SciPy installed on Ubuntu 12.04 LTS, we check the
-    # version. The version in SciPy 0.9.0 doesn't have kwargs either.
-    nine = LooseVersion('0.9.0')
-    ten = LooseVersion('0.10.0')
-    current = LooseVersion(scipy_version)
-
-    if current >= nine and current < ten:
-        print('SciPy 0.9.0 only supports 1D filtfilt, ' +
-              'so you get a slow version.')
-        if len(data.shape) == 2:
-            if axis == 0:
-                data = data.T
-            filtered = np.zeros_like(data)
-            for i, vector in enumerate(data):
-                filtered[i] = filtfilt(b, a, vector)
-            if axis == 0:
-                return filtered.T
-            else:
-                return filtered
-        else:
-            return filtfilt(b, a, data)
-    elif current >= ten:
-        return filtfilt(b, a, data, axis=axis, **kwargs)
+    return sosfiltfilt(sos, data, axis=axis, **kwargs)
 
 
 def subtract_mean(sig, hasNans=False):

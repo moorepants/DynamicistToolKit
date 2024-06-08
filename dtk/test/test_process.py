@@ -167,10 +167,6 @@ def test_derivative():
 
 def test_butterworth():
 
-    nine = LooseVersion('0.9.0')
-    ten = LooseVersion('0.10.0')
-    current = LooseVersion(scipy_version)
-
     # setup
     time = np.linspace(0.0, 1.0, 2001)
     sample_rate = 1.0 / np.diff(time).mean()
@@ -182,12 +178,7 @@ def test_butterworth():
     filtered = process.butterworth(low_freq + high_freq, 125.0, sample_rate,
                                    order=8, axis=0, padlen=150)
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[50:-50], low_freq[50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, low_freq, rtol=3e-5, atol=3e-5)
+    testing.assert_allclose(filtered, low_freq, rtol=3e-5, atol=3e-5)
 
     # shape(n,2)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq)).T
@@ -197,12 +188,7 @@ def test_butterworth():
 
     expected = np.vstack((low_freq, low_freq)).T
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[50:-50], expected[50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, expected, rtol=3e-5, atol=3e-5)
+    testing.assert_allclose(filtered, expected, rtol=3e-5, atol=3e-5)
 
     # shape(2,n)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq))
@@ -212,12 +198,7 @@ def test_butterworth():
 
     expected = np.vstack((low_freq, low_freq))
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[:, 50:-50], expected[:, 50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-3)
+    testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-3)
 
 
 def test_coefficient_of_determination():
