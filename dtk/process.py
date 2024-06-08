@@ -507,9 +507,6 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     # fs : sample rate in Hz
     # wc : cutoff frequency in rad/s
 
-    # TODO : Figure out if the correction is the same for low and high pass
-    # filters.
-
     correction_factor = (np.sqrt(2.0) - 1.0)**(1.0/(2.0*order))
     cutoff_radps = np.tan(np.pi*cutoff/samplerate)
     if btype == 'highpass':
