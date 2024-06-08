@@ -3,13 +3,13 @@
 
 # standard library
 import os
-from distutils.version import LooseVersion
 
 # external libraries
 import numpy as np
 from numpy import testing
-from scipy import __version__ as scipy_version
 from nose.tools import assert_raises
+import matplotlib.pyplot as plt
+from scipy.signal import butter, sosfilt
 
 # local libraries
 from .. import process
@@ -167,10 +167,6 @@ def test_derivative():
 
 def test_butterworth():
 
-    nine = LooseVersion('0.9.0')
-    ten = LooseVersion('0.10.0')
-    current = LooseVersion(scipy_version)
-
     # setup
     time = np.linspace(0.0, 1.0, 2001)
     sample_rate = 1.0 / np.diff(time).mean()
@@ -182,12 +178,7 @@ def test_butterworth():
     filtered = process.butterworth(low_freq + high_freq, 125.0, sample_rate,
                                    order=8, axis=0, padlen=150)
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[50:-50], low_freq[50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, low_freq, rtol=3e-5, atol=3e-5)
+    testing.assert_allclose(filtered, low_freq, rtol=3e-5, atol=3e-5)
 
     # shape(n,2)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq)).T
@@ -197,12 +188,7 @@ def test_butterworth():
 
     expected = np.vstack((low_freq, low_freq)).T
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[50:-50], expected[50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, expected, rtol=3e-5, atol=3e-5)
+    testing.assert_allclose(filtered, expected, rtol=3e-5, atol=3e-5)
 
     # shape(2,n)
     data = np.vstack((low_freq + high_freq, low_freq + high_freq))
@@ -212,12 +198,37 @@ def test_butterworth():
 
     expected = np.vstack((low_freq, low_freq))
 
-    if current >= nine and current < ten:
-        # SciPy 0.9.0 can't handle the end points.
-        testing.assert_allclose(filtered[:, 50:-50], expected[:, 50:-50],
-                                rtol=0.01, atol=0.01)
-    else:
-        testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-3)
+    testing.assert_allclose(filtered, expected, rtol=1e-5, atol=1e-3)
+
+
+def test_butterworth_white_noise(plot=False):
+    sample_rate = 1000  # Hz
+    duration = 10.0  # seconds
+    time = np.linspace(0.0, duration, num=int(sample_rate*duration) + 1)
+    white_noise = np.random.normal(0.0, 1.0, size=len(time))
+    cutoff = 200  # Hz
+    order = 4
+    double_pass_filtered = process.butterworth(white_noise, cutoff,
+                                               sample_rate, btype='lowpass',
+                                               order=order)
+    sos = butter(order, cutoff/sample_rate*2, btype='lowpass', output='sos')
+    single_pass_filtered = sosfilt(sos, white_noise)
+
+    if plot:
+        freq, amp = process.freq_spectrum(white_noise, sample_rate)
+        freq_double, amp_double = process.freq_spectrum(double_pass_filtered,
+                                                        sample_rate)
+        freq_single, amp_single = process.freq_spectrum(single_pass_filtered,
+                                                        sample_rate)
+        fig, ax = plt.subplots()
+        ax.plot(freq, amp, label='Unfiltered')
+        ax.plot(freq_single, amp_single, alpha=0.75,
+                label='Single Pass Filtered')
+        ax.plot(freq_double, amp_double, alpha=0.5,
+                label='Double Pass Filtered')
+        ax.axvline(cutoff, color='black')
+        ax.legend()
+        plt.show()
 
 
 def test_coefficient_of_determination():
