@@ -310,37 +310,64 @@ def fit_goodness(ym, yp):
 
 
 def spline_over_nan(x, y):
-    """
-    Returns a vector of which a cubic spline is used to fill in gaps in the
+    """Returns a vector of which a cubic spline is used to fill in gaps in the
     data from nan values.
 
     Parameters
     ----------
-    x : ndarray, shape(n,)
+    x : array_like, shape(n,)
         This x values should not contain nans.
-    y : ndarray, shape(n,)
+    y : array_like, shape(n,)
         The y values may contain nans.
 
     Returns
     -------
-    ySpline : ndarray, shape(n,)
-        The splined y values. If `y` doesn't contain any nans then `ySpline` is
-        `y`.
+    ndarray, shape(n,)
+        The splined y values. If `y` doesn't contain any nans the ``y`` is
+        returned unmodified.
 
     Notes
     -----
+
     The splined data is identical to the input data, except that the nan's are
     replaced by new data from the spline fit.
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+       :context: reset
+
+       import numpy as np
+       from dtk.process import spline_over_nan
+
+       x = np.linspace(0.0, 2.0, num=201)
+       y = np.sin(3*2*np.pi*x) + np.random.normal(0.0, 0.1, size=len(x))
+
+       y[78:89] = np.nan
+       y[95:102] = np.nan
+       y[189:192] = np.nan
+
+       y_splined = spline_over_nan(x, y)
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.fill_between(x, np.min(y_splined) - 0.5, np.max(y_splined) + 0.5,
+                       where=np.isnan(y), alpha=0.5, color='grey',
+                       transform=ax.get_xaxis_transform())
+       ax.plot(x, y_splined, linewidth=4, color='black', label='Filled')
+       ax.plot(x, y, linestyle='', marker='o', color='red', label='Missing')
+       ax.legend()
 
     """
 
     # if there are nans in the data then spline away
     if np.isnan(y).any():
         # remove the values with nans
-        xNoNan = x[np.nonzero(np.isnan(y) == False)]
-        yNoNan = y[np.nonzero(np.isnan(y) == False)]
+        x_no_nan = x[np.nonzero(np.isnan(y) == False)]
+        y_no_nan = y[np.nonzero(np.isnan(y) == False)]
         # fit a spline through the data
-        spline = UnivariateSpline(xNoNan, yNoNan, k=3, s=0)
+        spline = UnivariateSpline(x_no_nan, y_no_nan, k=3, s=0)
         return spline(x)
     else:
         return y
