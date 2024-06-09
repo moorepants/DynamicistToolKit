@@ -40,14 +40,11 @@ Modules
 Installation
 ============
 
-We recommend installing with conda so that dependency installation is not an
-issue::
+You can install DynamicistToolKit with conda:
 
    $ conda install -c conda-forge dynamicisttoolkit
 
-You will need Python 3.8+ and setuptools to install the packages. You can
-install using pip. Pip will theoretically [#]_ get the dependencies for you (or
-at least check if you have them)::
+or pip:
 
    $ python -m pip install DynamicistToolKit
 
@@ -71,9 +68,6 @@ Then for basic installation::
 Or install for development purposes::
 
    $ python setup.py develop
-
-.. [#] You will need all build dependencies and also note that matplotlib
-       doesn't play nice with pip.
 
 Tests
 =====
