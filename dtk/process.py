@@ -139,7 +139,6 @@ def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
     else:
         tau0 = guess
 
-
     print("The minimun of the error landscape is {}.".format(tau0))
 
     tau, fval = fmin(sync_error, tau0, args=(signal1, signal2, time),
@@ -401,29 +400,33 @@ def curve_area_stats(x, y):
         2nd percentile
 
     '''
-    area = trapz(y, x=x, axis=0) # shape (m,)
-    percents = np.array([0.02*area, 0.25*area, 0.5*area, 0.75*area, 0.98*area]) # shape (5,m)
-    CumArea = cumtrapz(y.T, x=x.T) # shape(m,n)
-    xstats = {'2p':[], 'lq':[], 'median':[], 'uq':[], '98p':[]}
+    area = trapz(y, x=x, axis=0)  # shape (m,)
+    percents = np.array([0.02*area,
+                         0.25*area,
+                         0.5*area,
+                         0.75*area,
+                         0.98*area])  # shape (5,m)
+    CumArea = cumtrapz(y.T, x=x.T)  # shape(m,n)
+    xstats = {'2p': [], 'lq': [], 'median': [], 'uq': [], '98p': []}
     for j, curve in enumerate(CumArea):
         flags = [False for flag in range(5)]
         for i, val in enumerate(curve):
-            if val > percents[0][j] and flags[0] == False:
+            if val > percents[0][j] and not flags[0]:
                 xstats['2p'].append(x[i])
                 flags[0] = True
-            elif val > percents[1][j] and flags[1] == False:
+            elif val > percents[1][j] and not flags[1]:
                 xstats['lq'].append(x[i])
                 flags[1] = True
-            elif val > percents[2][j] and flags[2] == False:
+            elif val > percents[2][j] and not flags[2]:
                 xstats['median'].append(x[i])
                 flags[2] = True
-            elif val > percents[3][j] and flags[3] == False:
+            elif val > percents[3][j] and not flags[3]:
                 xstats['uq'].append(x[i])
                 flags[3] = True
-            elif val > percents[4][j] and flags[4] == False:
+            elif val > percents[4][j] and not flags[4]:
                 xstats['98p'].append(x[i])
                 flags[4] = True
-        if flags[4] == False:
+        if not flags[4]:
             # this is what happens if it finds none of the above
             xstats['2p'].append(0.)
             xstats['lq'].append(0.)
