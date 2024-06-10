@@ -499,9 +499,8 @@ class TestSpectralAnalysis:
     
     def test_pow_spectrum(self):
         
-        # call frequency spectrum 
+        # call power spectrum 
         freq, amp = process.pow_spectrum(self.x, self.f_s) 
-        m = np.arange(0, len(freq))
         
         #build expected spectrum. This should have discrete peaks at the chosen
         #frequencies. The theoretical mean power of a sine over
@@ -526,5 +525,35 @@ class TestSpectralAnalysis:
                                                       "pectrum() does not " + \
                                                       "satisfy Parseval's " + \
                                                       "theorem!"
-        print("Test successful!")                                             
+    
+    def test_cum_pow_spectrum(self):
+        
+        ## Absolute case: 
+            
+        # call cummulative power spectrum
+        freq, amp = process.cum_pow_spectrum(self.x, self.f_s, relative=False) 
+        
+        #build expected spectrum. This is the cummulative version of the 
+        #spectrum used in test_pow_spectrum()
+        amp_exp = np.zeros_like(amp)
+        for fk, a in zip(self.frequencies_k, self.amplitudes):
+            amp_exp[fk] = a**2 / 2
+        amp_exp = np.cumsum[amp_exp]
+        
+        #check the power spectral density
+        assert np.allclose(amp, amp_exp), "The result of cum_pow_spectrum " + \
+                                          "does not match the theoretical " + \
+                                          "expectation for the absolute case."
+                                          
+        ## Relative case: 
+           
+        # call cummulative power spectrum with relative = True (default)
+        freq, amp = process.cum_pow_spectrum(self.x, self.f_s) 
        
+        # normalize the  spectrum. 
+        amp_exp = amp_exp / amp_exp[-1]
+       
+        #check the power spectral density
+        assert np.allclose(amp, amp_exp), "The result of cum_pow_spectrum " + \
+                                          "does not match the theoretical " + \
+                                          "expectation for the relative case."
