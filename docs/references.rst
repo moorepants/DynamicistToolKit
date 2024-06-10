@@ -1,7 +1,7 @@
 References
 ==========
 
-.. [Basu-Mandal2007] Basu-Mandal, P.; Chatterjee, A. & Papadopoulos, J. M.
+.. [BasuMandal2007] Basu-Mandal, P.; Chatterjee, A. & Papadopoulos, J. M.
    Hands-free circular motions of a benchmark bicycle. Proceedings of the Royal
    Society A: Mathematical, Physical and Engineering Sciences, 2007, 463,
    1983-2003

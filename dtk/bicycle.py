@@ -88,14 +88,12 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 def benchmark_parameters():
     """Returns the benchmark bicycle parameters from [Meijaard2007]_.
 
-    References
-    ----------
+    Examples
+    --------
 
-    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
-       L. Schwab. Linearized dynamics equations for the balance and steer of a
-       bicycle: A benchmark and review. Proceedings of the Royal Society A:
-       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
-       August 2007.
+    >>> from dtk.bicycle import benchmark_parameters
+    >>> benchmark_parameters()
+    {'w': 1.02, 'c': 0.08, 'lam': 0.3141592653589793, 'lambda': 0.3141592653589793, 'g': 9.81, 'rR': 0.3, 'mR': 2.0, 'IRxx': 0.0603, 'IRyy': 0.12, 'xB': 0.3, 'zB': -0.9, 'mB': 85.0, 'IBxx': 9.2, 'IByy': 11.0, 'IBzz': 2.8, 'IBxz': 2.4, 'xH': 0.9, 'zH': -0.7, 'mH': 4.0, 'IHxx': 0.05892, 'IHyy': 0.06, 'IHzz': 0.00708, 'IHxz': -0.00756, 'rF': 0.35, 'mF': 3.0, 'IFxx': 0.1405, 'IFyy': 0.28}
 
     """
 
@@ -156,15 +154,6 @@ def benchmark_matrices():
                steer angle]
     and f = [roll torque,
              steer torque]
-
-    References
-    ----------
-
-    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
-       L. Schwab. Linearized dynamics equations for the balance and steer of a
-       bicycle: A benchmark and review. Proceedings of the Royal Society A:
-       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
-       August 2007.
 
     """
 
@@ -251,18 +240,7 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
-    """Returns a figure that matches Figure #4 in [Meijaard2007]_.
-
-    References
-    ----------
-
-    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
-       L. Schwab. Linearized dynamics equations for the balance and steer of a
-       bicycle: A benchmark and review. Proceedings of the Royal Society A:
-       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
-       August 2007.
-
-    """
+    """Returns a figure that matches Figure #4 in [Meijaard2007]_."""
     width = 4.0  # inches
     golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
     height = width * golden_ratio
@@ -300,8 +278,8 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
 
 
 def moore_to_basu(moore, rr, lam):
-    """Returns the coordinates, speeds, and accelerations in BasuMandal2007's
-    convention.
+    """Returns the coordinates, speeds, and accelerations in
+    [BasuMandal2007]_'s convention.
 
     Parameters
     ----------
@@ -367,7 +345,7 @@ def moore_to_basu(moore, rr, lam):
 
 def basu_sig_figs():
     """Returns the number of significant figures reported in Table 1 of
-    Basu-Mandal2007.
+    [BasuMandal2007]_.
 
     """
     # q, qd, qdd
@@ -437,9 +415,9 @@ def basu_table_one_input():
 
 
 def basu_to_moore_input(basu, rr, lam):
-    """Returns the coordinates and speeds of the Moore2012 derivation of the
+    """Returns the coordinates and speeds of the [Moore2012]_ derivation of the
     Whipple bicycle model as a function of the states and speeds of the
-    Basu-Mandal2007 coordinates and speeds.
+    [BasuMandal2007]_ coordinates and speeds.
 
     Parameters
     ----------
@@ -564,7 +542,7 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     -------
     mooreParameters : dictionary
         The parameter set for the Moore derivation of the whipple bicycle model
-        as presented in Moore2012.
+        as presented in [Moore2012]_.
 
     """
 
@@ -686,15 +664,6 @@ def lambda_from_abc(rF, rR, a, b, c):
     -------
     lam : float
         The steer axis tilt as described in [Meijaard2007]_.
-
-    References
-    ----------
-
-    .. [Meijaard2007]_ J. P. Meijaard, Jim M. Papadopoulos, Andy Ruina, and A.
-       L. Schwab. Linearized dynamics equations for the balance and steer of a
-       bicycle: A benchmark and review. Proceedings of the Royal Society A:
-       Mathematical, Physical and Engineering Sciences, 463(2084):1955–1982,
-       August 2007.
 
     '''
     def lam_equality(lam, rF, rR, a, b, c):
