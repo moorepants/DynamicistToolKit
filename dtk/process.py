@@ -503,7 +503,7 @@ def pow_spectrum(data, sampleRate):
     return frequency, power
     
 
-def cum_pow_spectrum(data, sampleRate, normalize=True):
+def cum_pow_spectrum(data, sampleRate, relative=True):
     """
     Return the power spectrum of a dataset.
     
@@ -516,9 +516,9 @@ def cum_pow_spectrum(data, sampleRate, normalize=True):
         the number of time steps.
     sampleRate : int
         The signal sampling rate in hertz.
-    normalize : bool, optional
-        If True, the returned signal is normalized to the total power. The 
-        default is True. 
+    relative : bool, optional
+        If True, the returned amplitued is expressed relative to the total 
+        power. The default is True. 
 
     Returns
     -------
