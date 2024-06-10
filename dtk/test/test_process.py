@@ -501,7 +501,7 @@ class TestSpectralAnalysis:
         #frequencies with the designed amplitude of the harmonic signal frequs.
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk] = a
+            amp_exp[fk-1] = a   #shift by 1, bc freq_spectrum skips f=0
         
         #plot the results for inspection
         #plt.plot(freq, amp   , "r.")
@@ -522,7 +522,7 @@ class TestSpectralAnalysis:
         #one period is A**2 / 2. 
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk] = a**2 / 2
+            amp_exp[fk-1] = a**2 / 2 #shift by 1, bc freq_spectrum skips f=0
         
         #plot the results for inspection
         #plt.plot(freq, amp   , "r.")
@@ -552,8 +552,11 @@ class TestSpectralAnalysis:
         #spectrum used in test_pow_spectrum()
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk] = a**2 / 2
-        amp_exp = np.cumsum[amp_exp]
+            amp_exp[fk-1] = a**2 / 2 #shift by 1, bc freq_spectrum skips f=0
+        amp_exp = np.cumsum(amp_exp)
+        
+        #plt.plot(freq, amp   , "r.")
+        #plt.plot(freq, amp_exp, "b.")
         
         #check the power spectral density
         assert np.allclose(amp, amp_exp), "The result of cum_pow_spectrum " + \
