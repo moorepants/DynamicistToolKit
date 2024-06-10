@@ -412,7 +412,7 @@ def curve_area_stats(x, y):
     return xstats
 
 
-def freq_spectrum(data, sampleRate):
+def freq_spectrum(data, sampleRate, norm="forward"):
     """
     Return the frequency spectrum of a data set.
 
@@ -423,6 +423,11 @@ def freq_spectrum(data, sampleRate):
         the number of time steps.
     sampleRate : int
         The signal sampling rate in hertz.
+    norm : str
+        Normalization of the returned spectrum. See 
+        https://numpy.org/doc/stable/reference/routines.fft.html#normalization
+        for explanation. The default is "forward", which normalizes the 
+        frequency spectrum by 1/N.
 
     Returns
     -------
@@ -448,7 +453,7 @@ def freq_spectrum(data, sampleRate):
         L = data.shape[0] # length of data if (n,)
     # calculate the closest power of 2 for the length of the data
     n = nextpow2(L)
-    Y = fft(data, n) / L # divide by L for scaling
+    Y = fft(data, n, norm="forward") 
     f = fftfreq(n, d=time)
     #f = sampleRate/2.*linspace(0, 1, n)
     #print 'f =', f, f.shape, type(f)
@@ -475,6 +480,7 @@ def pow_spectrum(data, sampleRate):
         the number of time steps.
     sampleRate : int
         The signal sampling rate in hertz.
+    
 
     Returns
     -------
@@ -484,9 +490,15 @@ def pow_spectrum(data, sampleRate):
         The power at each frequency.
 
     """
-    frequency, amplitude = freq_spectrum(data, sampleRate)
+    #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
+    #ensure that Parseval's theorem is satisfied. 
+    frequency, amplitude = freq_spectrum(data, sampleRate, norm="ortho")
     
-    power = amplitude**2    #Power is the square of the amplitude
+    #Power is the square of the amplitude. 
+    #Division by two is necessary to compensate doubelled amplitude of 
+    #freq_spectrum. (Freq_spectrum combines
+    #the amplitude of the positive and negative frequencies). 
+    power = amplitude**2  / 2  
     
     return frequency, power
     
