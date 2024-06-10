@@ -602,7 +602,7 @@ def cum_pow_spectrum(data, sampleRate, relative=True):
     cum_power = np.cumsum(power)
     
     #if requested, normalize to the total power.
-    if normalize:
+    if relative:
         cum_power = cum_power / cum_power[-1]
         
     return frequency, cum_power
