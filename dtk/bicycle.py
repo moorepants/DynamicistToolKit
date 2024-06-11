@@ -608,10 +608,10 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
 
     # rotate the benchmark bicycle frame inertia through the steer axis tilt,
     # lambda
-    IB = np.matrix([[bP['IBxx'], 0., bP['IBxz']],
-                    [0., bP['IByy'], 0.],
-                    [bP['IBxz'], 0., bP['IBzz']]])
-    IBrot = R * IB * R.T
+    IB = np.array([[bP['IBxx'], 0., bP['IBxz']],
+                   [0., bP['IByy'], 0.],
+                   [bP['IBxz'], 0., bP['IBzz']]])
+    IBrot = R @ IB @ R.T
 
     # bicycle frame inertia
     mP['ic11'] = IBrot[0, 0]
@@ -623,10 +623,10 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
 
     # rotate the benchmark bicycle fork inertia through the steer axis tilt,
     # lambda
-    IH = np.matrix([[bP['IHxx'], 0., bP['IHxz']],
-                    [0., bP['IHyy'], 0.],
-                    [bP['IHxz'], 0., bP['IHzz']]])
-    IHrot = R * IH * R.T
+    IH = np.array([[bP['IHxx'], 0., bP['IHxz']],
+                   [0., bP['IHyy'], 0.],
+                   [bP['IHxz'], 0., bP['IHzz']]])
+    IHrot = R @ IH @ R.T
 
     # fork/handlebar inertia
     mP['ie11'] = IHrot[0, 0]
