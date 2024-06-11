@@ -273,8 +273,9 @@ def test_coefficient_of_determination():
                                  expected_total_sum_of_squares)
 
     # find R^2 another statistics way
-    r_squared, error_sum_of_squares, total_sum_of_squares, regression_sum_of_squares = \
-        process.fit_goodness(y_measured, np.dot(A, xhat))
+    (r_squared, error_sum_of_squares, total_sum_of_squares,
+     regression_sum_of_squares) = process.fit_goodness(y_measured,
+                                                       np.dot(A, xhat))
 
     # compute r^2 directly
     second_r_squared = process.coefficient_of_determination(y_measured,
@@ -312,7 +313,8 @@ def test_least_squares_variance():
     assert expected_variance == variance
     testing.assert_allclose(covariance, expected_covariance)
 
-def test_spline_over_nan():
+
+def test_spline_over_nan(plot=False):
     x = np.linspace(0., 50., num=300)
     y = np.sin(x) + np.random.rand(len(x))
     # add some nan's
@@ -322,9 +324,11 @@ def test_spline_over_nan():
     y[212] = np.nan
 
     ySplined = process.spline_over_nan(x, y)
-    #plt.plot(x, ySplined)
-    #plt.plot(x, y)
-    #plt.show()
+
+    if plot:
+        plt.plot(x, ySplined)
+        plt.plot(x, y)
+        plt.show()
 
 
 class TestTimeShift():
@@ -393,7 +397,7 @@ class TestTimeShiftRealData():
         stop = 5 * self.sample_rate
         test_time = self.grf_array.T[0, start:stop]
         vertical_grf = self.grf_array.T[1, start:stop]
-        #self.sample_rate = int(np.mean(1.0 / np.diff(original_time)))
+        # self.sample_rate = int(np.mean(1.0 / np.diff(original_time)))
 
         self.tau = -0.1
         self.base_signal = vertical_grf[int(abs(self.tau) * self.sample_rate):]
@@ -455,12 +459,11 @@ class TestSpectralAnalysis:
         # test time and sampling rate. Make sure that the number of samples is
         # a power of two to prevent frequency leakage (freq_spectrum does zero-
         # padding)
-        T = 5.12      #signal period
-        self.f_s = 100     #sample rate
+        T = 5.12  # signal period
+        self.f_s = 100  # sample rate
 
         t = np.arange(0, T, 1/self.f_s)
         N = len(t)
-        k = np.arange(0, N)
 
         # test function
         def harmonics(t, frequencies, amplitudes):
@@ -488,8 +491,8 @@ class TestSpectralAnalysis:
                 x += A * np.sin(2*np.pi*f*t)
             return x
 
-        #Build a test signal of three harmonics. The frequencies have to be
-        #multiples of the frequency resolution to prevent frequency leakage.
+        # Build a test signal of three harmonics. The frequencies have to be
+        # multiples of the frequency resolution to prevent frequency leakage.
         self.frequencies_k = np.array((5, 12, 17, 28, 25, 40))
         self.frequencies = self.frequencies_k * self.f_s / N
         self.amplitudes = np.array((0.5, 0.9, 0.4, 0.3, 0.6, 0.1))
@@ -500,45 +503,44 @@ class TestSpectralAnalysis:
 
         # call frequency spectrum
         freq, amp = process.freq_spectrum(self.x, self.f_s)
-        m = np.arange(0, len(freq))
 
-        #build expected spectrum. This should have discrete peaks at the chosen
-        #frequencies with the designed amplitude of the harmonic signal frequs.
+        # build expected spectrum. This should have discrete peaks at the
+        # chosen frequencies with the designed amplitude of the harmonic signal
+        # frequs.
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk-1] = a   #shift by 1, bc freq_spectrum skips f=0
+            amp_exp[fk-1] = a  # shift by 1, bc freq_spectrum skips f=0
 
-        #plot the results for inspection
-        #plt.plot(freq, amp   , "r.")
-        #plt.plot(freq, amp_exp, "b.")
+        # plot the results for inspection
+        # plt.plot(freq, amp   , "r.")
+        # plt.plot(freq, amp_exp, "b.")
 
-        assert np.allclose(amp, amp_exp), "The result freq_spectrum does n" + \
-                                          "ot match the theoretical expect" + \
-                                          "ation."
-
+        msg = ("The result freq_spectrum does "
+               "not match the theoretical expectation.")
+        assert np.allclose(amp, amp_exp), msg
 
     def test_pow_spectrum(self):
 
         # call power spectrum
         freq, amp = process.pow_spectrum(self.x, self.f_s)
 
-        #build expected spectrum. This should have discrete peaks at the chosen
-        #frequencies. The theoretical mean power of a sine over
-        #one period is A**2 / 2.
+        # build expected spectrum. This should have discrete peaks at the
+        # chosen frequencies. The theoretical mean power of a sine over one
+        # period is A**2 / 2.
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
             amp_exp[fk] = a**2 / 2
 
-        #plot the results for inspection
-        #plt.plot(freq, amp   , "r.")
-        #plt.plot(freq, amp_exp, "b.")
+        # plot the results for inspection
+        # plt.plot(freq, amp   , "r.")
+        # plt.plot(freq, amp_exp, "b.")
 
-        #check the power spectral density
+        # check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation.")
         assert np.allclose(amp, amp_exp), msg
 
-        #check Parseval's theorem
+        # check Parseval's theorem
         avgpwr_time = np.mean(np.abs(self.x)**2)
         avgpwr_freq = np.sum(amp)
 
@@ -548,27 +550,27 @@ class TestSpectralAnalysis:
 
     def test_cum_pow_spectrum(self):
 
-        ## Absolute case:
+        # Absolute case:
 
         # call cummulative power spectrum
         freq, amp = process.cum_pow_spectrum(self.x, self.f_s, relative=False)
 
-        #build expected spectrum. This is the cummulative version of the
-        #spectrum used in test_pow_spectrum()
+        # build expected spectrum. This is the cummulative version of the
+        # spectrum used in test_pow_spectrum()
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
             amp_exp[fk] = a**2 / 2
         amp_exp = np.cumsum(amp_exp)
 
-        #plt.plot(freq, amp   , "r.")
-        #plt.plot(freq, amp_exp, "b.")
+        # plt.plot(freq, amp   , "r.")
+        # plt.plot(freq, amp_exp, "b.")
 
-        #check the power spectral density
+        # check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation for the absolute case.")
         assert np.allclose(amp, amp_exp), msg
 
-        ## Relative case:
+        # Relative case:
 
         # call cummulative power spectrum with relative = True (default)
         freq, amp = process.cum_pow_spectrum(self.x, self.f_s)
@@ -576,7 +578,7 @@ class TestSpectralAnalysis:
         # normalize the  spectrum.
         amp_exp = amp_exp / amp_exp[-1]
 
-        #check the power spectral density
+        # check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation for the relative case.")
         assert np.allclose(amp, amp_exp), msg

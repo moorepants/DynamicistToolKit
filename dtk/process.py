@@ -539,8 +539,8 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
         amplitude = 2*abs(Y[int(remove_dc_component):n//2])
         # power = abs(Y[1:n/2])**2
 
-    #Correct the dc component. It may not be multiplied by two,
-    #the full spectrum [0,f_s[ (or equiv. ]-f_n, f_n[) only includes it once.
+    # Correct the dc component. It may not be multiplied by two,
+    # the full spectrum [0,f_s[ (or equiv. ]-f_n, f_n[) only includes it once.
     if not remove_dc_component:
         amplitude[0] = amplitude[0] / 2
 
@@ -601,32 +601,32 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        import matplotlib.pyplot as plt
        from dtk.process import pow_spectrum
 
-       #sampling parameters
-       N = 64    #signal period
-       f_s = 10   #sample rate
+       # sampling parameters
+       N = 64   # signal period
+       f_s = 10  # sample rate
        T = N/f_s
 
        t = np.arange(0, T, 1/f_s)
 
-       #rect test signal
-       A = 3       #amplitude
-       tau = 0.2*T #"on"-time
+       # rectangle test signal
+       A = 3  # amplitude
+       tau = 0.2*T # "on"-time
 
        x = np.zeros_like(t)
        x[0:int(tau*f_s)] = A
 
-       #power spectrum
+       # power spectrum
        freq, amp = pow_spectrum(x, f_s)
 
-       #check Parseval's theorem
+       # check Parseval's theorem
        energy_time = np.mean(np.abs(x)**2)
        energy_freq = np.sum(amp)
 
        print(f"Mean power in time domain: {energy_time:.6f}")
        print(f"Mean power in frequency domain: {energy_freq:.6f}")
 
-       #plot
-       fig, ax = plt.subplots(2,1, layout="constrained")
+       # plot
+       fig, ax = plt.subplots(2, 1, layout="constrained")
        ax[0].stem(t, x)
        ax[0].set_xlabel("$t$ in s")
        ax[0].set_ylabel("$x(t)$")
@@ -636,43 +636,42 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s")
 
     """
-    #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to
-    #ensure that Parseval's theorem is satisfied.
+    # call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to
+    # ensure that Parseval's theorem is satisfied.
     frequency, amplitude = freq_spectrum(
-                                    data,
-                                    sample_rate,
-                                    norm="ortho",
-                                    remove_dc_component=remove_dc_component
-                                    )
+        data, sample_rate, norm="ortho",
+        remove_dc_component=remove_dc_component)
 
-    #Power is the square of the amplitude.
+    # Power is the square of the amplitude.
     power = amplitude**2
 
-    #Division by two is necessary to compensate doubelled amplitude of
-    #freq_spectrum for f>0. (Freq_spectrum combines
-    #the amplitude of the positive and negative frequencies).
+    # Division by two is necessary to compensate doubelled amplitude of
+    # freq_spectrum for f>0. (Freq_spectrum combines
+    # the amplitude of the positive and negative frequencies).
     if not remove_dc_component:
         power[1:] = power[1:] / 2
 
     return frequency, power
 
 
-def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False):
-    """
+def cum_pow_spectrum(data, sample_rate, relative=True,
+                     remove_dc_component=False):
+    r"""
     Return the cummulative power spectrum of a signal::
 
-        S(f) = \sum_{k=0}^f |X(k)|^2
+       S(f) = \sum_{k=0}^f |X(k)|^2
 
     Notes
     -----
-    - cum_pow_spectrum() performs zero-padding. Parseval's
-      theorem is satisfied for the padded input signal. Provide input signals
-      with 2^p samples to prevent zero-padding.
+
+    - ``cum_pow_spectrum()`` performs zero-padding. Parseval's theorem is
+      satisfied for the padded input signal. Provide input signals with 2^p
+      samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
-      Parseval's theoreom on the interval [0, f_N].
-    - If the dc component is removed with remove_dc_component=True, the results
-      do not satisfy Parseval's theorem.
+      Parseval's theoreom on the interval ``[0, f_N]``.
+    - If the dc component is removed with ``remove_dc_component=True``, the
+      results do not satisfy Parseval's theorem.
 
     Parameters
     ----------
@@ -686,8 +685,8 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
         power. The default is True.
     remove_dc_component : bool, optional
         If True, the DC component (f = 0) is not included in the returned
-        spectrum ]0,f_N[. If False the returned spectrum covers
-        [0, f_N[. The default is False.
+        spectrum ``]0,f_N[``. If False the returned spectrum covers ``[0,
+        f_N[``.  The default is False.
 
     Returns
     -------
@@ -710,24 +709,24 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
        import matplotlib.pyplot as plt
        from dtk.process import cum_pow_spectrum
 
-       #sampling parameters
-       N = 64    #signal period
-       f_s = 10   #sample rate
+       # sampling parameters
+       N = 64  # signal period
+       f_s = 10  # sample rate
        T = N/f_s
 
        t = np.arange(0, T, 1/f_s)
 
-       #rect test signal
-       A = 3       #amplitude
-       tau = 0.2*T #"on"-time
+       # rect test signal
+       A = 3  # amplitude
+       tau = 0.2*T  # "on"-time
 
        x = np.zeros_like(t)
        x[0:int(tau*f_s)] = A
 
-       #power spectrum
+       # power spectrum
        freq, amp = cum_pow_spectrum(x, f_s)
 
-       #plot
+       # plot
        fig, ax = plt.subplots(2,1, layout="constrained")
        ax[0].stem(t, x, )
        ax[0].set_xlabel("$t$ in s")
@@ -744,7 +743,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
 
     cum_power = np.cumsum(power)
 
-    #if requested, normalize to the total power.
+    # if requested, normalize to the total power.
     if relative:
         cum_power = cum_power / cum_power[-1]
 
