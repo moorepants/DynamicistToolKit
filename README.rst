@@ -32,6 +32,8 @@ Modules
 
 **bicycle**
    Generic tools for basic bicycle dynamics analysis.
+**control**
+  Functions helpful in control systems analysis.
 **inertia**
    Various functions for calculating and manipulating inertial quantities.
 **process**
