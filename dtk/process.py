@@ -449,7 +449,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     data : array_like, shape (m, ) or shape(n, m)
         The array of time signals where ``n`` is the number of variables and
         ``m`` is the number of time steps.
-    sample_rate : int
+    sampleRate : int
         The signal sampling rate in Hertz.
     norm : str, optional
         Normalization of the returned spectrum. See 
