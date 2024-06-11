@@ -118,8 +118,8 @@ def eig_of_series(matrices):
 
     s = matrices.shape
 
-    eigenvalues = np.zeros((s[0], s[1]), dtype=np.complex)
-    eigenvectors = np.zeros(s, dtype=np.complex)
+    eigenvalues = np.zeros((s[0], s[1]), dtype=type(1j))
+    eigenvectors = np.zeros(s, dtype=type(1j))
 
     for i, A in enumerate(matrices):
         eVal, eVec = np.linalg.eig(matrices[i])
@@ -128,8 +128,9 @@ def eig_of_series(matrices):
 
     return eigenvalues, eigenvectors
 
-def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
-        fig=None, parName=None, parUnits=None, **kwargs):
+
+def plot_root_locus(parvalues, eigenvalues, skipZeros=False, fig=None,
+                    parName=None, parUnits=None, **kwargs):
     """Returns a root locus plot of a series of eigenvalues with respect to a
     series of values.
 
@@ -154,6 +155,22 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
     -------
     fig : matplotlib.Figure
 
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       from dtk.bicycle import (benchmark_matrices,
+                                benchmark_state_space_vs_speed)
+       from dtk.control import eig_of_series, plot_root_locus
+
+       M, C1, K0, K2 = benchmark_matrices()
+       v, A, B = benchmark_state_space_vs_speed(M, C1, K0, K2)
+       evals, evecs = eig_of_series(A)
+       plot_root_locus(v, evals, parName='Speed', parUnits='[m/s]')
+
     """
 
     if fig is None:
@@ -166,7 +183,7 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
 
     default = {'s': 20,
                'c': parvalues,
-               'cmap': plt.cm.gist_rainbow,
+               'cmap': plt.cm.viridis,
                'edgecolors': 'none'}
     for k, v in default.items():
         if k not in kwargs:
@@ -188,14 +205,16 @@ def plot_root_locus(parvalues, eigenvalues, skipZeros=False,
         if parName is not None and parUnits is not None:
             cb.set_label('{} {}'.format(parName, parUnits))
 
-    ax.grid(b=True)
+    ax.grid()
     ax.set_xlabel('Real [1/s]')
     ax.set_ylabel('Imaginary [1/s]')
 
     return fig
 
+
 def plot_root_locus_components(parvalues, eigenvalues, parts='both',
-        parName=None, parUnits=None, skipZeros=True, ax=None, **kwargs):
+                               parName=None, parUnits=None, skipZeros=True,
+                               ax=None, **kwargs):
     """Returns a root locus plot of a series of eigenvalues with respect to a
     series of values.
 
@@ -223,6 +242,26 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
     fig : matplotlib.Figure
         Nothing is returned if an axis is provided.
 
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import matplotlib.pyplot as plt
+       from dtk.bicycle import (benchmark_matrices,
+                                benchmark_state_space_vs_speed)
+       from dtk.control import (eig_of_series, sort_modes,
+                                plot_root_locus_components)
+
+       M, C1, K0, K2 = benchmark_matrices()
+       v, A, B = benchmark_state_space_vs_speed(M, C1, K0, K2)
+       evals, evecs = sort_modes(*eig_of_series(A))
+       fig, ax = plt.subplots(layout='constrained')
+       plot_root_locus_components(v, evals, parName='Speed',
+                                  parUnits='[m/s]', ax=ax)
+
     """
     newAx = False
     if ax is None:
@@ -230,23 +269,24 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
         ax = fig.add_subplot(1, 1, 1)
         newAx = True
 
-    colors = itertools.cycle(plt.rcParams['axes.color_cycle'])
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = itertools.cycle(prop_cycle.by_key()['color'])
 
     for i, ev in enumerate(eigenvalues.T):
         # don't plot the zero eigenvalues
         isZero = (abs(ev.real - np.zeros_like(ev.real)) < 1e-14).all()
-        if isZero and skipZeros==True:
+        if isZero and skipZeros:
             pass
         else:
             color = next(colors)
             if parts == 'both' or parts == 'imaginary':
                 if (abs(ev.imag - np.zeros_like(ev.imag)) > 1e-14).any():
-                   ax.plot(parvalues, ev.imag, '--', color=color,
-                       label='Imaginary')
+                    ax.plot(parvalues, ev.imag, '--', color=color,
+                            label='Imaginary')
             if parts == 'both' or parts == 'real':
                 ax.plot(parvalues, ev.real, '-', color=color, label='Real')
 
-    ax.grid(b=True)
+    ax.grid()
     ax.set_ylabel('Eigenvalue Component [$s^{-1}$]')
     ax.legend()
 
@@ -257,6 +297,7 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
         if parName is not None:
             plt.title('Root locus with respect to {}'.format(parName))
         return fig
+
 
 class Bode(object):
     """A class for creating Bode plots and the associated data."""
