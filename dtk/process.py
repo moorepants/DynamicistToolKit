@@ -594,8 +594,8 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     the mean power of the input signal. 
 
     .. plot::
+       :include-source:
        :context: reset
-       :source-include:
            
        import numpy as np
        import matplotlib.pyplot as plt
@@ -626,13 +626,14 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        print(f"Mean power in frequency domain: {energy_freq:.6f}")
 
        #plot
-       fig, ax = plt.subplots(2,1)
-       ax[0].stem(t, x, )
+       fig, ax = plt.subplots(2,1, layout="constrained")
+       ax[0].stem(t, x)
        ax[0].set_xlabel("$t$ in s")
        ax[0].set_ylabel("$x(t)$")
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("$|X(f)|^2$")
+       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s")
 
     """
     #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
@@ -656,9 +657,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     return frequency, power
     
 
-def cum_pow_spectrum(data, sample_rate, 
-                     relative=True, 
-                     remove_dc_component=False):
+def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False):
     """
     Return the cummulative power spectrum of a signal::
     
@@ -704,8 +703,8 @@ def cum_pow_spectrum(data, sample_rate,
     frequency domain. 
 
     .. plot::
+       :include-source:
        :context: reset
-       :source-include:
            
        import numpy as np
        import matplotlib.pyplot as plt
@@ -729,13 +728,14 @@ def cum_pow_spectrum(data, sample_rate,
        freq, amp = cum_pow_spectrum(x, f_s)
 
        #plot
-       fig, ax = plt.subplots(2,1)
+       fig, ax = plt.subplots(2,1, layout="constrained")
        ax[0].stem(t, x, )
        ax[0].set_xlabel("$t$ in s")
        ax[0].set_ylabel("$x(t)$")
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("Cummulative avg. power")
+       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, relative=True")
 
     """
     frequency, power = pow_spectrum(data, 
