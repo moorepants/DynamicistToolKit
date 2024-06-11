@@ -71,7 +71,7 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None,
             theta = np.angle(component)
             ax.plot([0, theta], [0, radius], lw=lw[j])
         ax.set_rmax(1.0)
-        ax.set_title(r'Eigenvalue: %1.3f$\pm$%1.3fj' % (eVal.real, eVal.imag))
+        ax.set_title('Eigenvalue: %1.3f±%1.3fj' % (eVal.real, eVal.imag))
         if compNames is not None:
             ax.legend(compNames)
 
