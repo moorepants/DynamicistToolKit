@@ -14,9 +14,9 @@ def test_euler_rotation(display=False):
     a = [15., 0., 0.]
     order = (1, 2, 3)
     R = euler_rotation(a, order)
-    C = np.matrix([[1., 0., 0.],
-                   [0., np.cos(a[0]), np.sin(a[0])],
-                   [0., -np.sin(a[0]), np.cos(a[0])]])
+    C = np.array([[1., 0., 0.],
+                  [0., np.cos(a[0]), np.sin(a[0])],
+                  [0., -np.sin(a[0]), np.cos(a[0])]])
     if display:
         print("body-three 1-2-3")
         print(R)
@@ -39,7 +39,7 @@ def test_euler_rotation(display=False):
 
     # definition of body 1-2-3 rotations from Spacecraft Dynamics, Kane,
     # Likins, Levinson, 1982
-    C = np.matrix([[c2 * c3, s1 * s2 * c3 + s3 * c1, -c1 * s2 * c3 + s3 * s1],
+    C = np.array([[c2 * c3, s1 * s2 * c3 + s3 * c1, -c1 * s2 * c3 + s3 * s1],
                    [-c2 * s3, -s1 * s2 * s3 + c3 * c1, c1 * s2 * s3 + c3 *s1],
                    [s2, -s1 * c2, c1 * c2]])
 
@@ -66,9 +66,9 @@ def test_euler_rotation(display=False):
 
     # definition of body 3-1-3 rotations from Spacecraft Dynamics, Kane,
     # Likins, Levinson, 1982
-    C = np.matrix([[-s1 * c2 * s3 + c3 * c1, c1 * c2 * s3 + c3 *s1, s2 *s3],
-                   [-s1 * c2 * c3 - s3 * c1, c1 * c2 * c3 - s3 * s1, s2 * c3],
-                   [s1 * s2, -c1 * s2, c2]])
+    C = np.array([[-s1 * c2 * s3 + c3 * c1, c1 * c2 * s3 + c3 *s1, s2 *s3],
+                  [-s1 * c2 * c3 - s3 * c1, c1 * c2 * c3 - s3 * s1, s2 * c3],
+                  [s1 * s2, -c1 * s2, c2]])
     if display:
         print("body-two 3-1-")
         print(R)
@@ -92,7 +92,7 @@ def test_euler_rotation(display=False):
 
     # definition of body-three 1-3-2 rotations from Spacecraft Dynamics, Kane,
     # Likins, Levinson, 1982
-    C = np.matrix([[c2 * c3, c1 * s2 * c3 + s3 * s1, s1 * s2 * c3 - s3 * c1],
+    C = np.array([[c2 * c3, c1 * s2 * c3 + s3 * s1, s1 * s2 * c3 - s3 * c1],
                    [-s2, c1 * c2, s1 * c2],
                    [c2 * s3, c1 * s2 * s3 - c3 * s1, s1 * s2 * s3 + c3 * c1]])
 
@@ -119,7 +119,7 @@ def test_euler_rotation(display=False):
 
     # definition of body 2-1-3 rotations from Spacecraft Dynamics, Kane,
     # Likins, Levinson, 1982
-    C = np.matrix([[s1 * s2 * s3 + c3 * c1, c2 * s3, c1 * s2 * s3 - c3 * s1],
+    C = np.array([[s1 * s2 * s3 + c3 * c1, c2 * s3, c1 * s2 * s3 - c3 * s1],
                    [s1 * s2 * c3 - s3 * c1, c2 * c3, c1 * s2 * c3 + s3 * s1],
                    [s1 * c2, -s2, c1 * c2]])
 
