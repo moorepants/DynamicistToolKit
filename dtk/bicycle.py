@@ -71,6 +71,40 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
     and u = [roll torque,
              steer torque]
 
+    Examples
+    --------
+    >>> from dtk.bicycle import benchmark_matrices, benchmark_state_space_vs_speed
+    >>> M, C1, K0, K2 = benchmark_matrices()
+    >>> vs, As, Bs = benchmark_state_space_vs_speed(M, C1, K0, K2, num=3)
+    >>> vs
+    array([ 0.,  5., 10.])
+    >>> As
+    array([[[   0.        ,    0.        ,    1.        ,    0.        ],
+            [   0.        ,    0.        ,    0.        ,    1.        ],
+            [   9.48977445,   -0.57152317,   -0.        ,   -0.        ],
+            [  11.71947687,   30.90875339,   -0.        ,   -0.        ]],
+           [[   0.        ,    0.        ,    1.        ,    0.        ],
+            [   0.        ,    0.        ,    0.        ,    1.        ],
+            [   9.48977445,  -22.85146663,   -0.52761225,   -1.65257699],
+            [  11.71947687,  -18.38412373,   18.38402617,  -15.42432764]],
+           [[   0.        ,    0.        ,    1.        ,    0.        ],
+            [   0.        ,    0.        ,    0.        ,    1.        ],
+            [   9.48977445,  -89.69129698,   -1.0552245 ,   -3.30515399],
+            [  11.71947687, -166.26275511,   36.76805233,  -30.84865527]]])
+    >>> Bs
+    array([[[ 0.        ,  0.        ],
+            [ 0.        ,  0.        ],
+            [ 0.01593498, -0.12409203],
+            [-0.12409203,  4.32384018]],
+           [[ 0.        ,  0.        ],
+            [ 0.        ,  0.        ],
+            [ 0.01593498, -0.12409203],
+            [-0.12409203,  4.32384018]],
+           [[ 0.        ,  0.        ],
+            [ 0.        ,  0.        ],
+            [ 0.01593498, -0.12409203],
+            [-0.12409203,  4.32384018]]])
+
     """
 
     if speeds is None:
@@ -91,9 +125,36 @@ def benchmark_parameters():
     Examples
     --------
 
+    >>> from pprint import pprint
     >>> from dtk.bicycle import benchmark_parameters
-    >>> benchmark_parameters()
-    {'w': 1.02, 'c': 0.08, 'lam': 0.3141592653589793, 'lambda': 0.3141592653589793, 'g': 9.81, 'rR': 0.3, 'mR': 2.0, 'IRxx': 0.0603, 'IRyy': 0.12, 'xB': 0.3, 'zB': -0.9, 'mB': 85.0, 'IBxx': 9.2, 'IByy': 11.0, 'IBzz': 2.8, 'IBxz': 2.4, 'xH': 0.9, 'zH': -0.7, 'mH': 4.0, 'IHxx': 0.05892, 'IHyy': 0.06, 'IHzz': 0.00708, 'IHxz': -0.00756, 'rF': 0.35, 'mF': 3.0, 'IFxx': 0.1405, 'IFyy': 0.28}
+    >>> pprint(benchmark_parameters())
+    {'IBxx': 9.2,
+     'IBxz': 2.4,
+     'IByy': 11.0,
+     'IBzz': 2.8,
+     'IFxx': 0.1405,
+     'IFyy': 0.28,
+     'IHxx': 0.05892,
+     'IHxz': -0.00756,
+     'IHyy': 0.06,
+     'IHzz': 0.00708,
+     'IRxx': 0.0603,
+     'IRyy': 0.12,
+     'c': 0.08,
+     'g': 9.81,
+     'lam': 0.3141592653589793,
+     'lambda': 0.3141592653589793,
+     'mB': 85.0,
+     'mF': 3.0,
+     'mH': 4.0,
+     'mR': 2.0,
+     'rF': 0.35,
+     'rR': 0.3,
+     'w': 1.02,
+     'xB': 0.3,
+     'xH': 0.9,
+     'zB': -0.9,
+     'zH': -0.7}
 
     """
 
@@ -154,6 +215,24 @@ def benchmark_matrices():
                steer angle]
     and f = [roll torque,
              steer torque]
+
+    Examples
+    --------
+
+    >>> from dtk.bicycle import benchmark_matrices
+    >>> M, C1, K0, K2 = benchmark_matrices()
+    >>> M
+    array([[80.81722   ,  2.31941332],
+           [ 2.31941332,  0.29784188]])
+    >>> C1
+    array([[ 0.        , 33.86641391],
+           [-0.85035641,  1.68540397]])
+    >>> K0
+    array([[-80.95      ,  -2.59951685],
+           [ -2.59951685,  -0.80329488]])
+    >>> K2
+    array([[ 0.        , 76.5973459 ],
+           [ 0.        ,  2.65431524]])
 
     """
 
@@ -240,7 +319,26 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
 
 
 def meijaard_figure_four(time, rollRate, steerRate, speed):
-    """Returns a figure that matches Figure #4 in [Meijaard2007]_."""
+    """Returns a figure that matches Figure #4 in [Meijaard2007]_.
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       from scipy.signal import lti, lsim
+       from dtk.bicycle import (benchmark_matrices, benchmark_state_space,
+                                meijaard_figure_four)
+       t = np.linspace(0.0, 5.0)
+       x0 = np.array([0.0, 0.0, 0.5, 0.0])
+       speed = 4.6  # m/s
+       A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
+       C, D = np.eye(4), np.zeros((4, 2))
+       system = lti(A, B, C, D)
+       t, y, _ = lsim(system, 0.0, t, X0=x0)
+       meijaard_figure_four(t, y[:, 2], y[:, 3], speed*np.ones_like(t))
+
+    """
     width = 4.0  # inches
     golden_ratio = (np.sqrt(5.0) - 1.0) / 2.0
     height = width * golden_ratio
@@ -248,7 +346,7 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
     fig.set_size_inches([width, height])
     params = {'backend': 'ps',
               'axes.labelsize': 10,
-              'text.fontsize': 10,
+              #'text.fontsize': 10,
               'legend.fontsize': 10,
               'xtick.labelsize': 8,
               'ytick.labelsize': 8,
@@ -347,6 +445,40 @@ def basu_sig_figs():
     """Returns the number of significant figures reported in Table 1 of
     [BasuMandal2007]_.
 
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import basu_sig_figs
+    >>> pprint(basu_sig_figs())
+    {'betaf': 0,
+     'betafd': 14,
+     'betafdd': 13,
+     'betar': 0,
+     'betard': 13,
+     'betardd': 14,
+     'phi': 14,
+     'phid': 12,
+     'phidd': 13,
+     'psi': 13,
+     'psid': 13,
+     'psidd': 14,
+     'psif': 13,
+     'psifd': 13,
+     'psifdd': 14,
+     'theta': 0,
+     'thetad': 13,
+     'thetadd': 13,
+     'x': 0,
+     'xd': 14,
+     'xdd': 13,
+     'y': 0,
+     'yd': 13,
+     'ydd': 13,
+     'z': 13,
+     'zd': 13,
+     'zdd': 13}
+
     """
     # q, qd, qdd
     sigFigTable = [[0, 14, 13],  # x
@@ -372,6 +504,25 @@ def basu_sig_figs():
 
 
 def basu_table_one_output():
+    """
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import basu_table_one_output
+    >>> pprint(basu_table_one_output())
+    {'betafdd': 2.454807290455,
+     'betardd': 1.8472554144217,
+     'phidd': 0.1205543897884,
+     'psidd': -7.8555281128244,
+     'psifdd': -4.6198904039403,
+     'thetadd': 0.8353281706379,
+     'xdd': -0.5041626315047,
+     'ydd': -0.3449706619454,
+     'zdd': -1.460452833298}
+
+    """
 
     basu = {}
     basu['xdd'] = -0.5041626315047
@@ -388,6 +539,34 @@ def basu_table_one_output():
 
 
 def basu_table_one_input():
+    """
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import basu_table_one_input
+    >>> pprint(basu_table_one_input())
+    {'betaf': 0.0,
+     'betafd': 8.0133620584155,
+     'betar': 0.0,
+     'betard': 8.912989661489,
+     'phi': 3.1257073014894,
+     'phid': -0.0119185528069,
+     'psi': 0.9501292851472,
+     'psid': 0.6068425835418,
+     'psif': 0.2311385135743,
+     'psifd': 0.4859824687093,
+     'theta': 0.0,
+     'thetad': 0.7830033527065,
+     'x': 0.0,
+     'xd': -2.8069345714545,
+     'y': 0.0,
+     'yd': -0.1480982396001,
+     'z': 0.2440472102925,
+     'zd': 0.1058778746261}
+
+    """
 
     basu = {}
     # coordinates
@@ -502,6 +681,14 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     -----
     All of the geometry parameters should be expressed in the same units.
 
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from dtk.bicycle import pitch_from_roll_and_steer
+    >>> np.rad2deg(pitch_from_roll_and_steer(np.deg2rad(10.0), np.deg2rad(-5.0), 0.3, 0.3, 0.6, 0.3, 0.02))
+    25.949714697571242
+
     """
     def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
         zero = (d2 * cos(q4) * cos(q5) + rF * cos(q4)**2 * cos(q5)**2 /
@@ -543,6 +730,46 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     mooreParameters : dictionary
         The parameter set for the Moore derivation of the whipple bicycle model
         as presented in [Moore2012]_.
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import benchmark_parameters, benchmark_to_moore
+    >>> par = benchmark_parameters()
+    >>> pprint(benchmark_to_moore(par))
+    {'d1': 0.9534570696121849,
+     'd2': 0.2676445084476887,
+     'd3': 0.03207142672761929,
+     'g': 9.81,
+     'ic11': 7.178169776497895,
+     'ic12': 0.0,
+     'ic22': 11.0,
+     'ic23': 0.0,
+     'ic31': 3.8225535938357873,
+     'ic33': 4.821830223502103,
+     'id11': 0.0603,
+     'id22': 0.12,
+     'id33': 0.0603,
+     'ie11': 0.05841337700152972,
+     'ie12': 0.0,
+     'ie22': 0.06,
+     'ie23': 0.0,
+     'ie31': 0.009119225261946298,
+     'ie33': 0.007586622998470264,
+     'if11': 0.1405,
+     'if22': 0.28,
+     'if33': 0.1405,
+     'l1': 0.4707271515135145,
+     'l2': -0.47792881146460797,
+     'l3': -0.00597083392418685,
+     'l4': -0.3699518200282974,
+     'mc': 85.0,
+     'md': 2.0,
+     'me': 4.0,
+     'mf': 3.0,
+     'rf': 0.35,
+     'rr': 0.3}
 
     """
 
@@ -665,6 +892,14 @@ def lambda_from_abc(rF, rR, a, b, c):
     lam : float
         The steer axis tilt as described in [Meijaard2007]_.
 
+    Examples
+    --------
+
+    >>> from dtk.bicycle import lambda_from_abc
+    >>> import numpy as np
+    >>> np.rad2deg(lambda_from_abc(0.31, 0.29, 1.0, 0.1, 0.5))
+    25.392364580504058
+
     '''
     def lam_equality(lam, rF, rR, a, b, c):
         return sin(lam) - (rF - rR + c * cos(lam)) / (a + b)
@@ -697,6 +932,14 @@ def trail(rF, lam, fo):
         Trail
     cm: float
         Mechanical Trail
+
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from dtk.bicycle import trail
+    >>> trail(0.3, np.deg2rad(10.0), 0.05)
+    (0.002126763618252235, 0.0020944533000790966)
 
     '''
 
@@ -803,6 +1046,24 @@ def benchmark_par_to_canonical(p):
     K2 : ndarray, shape(2,2)
         The stiffness matrix proportional to the speed squared, v**2.
 
+    Examples
+    --------
+
+    >>> from dtk.bicycle import benchmark_parameters, benchmark_par_to_canonical
+    >>> M, C1, K0, K2 = benchmark_par_to_canonical(benchmark_parameters())
+    >>> M
+    array([[80.81722   ,  2.31941332],
+           [ 2.31941332,  0.29784188]])
+    >>> C1
+    array([[ 0.        , 33.86641391],
+           [-0.85035641,  1.68540397]])
+    >>> K0
+    array([[-80.95      ,  -2.59951685],
+           [ -2.59951685,  -0.80329488]])
+    >>> K2
+    array([[ 0.        , 76.5973459 ],
+           [ 0.        ,  2.65431524]])
+
     """
     mT = p['mR'] + p['mB'] + p['mH'] + p['mF']
     xT = (p['xB'] * p['mB'] + p['xH'] * p['mH'] + p['w'] * p['mF']) / mT
@@ -906,6 +1167,22 @@ def benchmark_state_space(M, C1, K0, K2, v, g):
                     steer rate]
     The inputs are [roll torque,
                     steer torque]
+
+    Examples
+    --------
+
+    >>> from dtk.bicycle import benchmark_matrices, benchmark_state_space
+    >>> A, B = benchmark_state_space(*benchmark_matrices(), 5.2, 9.81)
+    >>> A
+    array([[  0.        ,   0.        ,   1.        ,   0.        ],
+           [  0.        ,   0.        ,   0.        ,   1.        ],
+           [  9.48977445, -24.66951001,  -0.54871674,  -1.71868007],
+           [ 11.71947687, -22.40642251,  19.11938721, -16.04130074]])
+    >>> B
+    array([[ 0.        ,  0.        ],
+           [ 0.        ,  0.        ],
+           [ 0.01593498, -0.12409203],
+           [-0.12409203,  4.32384018]])
 
     """
 
