@@ -9,6 +9,14 @@ dtk Package
    :undoc-members:
    :show-inheritance:
 
+:mod:`control` Module
+---------------------
+
+.. automodule:: dtk.control
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 :mod:`inertia` Module
 ---------------------
 
