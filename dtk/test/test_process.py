@@ -529,18 +529,17 @@ class TestSpectralAnalysis:
         #plt.plot(freq, amp_exp, "b.")
         
         #check the power spectral density
-        assert np.allclose(amp, amp_exp), "The result of pow_spectrum does" + \
-                                          " not match the theoretical expe" + \
-                                          "ctation."
+        msg = ("The result of freq_spectrum() does not match the theoretical "
+               "expectation.")
+        assert np.allclose(amp, amp_exp), msg
                 
         #check Parseval's theorem
         avgpwr_time = np.mean(np.abs(self.x)**2)
         avgpwr_freq = np.sum(amp)
         
-        assert np.allclose(avgpwr_time, avgpwr_freq), "The result of pow_s" + \
-                                                      "pectrum() does not " + \
-                                                      "satisfy Parseval's " + \
-                                                      "theorem!"
+        msg = ("The result of freq_spectrum() does not satisfy Parseval's " 
+               "theorem!")
+        assert np.allclose(avgpwr_time, avgpwr_freq), msg
     
     def test_cum_pow_spectrum(self):
         
@@ -560,9 +559,9 @@ class TestSpectralAnalysis:
         #plt.plot(freq, amp_exp, "b.")
         
         #check the power spectral density
-        assert np.allclose(amp, amp_exp), "The result of cum_pow_spectrum " + \
-                                          "does not match the theoretical " + \
-                                          "expectation for the absolute case."
+        msg = ("The result of freq_spectrum() does not match the theoretical "
+               "expectation for the absolute case.")
+        assert np.allclose(amp, amp_exp), msg
                                           
         ## Relative case: 
            
@@ -573,6 +572,6 @@ class TestSpectralAnalysis:
         amp_exp = amp_exp / amp_exp[-1]
        
         #check the power spectral density
-        assert np.allclose(amp, amp_exp), "The result of cum_pow_spectrum " + \
-                                          "does not match the theoretical " + \
-                                          "expectation for the relative case."
+        msg = ("The result of freq_spectrum() does not match the theoretical "
+               "expectation for the relative case.")
+        assert np.allclose(amp, amp_exp), msg
