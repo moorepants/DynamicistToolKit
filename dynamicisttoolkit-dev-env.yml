@@ -3,7 +3,6 @@ channels:
   - conda-forge
 # NOTE : The minimum versions correspond to those in Ubuntu 22.04 LTS.
 dependencies:
-  - python == 3.11
   - coverage >=6.2
   - matplotlib>=3.5.1
   - nose >=1.3.7
