@@ -438,7 +438,7 @@ def curve_area_stats(x, y):
     return xstats
 
 
-def freq_spectrum(data, sample_rate, norm="forward", remove_dc_component=True):
+def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     """
     Return the frequency spectrum of a data set. Combines negative and 
     positive frequencies in the positive frequency range. Returns frequencies
