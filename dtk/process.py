@@ -438,7 +438,7 @@ def curve_area_stats(x, y):
     return xstats
 
 
-def freq_spectrum(data, sampleRate, norm="forward"):
+def freq_spectrum(data, sample_rate, norm="forward"):
     """
     Return the frequency spectrum of a data set.
 
@@ -447,7 +447,7 @@ def freq_spectrum(data, sampleRate, norm="forward"):
     data : array_like, shape (m, ) or shape(n, m)
         The array of time signals where ``n`` is the number of variables and
         ``m`` is the number of time steps.
-    sampleRate : int
+    sample_rate : int
         The signal sampling rate in Hertz.
     norm : str
         Normalization of the returned spectrum. See 
@@ -512,7 +512,7 @@ def freq_spectrum(data, sampleRate, norm="forward"):
             n *= 2
         return n
 
-    time = 1./sampleRate  # sample time
+    time = 1./sample_rate  # sample time
     try:
         L = data.shape[1]  # length of data if (n, m)
     except IndexError:
@@ -522,7 +522,7 @@ def freq_spectrum(data, sampleRate, norm="forward"):
 
     Y = fft(data, n, norm="forward") 
     f = fftfreq(n, d=time)
-    # f = sampleRate/2.*linspace(0, 1, n)
+    # f = sample_rate/2.*linspace(0, 1, n)
     # print 'f =', f, f.shape, type(f)
     frequency = f[1:n//2]
     try:
@@ -536,7 +536,7 @@ def freq_spectrum(data, sampleRate, norm="forward"):
     return frequency, amplitude
 
 
-def pow_spectrum(data, sampleRate):
+def pow_spectrum(data, sample_rate):
     """
     Return the power spectrum of a dataset.
     
@@ -547,7 +547,7 @@ def pow_spectrum(data, sampleRate):
     data : ndarray, shape (m,) or shape(n,m)
         The array of time signals where n is the number of variables and m is
         the number of time steps.
-    sampleRate : int
+    sample_rate : int
         The signal sampling rate in hertz.
     
 
@@ -561,7 +561,7 @@ def pow_spectrum(data, sampleRate):
     """
     #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
     #ensure that Parseval's theorem is satisfied. 
-    frequency, amplitude = freq_spectrum(data, sampleRate, norm="ortho")
+    frequency, amplitude = freq_spectrum(data, sample_rate, norm="ortho")
     
     #Power is the square of the amplitude. 
     #Division by two is necessary to compensate doubelled amplitude of 
@@ -572,7 +572,7 @@ def pow_spectrum(data, sampleRate):
     return frequency, power
     
 
-def cum_pow_spectrum(data, sampleRate, relative=True):
+def cum_pow_spectrum(data, sample_rate, relative=True):
     """
     Return the power spectrum of a dataset.
     
@@ -583,7 +583,7 @@ def cum_pow_spectrum(data, sampleRate, relative=True):
     data : ndarray, shape (m,) or shape(n,m)
         The array of time signals where n is the number of variables and m is
         the number of time steps.
-    sampleRate : int
+    sample_rate : int
         The signal sampling rate in hertz.
     relative : bool, optional
         If True, the returned amplitued is expressed relative to the total 
@@ -597,7 +597,7 @@ def cum_pow_spectrum(data, sampleRate, relative=True):
         The cummulative power up to each frequency.
 
     """
-    frequency, power = pow_spectrum(data, sampleRate)
+    frequency, power = pow_spectrum(data, sample_rate)
     
     cum_power = np.cumsum(power)
     
