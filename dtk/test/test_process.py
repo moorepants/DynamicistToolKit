@@ -7,9 +7,9 @@ import os
 # external libraries
 import numpy as np
 from numpy import testing
-from nose.tools import assert_raises
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfilt
+import pytest
 
 # local libraries
 from .. import process
@@ -134,32 +134,32 @@ def test_derivative():
     dydx = process.derivative(x, y, method='combination')
     testing.assert_allclose(dydx, expected_dydx, rtol=1e-4)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones((5, 2))
         y = np.arange(5)
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(4)
         y = np.ones((5, 3))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(5)
         y = np.ones((5, 3, 2))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(1)
         y = np.ones((1, 3))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(2)
         y = np.ones((2, 3))
         process.derivative(x, y, method='central')
 
-    with assert_raises(NotImplementedError):
+    with pytest.raises(NotImplementedError):
         x = np.ones(2)
         y = np.ones((2, 3))
         process.derivative(x, y, method='booger')
@@ -324,7 +324,7 @@ def test_spline_over_nan():
 
 class TestTimeShift():
 
-    def setup(self):
+    def setup_method(self):
 
         self.sample_rate = 300  # hz
         self.time = np.linspace(0.0, 100.0, self.sample_rate * 100 + 1)
@@ -372,7 +372,7 @@ class TestTimeShift():
 
 class TestTimeShiftRealData():
 
-    def setup(self):
+    def setup_method(self):
 
         self.grf_array = np.loadtxt(
             os.path.join(os.path.dirname(__file__),

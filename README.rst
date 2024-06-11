@@ -72,9 +72,9 @@ Or install for development purposes::
 Tests
 =====
 
-Run the tests with nose::
+Run the tests with pytest::
 
-   $ nosetests
+   $ pytest dtk
 
 Documentation
 =============
