@@ -594,6 +594,9 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     the mean power of the input signal. 
 
     .. plot::
+       :context: reset
+       :source-include:
+           
        import numpy as np
        import matplotlib.pyplot as plt
        from dtk.process import pow_spectrum
@@ -701,6 +704,9 @@ def cum_pow_spectrum(data, sample_rate,
     frequency domain. 
 
     .. plot::
+       :context: reset
+       :source-include:
+           
        import numpy as np
        import matplotlib.pyplot as plt
        from dtk.process import cum_pow_spectrum
