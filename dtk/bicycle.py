@@ -344,13 +344,12 @@ def meijaard_figure_four(time, rollRate, steerRate, speed):
     height = width * golden_ratio
     fig = figure()
     fig.set_size_inches([width, height])
-    params = {'backend': 'ps',
-              'axes.labelsize': 10,
-              #'text.fontsize': 10,
-              'legend.fontsize': 10,
-              'xtick.labelsize': 8,
-              'ytick.labelsize': 8,
-              'text.usetex': True}
+    params = {
+        'axes.labelsize': 10,
+        'legend.fontsize': 10,
+        'xtick.labelsize': 8,
+        'ytick.labelsize': 8,
+    }
     rcParams.update(params)
 
     fig.subplots_adjust(right=0.85, left=0.15, bottom=0.15)
