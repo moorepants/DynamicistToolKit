@@ -42,11 +42,11 @@ Modules
 Installation
 ============
 
-You can install DynamicistToolKit with conda:
+You can install DynamicistToolKit with conda::
 
    $ conda install -c conda-forge dynamicisttoolkit
 
-or pip:
+or pip::
 
    $ python -m pip install DynamicistToolKit
 
