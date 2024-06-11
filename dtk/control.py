@@ -71,7 +71,7 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None,
             theta = np.angle(component)
             ax.plot([0, theta], [0, radius], lw=lw[j])
         ax.set_rmax(1.0)
-        ax.set_title('Eigenvalue: %1.3f$\pm$%1.3fj' % (eVal.real, eVal.imag))
+        ax.set_title('Eigenvalue: %1.3f±%1.3fj' % (eVal.real, eVal.imag))
         if compNames is not None:
             ax.legend(compNames)
 
@@ -247,15 +247,15 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
         The parameter values corresponding to each eigenvalue.
     eigenvalues : array_like, shape(n,m)
         The m eigenvalues for each parameter value.
-    parts : string, optional, {*'both'*|'real'|'imaginary'}
+    parts : string, optional, ``{'both'|'real'|'imaginary'}``
         Specify whether both the real and imaginary lines should be plotted or
-        one or the other.
+        one or the other. Default is ``'both'``.
     parName : string, optional
         Specify the name or abbreviation of the parameter name.
     parUnits : string, optional
         Specify the units of the parameter.
-    skipZeros : boolean, optional, {*True*|False}
-        If true any eigenvalues close to zero will not be plotted.
+    skipZeros : boolean, optional
+        If true (default) any eigenvalues close to zero will not be plotted.
     **kwargs : varies
         Any option keyword argments for the matplotlib plot function. This will
         be applied to all lines.
@@ -310,7 +310,7 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
                 ax.plot(parvalues, ev.real, '-', color=color, label='Real')
 
     ax.grid()
-    ax.set_ylabel('Eigenvalue Component [$s^{-1}$]')
+    ax.set_ylabel(r'Eigenvalue Component [$s^{-1}$]')
     ax.legend()
 
     if parName is not None and parUnits is not None:

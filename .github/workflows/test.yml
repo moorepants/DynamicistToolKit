@@ -10,7 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.8', '3.10', '3.12']
     steps:
     - name: Set up Git repository
       uses: actions/checkout@v4
@@ -24,13 +25,12 @@ jobs:
         miniforge-version: latest
     - name: Run pytest with coverage
       shell: bash -l {0}
-      if: ${{ matrix.python != '3.12' }}
       run: |
         coverage run -m pytest
     - name: Build the documentation
       shell: bash -l {0}
       run: |
-        cd docs && make html
+        cd docs && make html SPHINXOPTS="-W --keep-going"
     - name: Install the software
       shell: bash -l {0}
       run: |
