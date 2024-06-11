@@ -528,7 +528,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
 
     Y = fft(data, n, norm="forward") 
     f = fftfreq(n, d=time)
-    # f = sample_rate/2.*linspace(0, 1, n)
+    # f = sampleRate/2.*linspace(0, 1, n)
     # print 'f =', f, f.shape, type(f)
     frequency = f[int(remove_dc_component):n//2]
     try:
