@@ -442,7 +442,7 @@ class TestSpectralAnalysis:
 
     """
     
-    def setup(self):
+    def setup_method(self):
         """
         Create test signal.
 
