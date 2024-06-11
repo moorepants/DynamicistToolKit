@@ -73,6 +73,7 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
     Examples
     --------
+
     >>> from dtk.bicycle import benchmark_matrices, benchmark_state_space_vs_speed
     >>> M, C1, K0, K2 = benchmark_matrices()
     >>> vs, As, Bs = benchmark_state_space_vs_speed(M, C1, K0, K2, num=3)
@@ -83,10 +84,12 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
             [   0.        ,    0.        ,    0.        ,    1.        ],
             [   9.48977445,   -0.57152317,   -0.        ,   -0.        ],
             [  11.71947687,   30.90875339,   -0.        ,   -0.        ]],
+    <BLANKLINE>
            [[   0.        ,    0.        ,    1.        ,    0.        ],
             [   0.        ,    0.        ,    0.        ,    1.        ],
             [   9.48977445,  -22.85146663,   -0.52761225,   -1.65257699],
             [  11.71947687,  -18.38412373,   18.38402617,  -15.42432764]],
+    <BLANKLINE>
            [[   0.        ,    0.        ,    1.        ,    0.        ],
             [   0.        ,    0.        ,    0.        ,    1.        ],
             [   9.48977445,  -89.69129698,   -1.0552245 ,   -3.30515399],
@@ -96,10 +99,12 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
             [ 0.        ,  0.        ],
             [ 0.01593498, -0.12409203],
             [-0.12409203,  4.32384018]],
+    <BLANKLINE>
            [[ 0.        ,  0.        ],
             [ 0.        ,  0.        ],
             [ 0.01593498, -0.12409203],
             [-0.12409203,  4.32384018]],
+    <BLANKLINE>
            [[ 0.        ,  0.        ],
             [ 0.        ,  0.        ],
             [ 0.01593498, -0.12409203],

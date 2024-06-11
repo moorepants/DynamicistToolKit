@@ -27,6 +27,7 @@ jobs:
       shell: bash -l {0}
       run: |
         coverage run -m pytest
+        pytest --doctest-modules dtk/
     - name: Build the documentation
       shell: bash -l {0}
       run: |
