@@ -192,6 +192,27 @@ def total_com(coordinates, masses):
     cT : ndarray, shape(3,)
         The x, y, and z coordinates of the total center of mass.
 
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from dtk.bicycle import benchmark_parameters
+    >>> from dtk.inertia import total_com
+    >>> par = benchmark_parameters()
+    >>> coordinates = np.array([[par['xB'], par['xH']],
+    ...                         [0.0, 0.0],
+    ...                         [par['zB'], par['zH']]])
+    ...
+    >>> coordinates
+    array([[ 0.3,  0.9],
+           [ 0. ,  0. ],
+           [-0.9, -0.7]])
+    >>> masses = np.array([par['mB'], par['mH']])
+    >>> masses
+    array([85.,  4.])
+    >>> total_com(coordinates, masses)
+    (89.0, array([ 0.32696629,  0.        , -0.89101124]))
+
     """
     products = masses * coordinates
     mT = np.sum(masses)
