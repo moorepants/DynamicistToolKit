@@ -438,9 +438,11 @@ def curve_area_stats(x, y):
     return xstats
 
 
-def freq_spectrum(data, sample_rate, norm="forward"):
+def freq_spectrum(data, sample_rate, norm="forward", remove_dc_component=True):
     """
-    Return the frequency spectrum of a data set.
+    Return the frequency spectrum of a data set. Combines negative and 
+    positive frequencies in the positive frequency range. Returns frequencies
+    up until the Nyquist frequency f_N. 
 
     Parameters
     ----------
@@ -449,11 +451,15 @@ def freq_spectrum(data, sample_rate, norm="forward"):
         ``m`` is the number of time steps.
     sample_rate : int
         The signal sampling rate in Hertz.
-    norm : str
+    norm : str, optional
         Normalization of the returned spectrum. See 
         https://numpy.org/doc/stable/reference/routines.fft.html#normalization
         for explanation. The default is "forward", which normalizes the 
         frequency spectrum by 1/N.
+    remove_dc_component : bool, optional
+        If True, the DC component (f = 0) is not included in the returned 
+        spectrum ]0,f_N[. If False the returned spectrum covers
+        [0, f_N[. The default is True. 
 
 
     Returns
@@ -524,19 +530,19 @@ def freq_spectrum(data, sample_rate, norm="forward"):
     f = fftfreq(n, d=time)
     # f = sample_rate/2.*linspace(0, 1, n)
     # print 'f =', f, f.shape, type(f)
-    frequency = f[1:n//2]
+    frequency = f[int(remove_dc_component):n//2]
     try:
         # multiply by 2 because we take half the vector
-        amplitude = 2*abs(Y[:, 1:n//2]).T
+        amplitude = 2*abs(Y[:, int(remove_dc_component):n//2]).T
         # power = abs(Y[:, 1:n/2])**2
     except IndexError:
-        amplitude = 2*abs(Y[1:n//2])
+        amplitude = 2*abs(Y[int(remove_dc_component):n//2])
         # power = abs(Y[1:n/2])**2
 
     return frequency, amplitude
 
 
-def pow_spectrum(data, sample_rate):
+def pow_spectrum(data, sample_rate, remove_dc_component=False):
     """
     Return the power spectrum of a dataset.
     
@@ -561,7 +567,12 @@ def pow_spectrum(data, sample_rate):
     """
     #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
     #ensure that Parseval's theorem is satisfied. 
-    frequency, amplitude = freq_spectrum(data, sample_rate, norm="ortho")
+    frequency, amplitude = freq_spectrum(
+                                    data, 
+                                    sample_rate, 
+                                    norm="ortho",
+                                    remove_dc_component=remove_dc_component
+                                    )
     
     #Power is the square of the amplitude. 
     #Division by two is necessary to compensate doubelled amplitude of 
@@ -572,7 +583,9 @@ def pow_spectrum(data, sample_rate):
     return frequency, power
     
 
-def cum_pow_spectrum(data, sample_rate, relative=True):
+def cum_pow_spectrum(data, sample_rate, 
+                     relative=True, 
+                     remove_dc_component=False):
     """
     Return the power spectrum of a dataset.
     
@@ -588,6 +601,10 @@ def cum_pow_spectrum(data, sample_rate, relative=True):
     relative : bool, optional
         If True, the returned amplitued is expressed relative to the total 
         power. The default is True. 
+    remove_dc_component : bool, optional
+        If True, the DC component (f = 0) is not included in the returned 
+        spectrum ]0,f_N[. If False the returned spectrum covers
+        [0, f_N[. The default is False.
 
     Returns
     -------
@@ -597,7 +614,9 @@ def cum_pow_spectrum(data, sample_rate, relative=True):
         The cummulative power up to each frequency.
 
     """
-    frequency, power = pow_spectrum(data, sample_rate)
+    frequency, power = pow_spectrum(data, 
+                                    sample_rate,
+                                    remove_dc_component=remove_dc_component)
     
     cum_power = np.cumsum(power)
     
