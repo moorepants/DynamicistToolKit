@@ -582,6 +582,53 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
         The frequencies where p is a power of 2 close to m.
     power : ndarray, shape (p,n)
         The power at each frequency.
+        
+    Examples
+    --------
+
+    Create the power spectrum of a rect pulse and plot in time and frequency
+    domain. Note how the power of frequencies f>0 is larger then f=0 because
+    the positive frequencies inlclude the contribution of negative frequencies.
+    As a result, the mean power in the displayed half spectrum equals the 
+    the mean power of the input signal. 
+
+    .. plot::
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import pow_spectrum
+
+       #sampling parameters
+       N = 64    #signal period
+       f_s = 10   #sample rate
+       T = N/f_s
+
+       t = np.arange(0, T, 1/f_s)
+
+       #rect test signal
+       A = 3       #amplitude
+       tau = 0.2*T #"on"-time
+
+       x = np.zeros_like(t)
+       x[0:int(tau*f_s)] = A
+
+       #power spectrum
+       freq, amp = pow_spectrum(x, f_s)
+
+       #check Parseval's theorem
+       energy_time = np.mean(np.abs(x)**2)
+       energy_freq = np.sum(amp)
+
+       print(f"Mean power in time domain: {energy_time:.6f}")
+       print(f"Mean power in frequency domain: {energy_freq:.6f}")
+
+       #plot
+       fig, ax = plt.subplots(2,1)
+       ax[0].stem(t, x, )
+       ax[0].set_xlabel("$t$ in s")
+       ax[0].set_ylabel("$x(t)$")
+       ax[1].stem(freq,amp)
+       ax[1].set_xlabel("$f$ in Hz")
+       ax[1].set_ylabel("$|X(f)|^2$")
 
     """
     #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
@@ -644,6 +691,43 @@ def cum_pow_spectrum(data, sample_rate,
         The frequencies where p is a power of 2 close to m.
     cum_power : ndarray, shape (p,n)
         The cummulative power up to each frequency.
+        
+    Examples
+    --------
+
+    Create the cummulative power spectrum of a rect pulse and plot in time and 
+    frequency domain. 
+
+    .. plot::
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import cum_pow_spectrum
+
+       #sampling parameters
+       N = 64    #signal period
+       f_s = 10   #sample rate
+       T = N/f_s
+
+       t = np.arange(0, T, 1/f_s)
+
+       #rect test signal
+       A = 3       #amplitude
+       tau = 0.2*T #"on"-time
+
+       x = np.zeros_like(t)
+       x[0:int(tau*f_s)] = A
+
+       #power spectrum
+       freq, amp = cum_pow_spectrum(x, f_s)
+
+       #plot
+       fig, ax = plt.subplots(2,1)
+       ax[0].stem(t, x, )
+       ax[0].set_xlabel("$t$ in s")
+       ax[0].set_ylabel("$x(t)$")
+       ax[1].stem(freq,amp)
+       ax[1].set_xlabel("$f$ in Hz")
+       ax[1].set_ylabel("Cummulative avg. power")
 
     """
     frequency, power = pow_spectrum(data, 
