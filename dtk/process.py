@@ -518,7 +518,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
             n *= 2
         return n
 
-    time = 1./sample_rate  # sample time
+    time = 1./sampleRate  # sample time
     try:
         L = data.shape[1]  # length of data if (n, m)
     except IndexError:
