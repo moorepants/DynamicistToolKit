@@ -440,9 +440,9 @@ def curve_area_stats(x, y):
 
 def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     """
-    Return the frequency spectrum of a data set. Combines negative and 
+    Return the frequency spectrum of a data set. Combines negative and
     positive frequencies in the positive frequency range. Returns frequencies
-    up until the Nyquist frequency f_N. 
+    up until the Nyquist frequency f_N.
 
     Parameters
     ----------
@@ -452,14 +452,14 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     sampleRate : int
         The signal sampling rate in Hertz.
     norm : str, optional
-        Normalization of the returned spectrum. See 
+        Normalization of the returned spectrum. See
         https://numpy.org/doc/stable/reference/routines.fft.html#normalization
-        for explanation. The default is "forward", which normalizes the 
+        for explanation. The default is "forward", which normalizes the
         frequency spectrum by 1/N.
     remove_dc_component : bool, optional
-        If True, the DC component (f = 0) is not included in the returned 
+        If True, the DC component (f = 0) is not included in the returned
         spectrum ]0,f_N[. If False the returned spectrum covers
-        [0, f_N[. The default is True. 
+        [0, f_N[. The default is True.
 
 
     Returns
@@ -526,7 +526,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     # calculate the closest power of 2 for the length of the data
     n = nextpow2(L)
 
-    Y = fft(data, n, norm="forward") 
+    Y = fft(data, n, norm="forward")
     f = fftfreq(n, d=time)
     # f = sampleRate/2.*linspace(0, 1, n)
     # print 'f =', f, f.shape, type(f)
@@ -538,8 +538,8 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     except IndexError:
         amplitude = 2*abs(Y[int(remove_dc_component):n//2])
         # power = abs(Y[1:n/2])**2
-        
-    #Correct the dc component. It may not be multiplied by two, 
+
+    #Correct the dc component. It may not be multiplied by two,
     #the full spectrum [0,f_s[ (or equiv. ]-f_n, f_n[) only includes it once.
     if not remove_dc_component:
         amplitude[0] = amplitude[0] / 2
@@ -550,15 +550,15 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
 def pow_spectrum(data, sample_rate, remove_dc_component=False):
     """
     Return the power spectrum of a signal::
-    
+
         S(f) = |X(f)|^2
-    
+
     Notes
-    ----- 
-    - pow_spectrum() performs zero-padding. Parseval's 
+    -----
+    - pow_spectrum() performs zero-padding. Parseval's
       theorem is satisfied for the padded input signal. Provide input signals
-      with 2^p samples to prevent zero-padding. 
-    - The power contributions of positive and negative frequencies are 
+      with 2^p samples to prevent zero-padding.
+    - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
       Parseval's theoreom on the interval [0, f_N].
     - If the dc component is removed with remove_dc_component=True, the results
@@ -572,10 +572,10 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     sample_rate : int
         The signal sampling rate in Hertz.
     remove_dc_component : bool, optional
-        If True, the DC component (f = 0) is not included in the returned 
+        If True, the DC component (f = 0) is not included in the returned
         spectrum ]0,f_N[. If False the returned spectrum covers
-        [0, f_N[. The default is True. 
-    
+        [0, f_N[. The default is True.
+
 
     Returns
     -------
@@ -583,20 +583,20 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
         The frequencies where p is a power of 2 close to m.
     power : ndarray, shape (p,n)
         The power at each frequency.
-        
+
     Examples
     --------
 
     Create the power spectrum of a rect pulse and plot in time and frequency
     domain. Note how the power of frequencies f>0 is larger then f=0 because
     the positive frequencies inlclude the contribution of negative frequencies.
-    As a result, the mean power in the displayed half spectrum equals the 
-    the mean power of the input signal. 
+    As a result, the mean power in the displayed half spectrum equals the
+    the mean power of the input signal.
 
     .. plot::
        :include-source:
        :context: reset
-           
+
        import numpy as np
        import matplotlib.pyplot as plt
        from dtk.process import pow_spectrum
@@ -636,39 +636,39 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s")
 
     """
-    #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to 
-    #ensure that Parseval's theorem is satisfied. 
+    #call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to
+    #ensure that Parseval's theorem is satisfied.
     frequency, amplitude = freq_spectrum(
-                                    data, 
-                                    sample_rate, 
+                                    data,
+                                    sample_rate,
                                     norm="ortho",
                                     remove_dc_component=remove_dc_component
                                     )
-    
-    #Power is the square of the amplitude. 
-    power = amplitude**2  
-    
-    #Division by two is necessary to compensate doubelled amplitude of 
+
+    #Power is the square of the amplitude.
+    power = amplitude**2
+
+    #Division by two is necessary to compensate doubelled amplitude of
     #freq_spectrum for f>0. (Freq_spectrum combines
-    #the amplitude of the positive and negative frequencies). 
+    #the amplitude of the positive and negative frequencies).
     if not remove_dc_component:
         power[1:] = power[1:] / 2
-    
+
     return frequency, power
-    
+
 
 def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False):
     """
     Return the cummulative power spectrum of a signal::
-    
+
         S(f) = \sum_{k=0}^f |X(k)|^2
 
     Notes
     -----
-    - cum_pow_spectrum() performs zero-padding. Parseval's 
+    - cum_pow_spectrum() performs zero-padding. Parseval's
       theorem is satisfied for the padded input signal. Provide input signals
-      with 2^p samples to prevent zero-padding. 
-    - The power contributions of positive and negative frequencies are 
+      with 2^p samples to prevent zero-padding.
+    - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
       Parseval's theoreom on the interval [0, f_N].
     - If the dc component is removed with remove_dc_component=True, the results
@@ -682,10 +682,10 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
     sample_rate : int
         The signal sampling rate in Hertz.
     relative : bool, optional
-        If True, the returned amplitued is expressed relative to the total 
-        power. The default is True. 
+        If True, the returned amplitued is expressed relative to the total
+        power. The default is True.
     remove_dc_component : bool, optional
-        If True, the DC component (f = 0) is not included in the returned 
+        If True, the DC component (f = 0) is not included in the returned
         spectrum ]0,f_N[. If False the returned spectrum covers
         [0, f_N[. The default is False.
 
@@ -695,17 +695,17 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
         The frequencies where p is a power of 2 close to m.
     cum_power : ndarray, shape (p,n)
         The cummulative power up to each frequency.
-        
+
     Examples
     --------
 
-    Create the cummulative power spectrum of a rect pulse and plot in time and 
-    frequency domain. 
+    Create the cummulative power spectrum of a rect pulse and plot in time and
+    frequency domain.
 
     .. plot::
        :include-source:
        :context: reset
-           
+
        import numpy as np
        import matplotlib.pyplot as plt
        from dtk.process import cum_pow_spectrum
@@ -738,18 +738,18 @@ def cum_pow_spectrum(data, sample_rate, relative=True, remove_dc_component=False
        plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, relative=True")
 
     """
-    frequency, power = pow_spectrum(data, 
+    frequency, power = pow_spectrum(data,
                                     sample_rate,
                                     remove_dc_component=remove_dc_component)
-    
+
     cum_power = np.cumsum(power)
-    
+
     #if requested, normalize to the total power.
     if relative:
         cum_power = cum_power / cum_power[-1]
-        
+
     return frequency, cum_power
-    
+
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
                 **kwargs):

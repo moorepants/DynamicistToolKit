@@ -446,38 +446,38 @@ class TestSpectralAnalysis:
     based on a common test signal.
 
     """
-    
+
     def setup_method(self):
         """
         Create test signal.
 
         """
-        # test time and sampling rate. Make sure that the number of samples is 
+        # test time and sampling rate. Make sure that the number of samples is
         # a power of two to prevent frequency leakage (freq_spectrum does zero-
         # padding)
         T = 5.12      #signal period
         self.f_s = 100     #sample rate
-        
+
         t = np.arange(0, T, 1/self.f_s)
         N = len(t)
         k = np.arange(0, N)
-        
+
         # test function
         def harmonics(t, frequencies, amplitudes):
             """
             Create a test function with three harmonic frequencies.
-            
+
             x(t) = A0 * sin(2*pi*f0*t) + ... + An * sin(2*pi*fn*t)
-            
+
             Parameters
             ----------
             t : array-like
                 Array of sample times
             frequencies : array-like
-                Array of n frequencies 
+                Array of n frequencies
             amplitudes : array-like
-                Array of n amplitudes 
-            
+                Array of n amplitudes
+
             Returns
             -------
             x : array-like
@@ -485,97 +485,97 @@ class TestSpectralAnalysis:
             """
             x = np.zeros_like(t, dtype=float)
             for f, A in zip(frequencies, amplitudes):
-                x += A * np.sin(2*np.pi*f*t) 
+                x += A * np.sin(2*np.pi*f*t)
             return x
-        
-        #Build a test signal of three harmonics. The frequencies have to be 
-        #multiples of the frequency resolution to prevent frequency leakage. 
-        self.frequencies_k = np.array((5, 12, 17, 28, 25, 40)) 
+
+        #Build a test signal of three harmonics. The frequencies have to be
+        #multiples of the frequency resolution to prevent frequency leakage.
+        self.frequencies_k = np.array((5, 12, 17, 28, 25, 40))
         self.frequencies = self.frequencies_k * self.f_s / N
         self.amplitudes = np.array((0.5, 0.9, 0.4, 0.3, 0.6, 0.1))
-        
+
         self.x = harmonics(t, self.frequencies, self.amplitudes)
-        
+
     def test_freq_spectrum(self):
-        
-        # call frequency spectrum 
-        freq, amp = process.freq_spectrum(self.x, self.f_s) 
+
+        # call frequency spectrum
+        freq, amp = process.freq_spectrum(self.x, self.f_s)
         m = np.arange(0, len(freq))
-        
+
         #build expected spectrum. This should have discrete peaks at the chosen
         #frequencies with the designed amplitude of the harmonic signal frequs.
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
             amp_exp[fk-1] = a   #shift by 1, bc freq_spectrum skips f=0
-        
+
         #plot the results for inspection
         #plt.plot(freq, amp   , "r.")
         #plt.plot(freq, amp_exp, "b.")
-        
+
         assert np.allclose(amp, amp_exp), "The result freq_spectrum does n" + \
                                           "ot match the theoretical expect" + \
                                           "ation."
-                
-    
+
+
     def test_pow_spectrum(self):
-        
-        # call power spectrum 
-        freq, amp = process.pow_spectrum(self.x, self.f_s) 
-        
+
+        # call power spectrum
+        freq, amp = process.pow_spectrum(self.x, self.f_s)
+
         #build expected spectrum. This should have discrete peaks at the chosen
         #frequencies. The theoretical mean power of a sine over
-        #one period is A**2 / 2. 
+        #one period is A**2 / 2.
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk] = a**2 / 2 
-        
+            amp_exp[fk] = a**2 / 2
+
         #plot the results for inspection
         #plt.plot(freq, amp   , "r.")
         #plt.plot(freq, amp_exp, "b.")
-        
+
         #check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation.")
         assert np.allclose(amp, amp_exp), msg
-                
+
         #check Parseval's theorem
         avgpwr_time = np.mean(np.abs(self.x)**2)
         avgpwr_freq = np.sum(amp)
-        
-        msg = ("The result of freq_spectrum() does not satisfy Parseval's " 
+
+        msg = ("The result of freq_spectrum() does not satisfy Parseval's "
                "theorem!")
         assert np.allclose(avgpwr_time, avgpwr_freq), msg
-    
+
     def test_cum_pow_spectrum(self):
-        
-        ## Absolute case: 
-            
+
+        ## Absolute case:
+
         # call cummulative power spectrum
-        freq, amp = process.cum_pow_spectrum(self.x, self.f_s, relative=False) 
-        
-        #build expected spectrum. This is the cummulative version of the 
+        freq, amp = process.cum_pow_spectrum(self.x, self.f_s, relative=False)
+
+        #build expected spectrum. This is the cummulative version of the
         #spectrum used in test_pow_spectrum()
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
-            amp_exp[fk] = a**2 / 2 
+            amp_exp[fk] = a**2 / 2
         amp_exp = np.cumsum(amp_exp)
-        
+
         #plt.plot(freq, amp   , "r.")
         #plt.plot(freq, amp_exp, "b.")
-        
+
         #check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation for the absolute case.")
         assert np.allclose(amp, amp_exp), msg
-                                          
-        ## Relative case: 
-           
+
+        ## Relative case:
+
         # call cummulative power spectrum with relative = True (default)
-        freq, amp = process.cum_pow_spectrum(self.x, self.f_s) 
-       
-        # normalize the  spectrum. 
+        freq, amp = process.cum_pow_spectrum(self.x, self.f_s)
+
+        # normalize the  spectrum.
         amp_exp = amp_exp / amp_exp[-1]
-       
+
         #check the power spectral density
         msg = ("The result of freq_spectrum() does not match the theoretical "
                "expectation for the relative case.")
