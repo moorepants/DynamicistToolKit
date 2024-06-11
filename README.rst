@@ -32,6 +32,8 @@ Modules
 
 **bicycle**
    Generic tools for basic bicycle dynamics analysis.
+**control**
+  Functions helpful in control systems analysis.
 **inertia**
    Various functions for calculating and manipulating inertial quantities.
 **process**
@@ -40,11 +42,11 @@ Modules
 Installation
 ============
 
-You can install DynamicistToolKit with conda:
+You can install DynamicistToolKit with conda::
 
    $ conda install -c conda-forge dynamicisttoolkit
 
-or pip:
+or pip::
 
    $ python -m pip install DynamicistToolKit
 
@@ -72,9 +74,9 @@ Or install for development purposes::
 Tests
 =====
 
-Run the tests with nose::
+Run the tests with pytest::
 
-   $ nosetests
+   $ pytest dtk
 
 Documentation
 =============

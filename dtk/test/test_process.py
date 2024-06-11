@@ -7,9 +7,9 @@ import os
 # external libraries
 import numpy as np
 from numpy import testing
-from nose.tools import assert_raises
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfilt
+import pytest
 
 # local libraries
 from .. import process
@@ -134,32 +134,32 @@ def test_derivative():
     dydx = process.derivative(x, y, method='combination')
     testing.assert_allclose(dydx, expected_dydx, rtol=1e-4)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones((5, 2))
         y = np.arange(5)
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(4)
         y = np.ones((5, 3))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(5)
         y = np.ones((5, 3, 2))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(1)
         y = np.ones((1, 3))
         process.derivative(x, y)
 
-    with assert_raises(ValueError):
+    with pytest.raises(ValueError):
         x = np.ones(2)
         y = np.ones((2, 3))
         process.derivative(x, y, method='central')
 
-    with assert_raises(NotImplementedError):
+    with pytest.raises(NotImplementedError):
         x = np.ones(2)
         y = np.ones((2, 3))
         process.derivative(x, y, method='booger')
@@ -253,7 +253,12 @@ def test_coefficient_of_determination():
     # find the least squares solution
     A = np.vstack((x_measured, np.ones_like(x_measured))).transpose()
     b = y_measured
-    xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b)
+    # NOTE : Set because of this FutureWarning:
+    # ........../home/moorepants/src/DynamicistToolKit/dtk/test/test_process.py:241: FutureWarning: `rcond` parameter will change to the default of machine precision times ``max(M, N)`` where M and N are the input matrix dimensions.
+    # To use the future default and silence this warning we advise to pass `rcond=None`, to keep using the old, explicitly pass `rcond=-1`.
+    # xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b)
+    xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b,
+                                                                  rcond=None)
     y_predicted = np.dot(A, xhat)
 
     # find R^2 the linear algebra way
@@ -324,7 +329,7 @@ def test_spline_over_nan():
 
 class TestTimeShift():
 
-    def setup(self):
+    def setup_method(self):
 
         self.sample_rate = 300  # hz
         self.time = np.linspace(0.0, 100.0, self.sample_rate * 100 + 1)
@@ -372,7 +377,7 @@ class TestTimeShift():
 
 class TestTimeShiftRealData():
 
-    def setup(self):
+    def setup_method(self):
 
         self.grf_array = np.loadtxt(
             os.path.join(os.path.dirname(__file__),

@@ -108,7 +108,7 @@ def inertia_components(jay, beta):
     '''
     sb = np.sin(beta)
     cb = np.cos(beta)
-    betaMat = np.matrix(np.vstack((cb**2, -2 * sb * cb, sb**2)).T)
+    betaMat = np.array(np.vstack((cb**2, -2 * sb * cb, sb**2)).T)
     eye = np.squeeze(np.asarray(np.dot(betaMat.I, jay)))
     return eye
 
@@ -214,10 +214,10 @@ def rotate_inertia_about_y(I, angle):
     """
     ca = np.cos(angle)
     sa = np.sin(angle)
-    C = np.matrix([[ca, 0., -sa],
-                   [0., 1., 0.],
-                   [sa, 0., ca]])
-    Irot = C * I * C.T
+    C = np.array([[ca, 0., -sa],
+                  [0., 1., 0.],
+                  [sa, 0., ca]])
+    Irot = C @ I @ C.T
     return np.array(Irot)
 
 
@@ -256,7 +256,7 @@ def x_rot(angle):
 
     Returns
     -------
-    Rx : np.matrix, shape(3,3)
+    Rx : ndarray, shape(3,3)
         The rotation matrix.
 
     Notes
@@ -268,9 +268,9 @@ def x_rot(angle):
     """
     sa = np.sin(angle)
     ca = np.cos(angle)
-    Rx = np.matrix([[1., 0. , 0.],
-                    [0., ca, sa],
-                    [0., -sa, ca]])
+    Rx = np.array([[1., 0. , 0.],
+                   [0., ca, sa],
+                   [0., -sa, ca]])
     return Rx
 
 
@@ -285,7 +285,7 @@ def y_rot(angle):
 
     Returns
     -------
-    Rx : np.matrix, shape(3,3)
+    Rx : ndarray, shape(3,3)
         The rotation matrix.
 
     Notes
@@ -297,9 +297,9 @@ def y_rot(angle):
     """
     sa = np.sin(angle)
     ca = np.cos(angle)
-    Ry = np.matrix([[ca, 0. , -sa],
-                    [0., 1., 0.],
-                    [sa, 0., ca]])
+    Ry = np.array([[ca, 0. , -sa],
+                   [0., 1., 0.],
+                   [sa, 0., ca]])
     return Ry
 
 
@@ -314,7 +314,7 @@ def z_rot(angle):
 
     Returns
     -------
-    Rx : np.matrix, shape(3,3)
+    Rx : ndarray, shape(3,3)
         The rotation matrix.
 
     Notes
@@ -326,9 +326,9 @@ def z_rot(angle):
     """
     sa = np.sin(angle)
     ca = np.cos(angle)
-    Rz = np.matrix([[ca, sa , 0.],
-                    [-sa, ca, 0.],
-                    [0., 0., 1.]])
+    Rz = np.array([[ca, sa , 0.],
+                   [-sa, ca, 0.],
+                   [0., 0., 1.]])
     return Rz
 
 
@@ -352,7 +352,7 @@ def euler_rotation(angles, order):
 
     Returns
     -------
-    R : numpy.matrix, shape(3,3)
+    R : ndarray, shape(3,3)
         A rotation matrix.
 
     Notes
@@ -372,15 +372,15 @@ def euler_rotation(angles, order):
     >>> angles = [np.pi, np.pi / 2., -np.pi / 4.]
     >>> rotMat = euler_rotation(angles, (3, 1, 3))
     >>> rotMat
-    matrix([[ -7.07106781e-01,   1.29893408e-16,  -7.07106781e-01],
-            [ -7.07106781e-01,   4.32978028e-17,   7.07106781e-01],
-            [  1.22464680e-16,   1.00000000e+00,   6.12323400e-17]])
-    >>> v = np.matrix([[1.], [0.], [0.]])
+    array([[ -7.07106781e-01,   1.29893408e-16,  -7.07106781e-01],
+           [ -7.07106781e-01,   4.32978028e-17,   7.07106781e-01],
+           [  1.22464680e-16,   1.00000000e+00,   6.12323400e-17]])
+    >>> v = np.array([[1.], [0.], [0.]])
     >>> vp = rotMat * v
     >>> vp
-    matrix([[ -7.07106781e-01],
-            [ -7.07106781e-01],
-            [  1.22464680e-16]])
+    array([[ -7.07106781e-01],
+           [ -7.07106781e-01],
+           [  1.22464680e-16]])
 
     """
 
@@ -393,7 +393,6 @@ def euler_rotation(angles, order):
         if v not in [1, 2, 3]:
             raise ValueError('The values in order have to be 1, 2 or 3')
 
-
     rot = [x_rot, y_rot, z_rot]
 
     mat = []
@@ -401,7 +400,7 @@ def euler_rotation(angles, order):
     for i, ang in enumerate(angles):
         mat.append(rot[order[i] - 1](ang))
 
-    return mat[2] * mat[1] * mat[0]
+    return mat[2] @ mat[1] @ mat[0]
 
 
 def rotate3(angles):
@@ -421,7 +420,7 @@ def rotate3(angles):
 
     Returns
     -------
-    R : numpy.matrix, shape(3,3)
+    R : ndarray, shape(3,3)
         Three dimensional rotation matrix about three different orthogonal axes.
 
     """
@@ -434,19 +433,19 @@ def rotate3(angles):
     cz = np.cos(angles[2])
     sz = np.sin(angles[2])
 
-    Rz = np.mat([[ cz,-sz,  0],
-                 [ sz, cz,  0],
-                 [  0,  0,  1]])
+    Rz = np.array([[ cz,-sz,  0],
+                   [ sz, cz,  0],
+                   [  0,  0,  1]])
 
-    Ry = np.mat([[ cy,  0, sy],
-                 [  0,  1,  0],
-                 [-sy,  0, cy]])
+    Ry = np.array([[ cy,  0, sy],
+                   [  0,  1,  0],
+                   [-sy,  0, cy]])
 
-    Rx = np.mat([[  1,  0,  0],
-                 [  0, cx, -sx],
-                 [  0, sx,  cx]])
+    Rx = np.array([[  1,  0,  0],
+                   [  0, cx, -sx],
+                   [  0, sx,  cx]])
 
-    return Rz * Ry * Rx
+    return Rz @ Ry @ Rx
 
 
 def euler_123(angles):
@@ -469,7 +468,7 @@ def euler_123(angles):
 
     Returns
     -------
-    R : numpy.matrix, shape(3,3)
+    R : ndarray, shape(3,3)
         Three dimensional rotation matrix about three different orthogonal axes.
 
     """
@@ -482,19 +481,19 @@ def euler_123(angles):
     cpsi = np.cos(angles[2])
     spsi = np.sin(angles[2])
 
-    R1 = np.mat([[     1,     0,     0],
-                 [     0,  cphi, -sphi],
-                 [     0,  sphi,  cphi]])
+    R1 = np.array([[     1,     0,     0],
+                   [     0,  cphi, -sphi],
+                   [     0,  sphi,  cphi]])
 
-    R2 = np.mat([[  cthe,     0,  sthe],
-                 [     0,     1,     0],
-                 [ -sthe,     0,  cthe]])
+    R2 = np.array([[  cthe,     0,  sthe],
+                   [     0,     1,     0],
+                   [ -sthe,     0,  cthe]])
 
-    R3 = np.mat([[  cpsi,  -spsi,     0],
-                 [  spsi,  cpsi,     0],
-                 [     0,     0,     1]])
+    R3 = np.array([[  cpsi,  -spsi,     0],
+                   [  spsi,  cpsi,     0],
+                   [     0,     0,     1]])
 
-    return R1 * R2 * R3
+    return R1 @ R2 @ R3
 
 
 def rotate3_inertia(RotMat,relInertia):
@@ -508,18 +507,18 @@ def rotate3_inertia(RotMat,relInertia):
 
     Parameters
     ----------
-    RotMat : numpy.matrix, shape(3,3)
+    RotMat : array_like, shape(3,3)
         Three-dimensional rotation matrix specifying the coordinate frame that
         the input inertia tensor is in, with respect to a fixed coordinate
         system in which one desires to express the inertia tensor.
-    relInertia : numpy.matrix, shape(3,3)
+    relInertia : array_like, shape(3,3)
         Three-dimensional cartesian inertia tensor describing the inertia of a
         mass in a rotated coordinate frame.
 
     Returns
     -------
-    Inertia : numpy.matrix, shape(3,3)
+    Inertia : ndarray, shape(3,3)
         Inertia tensor with respect to a fixed coordinate system ("unrotated").
 
     """
-    return RotMat * relInertia * RotMat.T
+    return RotMat @ relInertia @ RotMat.T
