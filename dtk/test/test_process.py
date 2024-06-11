@@ -253,7 +253,12 @@ def test_coefficient_of_determination():
     # find the least squares solution
     A = np.vstack((x_measured, np.ones_like(x_measured))).transpose()
     b = y_measured
-    xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b)
+    # NOTE : Set because of this FutureWarning:
+    # ........../home/moorepants/src/DynamicistToolKit/dtk/test/test_process.py:241: FutureWarning: `rcond` parameter will change to the default of machine precision times ``max(M, N)`` where M and N are the input matrix dimensions.
+    # To use the future default and silence this warning we advise to pass `rcond=None`, to keep using the old, explicitly pass `rcond=-1`.
+    # xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b)
+    xhat, sums_of_squares_of_residuals, rank, s = np.linalg.lstsq(A, b,
+                                                                  rcond=None)
     y_predicted = np.dot(A, xhat)
 
     # find R^2 the linear algebra way
