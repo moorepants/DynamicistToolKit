@@ -533,10 +533,11 @@ class TestSpectralAnalysis:
                                           " not match the theoretical expe" + \
                                           "ctation."
                 
-        #check parseval's theorem
-        energy_time = np.mean(np.abs(self.x)**2)
-        energy_spec = np.sum(amp)
-        assert np.allclose(energy_time, energy_spec), "The result of pow_s" + \
+        #check Parseval's theorem
+        avgpwr_time = np.mean(np.abs(self.x)**2)
+        avgpwr_freq = np.sum(amp)
+        
+        assert np.allclose(avgpwr_time, avgpwr_freq), "The result of pow_s" + \
                                                       "pectrum() does not " + \
                                                       "satisfy Parseval's " + \
                                                       "theorem!"

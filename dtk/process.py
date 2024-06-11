@@ -538,6 +538,11 @@ def freq_spectrum(data, sample_rate, norm="forward", remove_dc_component=True):
     except IndexError:
         amplitude = 2*abs(Y[int(remove_dc_component):n//2])
         # power = abs(Y[1:n/2])**2
+        
+    #Correct the dc component. It may not be multiplied by two, 
+    #the full spectrum [0,f_s[ (or equiv. ]-f_n, f_n[) only includes it once.
+    if not remove_dc_component:
+        amplitude[0] = amplitude[0] / 2
 
     return frequency, amplitude
 
@@ -547,6 +552,16 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     Return the power spectrum of a dataset.
     
     S(f) = |X(f)|^2
+    
+    Notes: 
+    - pow_spectrum() performs zero-padding. Parseval's 
+      theorem is satisfied for the padded input signal. Provide input signals
+      with 2^p samples to prevent zero-padding. 
+    - The power contributions of positive and negative frequencies are 
+      combined in the positive half spectrum so that the results satisfy
+      Parseval's theoreom on the interval [0, f_N].
+    - If the dc component is removed with remove_dc_component=True, the results
+      do not satisfy Parseval's theorem.
 
     Parameters
     ----------
@@ -554,7 +569,11 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
         The array of time signals where n is the number of variables and m is
         the number of time steps.
     sample_rate : int
-        The signal sampling rate in hertz.
+        The signal sampling rate in Hertz.
+    remove_dc_component : bool, optional
+        If True, the DC component (f = 0) is not included in the returned 
+        spectrum ]0,f_N[. If False the returned spectrum covers
+        [0, f_N[. The default is True. 
     
 
     Returns
@@ -575,10 +594,13 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
                                     )
     
     #Power is the square of the amplitude. 
+    power = amplitude**2  
+    
     #Division by two is necessary to compensate doubelled amplitude of 
-    #freq_spectrum. (Freq_spectrum combines
+    #freq_spectrum for f>0. (Freq_spectrum combines
     #the amplitude of the positive and negative frequencies). 
-    power = amplitude**2  / 2  
+    if not remove_dc_component:
+        power[1:] = power[1:] / 2
     
     return frequency, power
     
@@ -587,9 +609,19 @@ def cum_pow_spectrum(data, sample_rate,
                      relative=True, 
                      remove_dc_component=False):
     """
-    Return the power spectrum of a dataset.
+    Return the cummulative power spectrum of a dataset.
     
-    S(f) = |X(f)|^2
+    S(f) = \sum_{k=0}^f |X(k)|^2
+
+    Notes:
+    - cum_pow_spectrum() performs zero-padding. Parseval's 
+      theorem is satisfied for the padded input signal. Provide input signals
+      with 2^p samples to prevent zero-padding. 
+    - The power contributions of positive and negative frequencies are 
+      combined in the positive half spectrum so that the results satisfy
+      Parseval's theoreom on the interval [0, f_N].
+    - If the dc component is removed with remove_dc_component=True, the results
+      do not satisfy Parseval's theorem.
 
     Parameters
     ----------
@@ -597,7 +629,7 @@ def cum_pow_spectrum(data, sample_rate,
         The array of time signals where n is the number of variables and m is
         the number of time steps.
     sample_rate : int
-        The signal sampling rate in hertz.
+        The signal sampling rate in Hertz.
     relative : bool, optional
         If True, the returned amplitued is expressed relative to the total 
         power. The default is True. 
