@@ -549,11 +549,12 @@ def freq_spectrum(data, sample_rate, norm="forward", remove_dc_component=True):
 
 def pow_spectrum(data, sample_rate, remove_dc_component=False):
     """
-    Return the power spectrum of a dataset.
+    Return the power spectrum of a signal::
     
-    S(f) = |X(f)|^2
+        S(f) = |X(f)|^2
     
-    Notes: 
+    Notes
+    ----- 
     - pow_spectrum() performs zero-padding. Parseval's 
       theorem is satisfied for the padded input signal. Provide input signals
       with 2^p samples to prevent zero-padding. 
@@ -656,11 +657,12 @@ def cum_pow_spectrum(data, sample_rate,
                      relative=True, 
                      remove_dc_component=False):
     """
-    Return the cummulative power spectrum of a dataset.
+    Return the cummulative power spectrum of a signal::
     
-    S(f) = \sum_{k=0}^f |X(k)|^2
+        S(f) = \sum_{k=0}^f |X(k)|^2
 
-    Notes:
+    Notes
+    -----
     - cum_pow_spectrum() performs zero-padding. Parseval's 
       theorem is satisfied for the padded input signal. Provide input signals
       with 2^p samples to prevent zero-padding. 
