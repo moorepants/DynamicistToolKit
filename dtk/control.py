@@ -8,7 +8,9 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None, show=False):
+
+def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None,
+                show=False):
     """Returns a phasor plot of the given eigenvalues and eigenvectors.
 
     Parameters
@@ -31,10 +33,31 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None, show
     -----
     Plots are not produced for zero eigenvalues.
 
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import matplotlib.pyplot as plt
+       from dtk.bicycle import (benchmark_matrices,
+                                benchmark_state_space_vs_speed)
+       from dtk.control import (eig_of_series, sort_modes,
+                                plot_phasor)
+
+       M, C1, K0, K2 = benchmark_matrices()
+       v, A, B = benchmark_state_space_vs_speed(M, C1, K0, K2)
+       evals, evecs = sort_modes(*eig_of_series(A))
+       plot_phasor(evals[25], evecs[25])
+
     """
 
     figs = []
-    lw = range(len(components), 0, -1)
+    if components is None:
+        lw = range(len(eigenvalues))
+    else:
+        lw = range(len(components), 0, -1)
     for i, eVal in enumerate(eigenvalues):
         figs.append(plt.figure())
         ax = figs[-1].add_subplot(1, 1, 1, polar=True)
