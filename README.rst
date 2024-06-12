@@ -24,8 +24,10 @@ Introduction
 ============
 
 This is a collection of Python modules which contain tools that are helpful for
-a dynamicist. Right now it is basically a place I place general tools that
-don't necessarily need a distribution of their own.
+a dynamics. We use it at the TU Delft Bicycle Lab as an initial shared location
+to house reusable tools for the group. These tools may eventually graduate to
+packages of their own or be incorporated into other existing specialized
+packages.
 
 Modules
 =======
@@ -74,9 +76,13 @@ Or install for development purposes::
 Tests
 =====
 
-Run the tests with pytest::
+Run the unit tests with pytest::
 
    $ pytest dtk
+
+and doctests with::
+
+   $ pytest --doctest-modules dtk
 
 Documentation
 =============
@@ -85,8 +91,7 @@ The documentation is hosted at ReadTheDocs:
 
 http://dynamicisttoolkit.readthedocs.org
 
-You can build the documentation (currently sparse) if you have Sphinx and
-numpydoc::
+You can build the documentation if you have Sphinx and numpydoc::
 
    $ cd docs
    $ make html
