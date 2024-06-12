@@ -37,3 +37,6 @@ nosetests.xml
 
 # vim swap files
 *.swp
+
+# sphinx
+docs/_build/*
