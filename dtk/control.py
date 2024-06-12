@@ -81,6 +81,7 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None,
 
     return figs
 
+
 def sort_modes(evals, evecs):
     """Sort a series of eigenvalues and eigenvectors into modes.
 
@@ -121,6 +122,7 @@ def sort_modes(evals, evecs):
             # keep track of the indices we've used
             used.append(np.argmin(dist))
     return evalsorg, evecsorg
+
 
 def eig_of_series(matrices):
     """Returns the eigenvalues and eigenvectors for a series of matrices.
@@ -323,20 +325,51 @@ def plot_root_locus_components(parvalues, eigenvalues, parts='both',
 
 
 class Bode(object):
-    """A class for creating Bode plots and the associated data."""
+    """A class for creating Bode plots and the associated data.
+
+    Parameters
+    ----------
+    frequency : ndarray, shape(n,)
+        An array of frequencies at which to evaluate the system frequency
+        reponse in radians per second. Use numpy.logspace to generate them.
+    sys : dtk.control.StateSpace object
+        One or more state space systems. If more than one system is
+        provided, they must all have the same inputs and outputs.
+
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       from dtk.bicycle import benchmark_matrices, benchmark_state_space
+       from dtk.control import StateSpace, Bode
+
+       speed = 4.6  # m/s
+       A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
+       C, D = np.eye(4), np.zeros((4, 2))
+
+       states = ['Roll Angle', 'Steer Angle', 'Roll Rate', 'Steer Rate']
+       inputs = ['Roll Torque', 'Steer Torque']
+
+       sys = StateSpace(A, B, C, D,
+           name='Carvallo-Whipple Bicycle',
+           stateNames=states,
+           inputNames=inputs,
+           outputNames=states,
+       )
+
+       freqs = np.logspace(0.0, 3.0, num=400)
+
+       bode = Bode(freqs, sys)
+
+       bode.plot()
+
+    """
     def __init__(self, frequency, *args, **kwargs):
-        """Returns a Bode object for a set of systems.
-
-        Parameters
-        ----------
-        frequency : ndarray, shape(n,)
-            An array of frequencies at which to evaluate the system frequency
-            reponse in radians per second. Use numpy.logspace to generate them.
-        sys : dtk.control.StateSpace object
-            One or more state space systems. If more than one system is
-            provided, they must all have the same inputs and outputs.
-
-        """
+        """Returns a Bode object for a set of systems."""
 
         self.frequency = frequency
 
@@ -386,7 +419,7 @@ class Bode(object):
                 pass
 
             self.plot_system(system, self.magnitudes[i], self.phases[i],
-                    **kwargs)
+                             **kwargs)
 
         #for f in self.figs:
             #leg = f.phaseAx.legend(loc=4)
@@ -446,7 +479,7 @@ class Bode(object):
         return magnitude, phase
 
     def plot_system(self, system, magnitude, phase, decibel=True, degree=True,
-            **kwargs):
+                    **kwargs):
         """Plots the Bode plots of a single system. If a system for this object
         has already been plotted, it will add new lines to the existing plots.
 
@@ -487,22 +520,22 @@ class Bode(object):
                                   #horizontalalignment='right',
                                   #verticalalignment='center',
                                   #x=-0.01)
-                    fig.yprops = {}
+                    yprops = {}
 
-                    fig.axprops = {}
+                    axprops = {}
 
                     fig.suptitle('Input: {}, Output: {}'.format(system.inputNames[i],
                         system.outputNames[o]))
 
-                    fig.magAx = fig.add_subplot(2, 1, 1, **fig.axprops)
-                    fig.phaseAx = fig.add_subplot(2, 1, 2, **fig.axprops)
+                    fig.magAx = fig.add_subplot(2, 1, 1, **axprops)
+                    fig.phaseAx = fig.add_subplot(2, 1, 2, **axprops)
 
-                    fig.magAx.set_ylabel('Magnitude [dB]', **fig.yprops)
-                    fig.phaseAx.set_ylabel('Phase [deg]', **fig.yprops)
+                    fig.magAx.set_ylabel('Magnitude [dB]', **yprops)
+                    fig.phaseAx.set_ylabel('Phase [deg]', **yprops)
                     fig.phaseAx.set_xlabel('Frequency [rad/s]')
-                    fig.axprops['sharex'] = fig.axprops['sharey'] = fig.magAx
-                    fig.magAx.grid(b=True)
-                    fig.phaseAx.grid(b=True)
+                    axprops['sharex'] = axprops['sharey'] = fig.magAx
+                    fig.magAx.grid()
+                    fig.phaseAx.grid()
 
                     plt.setp(fig.magAx.get_xticklabels(), visible=False)
                     plt.setp(fig.magAx.get_yticklabels(), visible=True)
@@ -521,6 +554,7 @@ class Bode(object):
                         label=system.name, **kwargs)
 
                 plotNum += 1
+
 
 class StateSpace(object):
     """A linear time invariant system described by its state space."""
@@ -573,6 +607,7 @@ class StateSpace(object):
                 .format(self.name, len(self.stateNames), len(self.inputNames),
                         len(self.outputNames))
 
+
 def bode(system, frequency, fig=None, label=None, title=None, color=None):
     """Creates a Bode plot of the given system.
 
@@ -599,22 +634,43 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
     fig : matplotlib Figure instance
         The Bode plot.
 
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       from dtk.bicycle import benchmark_matrices, benchmark_state_space
+       from dtk.control import bode
+
+       speed = 4.6  # m/s
+       A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
+       C, D = np.array([1.0, 0.0, 0.0, 0.0]), np.zeros(1)
+
+       freqs = np.logspace(0.0, 3.0, num=301)
+
+       bode((A, B[:, 0].reshape(4, 1), C, D), freqs)
+
+    .. plot::
+       :context: close-figs
+       :include-source:
+
+       bode((A, B[:, 0].reshape(4, 1), C, D), freqs,
+           label='Nice Curve',
+           title='My Bode Plot',
+           color='black',
+       )
+
     """
     if fig is None:
-        fig = plt.figure()
+        fig, ax = plt.subplots(2, 1, sharex=True, layout="constrained")
+    else:
+        ax = fig.axes
 
-    fig.yprops = dict(rotation=90,
-                  horizontalalignment='right',
-                  verticalalignment='center',
-                  x=-0.01)
-
-    fig.axprops = {}
-    # axes [left, bottom, width, height]
-    fig.ax1 = fig.add_axes([.125, .525, .825, .275], **fig.axprops)
-    fig.ax2 = fig.add_axes([.125, .2, .825, .275], **fig.axprops)
-
-    magnitude = np.zeros(len(frequency))
-    phase = np.zeros(len(frequency))
+    magnitude = np.zeros_like(frequency)
+    phase = np.zeros_like(frequency)
 
     try:
         A, B, C, D = system
@@ -622,44 +678,41 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
         num, den = system
         n = np.poly1d(num)
         d = np.poly1d(den)
-        Gjw = n(1j * frequency) / d(1j * frequency)
-        magnitude = 20. * np.log10(np.abs(Gjw))
-        phase = 180. / np.pi * np.unwrap(np.arctan2(np.imag(Gjw), np.real(Gjw)))
+        Gjw = n(1j*frequency)/d(1j*frequency)
+        magnitude = 20.*np.log10(np.abs(Gjw))
+        phase = 180./np.pi*np.unwrap(np.arctan2(np.imag(Gjw), np.real(Gjw)))
     else:
-        I = np.eye(A.shape[0])
+        identity = np.eye(A.shape[0])
         for i, f in enumerate(frequency):
             # this inverse is expensive, can this be reformed to be solved with
             # a faster method?
-            sImA_inv = np.linalg.inv(1j * f * I - A)
+            sImA_inv = np.linalg.inv(1j*f*identity - A)
             G = np.dot(np.dot(C, sImA_inv), B) + D
-            magnitude[i] = 20. * np.log10(np.abs(G))
+            magnitude[i] = 20.0*np.log10(np.abs(G))
             phase[i] = np.angle(G)
-        phase = 180. / np.pi * np.unwrap(phase)
+        phase = 180.0/np.pi*np.unwrap(phase)
 
-    fig.ax1.semilogx(frequency, magnitude, label=label)
+    if color is None:
+        ax[0].semilogx(frequency, magnitude, label=label)
+    else:
+        ax[0].semilogx(frequency, magnitude, label=label, color=color)
 
     if title:
-        fig.ax1.set_title(title)
+        ax[0].set_title(title)
 
-    fig.ax2.semilogx(frequency, phase, label=label)
+    if color is None:
+        ax[1].semilogx(frequency, phase, label=label)
+    else:
+        ax[1].semilogx(frequency, phase, label=label, color=color)
 
-    fig.axprops['sharex'] = fig.axprops['sharey'] = fig.ax1
-    fig.ax1.grid(b=True)
-    fig.ax2.grid(b=True)
+    ax[0].grid()
+    ax[1].grid()
 
-    plt.setp(fig.ax1.get_xticklabels(), visible=False)
-    plt.setp(fig.ax1.get_yticklabels(), visible=True)
-    plt.setp(fig.ax2.get_yticklabels(), visible=True)
-    fig.ax1.set_ylabel('Magnitude [dB]', **fig.yprops)
-    fig.ax2.set_ylabel('Phase [deg]', **fig.yprops)
-    fig.ax2.set_xlabel('Frequency [rad/s]')
+    ax[0].set_ylabel('Magnitude [dB]')
+    ax[1].set_ylabel('Phase [deg]')
+    ax[1].set_xlabel('Frequency [rad/s]')
 
     if label:
-        fig.ax1.legend()
-
-    if color:
-        print(color)
-        plt.setp(fig.ax1.lines, color=color)
-        plt.setp(fig.ax2.lines, color=color)
+        ax[0].legend()
 
     return magnitude, phase, fig
