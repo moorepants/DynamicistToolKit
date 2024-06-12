@@ -399,8 +399,8 @@ def spline_over_nan(x, y):
     --------
 
     .. plot::
-       :include-source:
        :context: reset
+       :include-source:
 
        import numpy as np
        from dtk.process import spline_over_nan
@@ -542,8 +542,8 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     the sum.
 
     .. plot::
-       :include-source:
        :context: reset
+       :include-source:
 
        import numpy as np
        import matplotlib.pyplot as plt
@@ -563,8 +563,8 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
        ax.set_ylabel('Amplitude')
 
     .. plot::
-       :include-source:
        :context: close-figs
+       :include-source:
 
        freqs, amps = freq_spectrum(low_freq + high_freq, sample_rate)
 
@@ -658,8 +658,8 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     the mean power of the input signal.
 
     .. plot::
-       :include-source:
        :context: reset
+       :include-source:
 
        import numpy as np
        import matplotlib.pyplot as plt
@@ -766,8 +766,8 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
     frequency domain.
 
     .. plot::
-       :include-source:
        :context: reset
+       :include-source:
 
        import numpy as np
        import matplotlib.pyplot as plt
@@ -856,8 +856,8 @@ def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
     --------
 
     .. plot::
-       :include-source:
        :context: reset
+       :include-source:
 
        import numpy as np
        import matplotlib.pyplot as plt
