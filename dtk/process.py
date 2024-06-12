@@ -39,6 +39,25 @@ def sync_error(tau, signal1, signal2, time, plot=False):
     error : float
         Error between the two signals for the given tau.
 
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import find_timeshift, sync_error
+
+       t = np.linspace(0.0, 4.0, num=401)
+       sig1 = np.sin(2.0*t) + np.random.normal(0.0, 0.1, size=len(t))
+       sig2 = np.sin(2.0*t + 0.3) + np.random.normal(0.0, 0.1, size=len(t))
+
+       tau = find_timeshift(sig1, sig2, 100, guess=0.2)
+
+       sync_error(tau, sig1, sig2, t, plot=True)
+
     '''
     # make sure tau isn't too large
     if np.abs(tau) >= time[-1]:
@@ -66,7 +85,7 @@ def sync_error(tau, signal1, signal2, time, plot=False):
         sig2OnInterval = signal2[np.nonzero(shiftedTime >= intervalTime[0])]
 
     if plot is True:
-        fig, axes = plt.subplots(2, 1)
+        fig, axes = plt.subplots(2, 1, layout='constrained')
         axes[0].plot(time, signal1, time, signal2)
         axes[0].legend(('Signal 1', 'Signal 2'))
         axes[0].set_title("Before shifting.")
@@ -83,8 +102,8 @@ def sync_error(tau, signal1, signal2, time, plot=False):
 
 
 def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
-    '''Returns the timeshift, tau, of the second signal relative to the
-    first signal.
+    '''Returns the timeshift, tau, of the second signal relative to the first
+    signal.
 
     Parameters
     ----------
@@ -104,6 +123,29 @@ def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
     -------
     tau : float
         The timeshift between the two signals.
+
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import find_timeshift
+
+       t = np.linspace(0.0, 4.0, num=401)
+       sig1 = np.sin(2.0*t) + np.random.normal(0.0, 0.1, size=len(t))
+       sig2 = np.sin(2.0*t + 0.3) + np.random.normal(0.0, 0.1, size=len(t))
+
+       tau = find_timeshift(sig1, sig2, 100, guess=0.2)
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.plot(t, sig1, t, sig2)
+       ax.legend(['Signal 1', 'Signal 2'])
+       ax.set_title('Shift: {:1.3f} s'.format(tau))
+       ax.set_xlabel('Time [s]')
 
     '''
     # raise an error if the signals are not the same length
@@ -139,18 +181,15 @@ def find_timeshift(signal1, signal2, sample_rate, guess=None, plot=False):
     else:
         tau0 = guess
 
-    print("The minimun of the error landscape is {}.".format(tau0))
+    res = fmin(sync_error, tau0, args=(signal1, signal2, time))
 
-    tau, fval = fmin(sync_error, tau0, args=(signal1, signal2, time),
-                     full_output=True, disp=True)[0:2]
-
-    return tau
+    return res[0]
 
 
 def truncate_data(tau, signal1, signal2, sample_rate):
     '''Returns the truncated vectors with respect to the time shift tau. It
-    assume you've found the time shift between two signals with
-    find_time_shift or something similar.
+    assume you've found the time shift between two signals with find_time_shift
+    or something similar.
 
     Parameters
     ----------
@@ -169,6 +208,31 @@ def truncate_data(tau, signal1, signal2, sample_rate):
         The truncated time series.
     truncated2 : ndarray, shape(m, )
         The truncated time series.
+
+    Examples
+    --------
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from dtk.process import find_timeshift, truncate_data
+
+       t = np.linspace(0.0, 4.0, num=401)
+       sig1 = np.sin(2.0*t) + np.random.normal(0.0, 0.1, size=len(t))
+       sig2 = np.sin(2.0*t + 0.3) + np.random.normal(0.0, 0.1, size=len(t))
+
+       tau = find_timeshift(sig1, sig2, 100, guess=0.2)
+
+       sigtr1, sigtr2 = truncate_data(tau, sig1, sig2, 100)
+
+       fig, ax = plt.subplots(layout='constrained')
+       ax.plot(t[:len(sigtr1)], sigtr1, t[:len(sigtr2)], sigtr2)
+       ax.legend(['Signal 1', 'Signal 2'])
+       ax.set_title('Shift: {:1.3f} s'.format(tau))
+       ax.set_xlabel('Time [s]')
 
     '''
     t = time_vector(len(signal1), sample_rate)
