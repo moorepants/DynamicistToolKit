@@ -690,7 +690,7 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
             G = np.dot(np.dot(C, sImA_inv), B) + D
             magnitude[i] = 20.0*np.log10(np.abs(G))
             phase[i] = np.angle(G)
-        phase = 180.0/np.p *np.unwrap(phase)
+        phase = 180.0/np.pi*np.unwrap(phase)
 
     if color is None:
         ax[0].semilogx(frequency, magnitude, label=label)
