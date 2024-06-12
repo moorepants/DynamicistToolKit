@@ -51,6 +51,7 @@ def benchmark_state_space_vs_speed(M, C1, K0, K2, speeds=None, v0=0.,
 
     Notes
     -----
+
     The second order equations of motion take this form:
 
     M * q'' + v * C1 * q' + [g * K0 + v**2 * K2] * q' = f
@@ -295,6 +296,16 @@ def front_contact(q1, q2, q3, q4, q7, d1, d2, d3, rr, rf, guess=None):
         The location of the front wheel contact point with respect to the
         inertial origin along the 2 axis.
 
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from dtk.bicycle import front_contact
+    >>> front_contact(0.0, 0.0,
+    ...               np.deg2rad(5.0), np.deg2rad(5.0), np.deg2rad(5.0),
+    ...               0.6, 0.3, 0.03, 0.3, 0.3)
+    (0.6987001194987257, 0.05266663513621053)
+
     """
 
     q5 = pitch_from_roll_and_steer(q4, q7, rf, rr, d1, d2, d3, guess=guess)
@@ -396,6 +407,89 @@ def moore_to_basu(moore, rr, lam):
     -------
     basu : dictionary
         A dictionary containing the coordinates, speeds and accelerations.
+
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import basu_table_one_input
+    >>> from dtk.bicycle import basu_to_moore_input, moore_to_basu
+    >>> rr, lam = 0.3, np.pi/10
+    >>> basu = basu_table_one_input()
+    >>> pprint(basu)
+    {'betaf': 0.0,
+     'betafd': 8.0133620584155,
+     'betar': 0.0,
+     'betard': 8.912989661489,
+     'phi': 3.1257073014894,
+     'phid': -0.0119185528069,
+     'psi': 0.9501292851472,
+     'psid': 0.6068425835418,
+     'psif': 0.2311385135743,
+     'psifd': 0.4859824687093,
+     'theta': 0.0,
+     'thetad': 0.7830033527065,
+     'x': 0.0,
+     'xd': -2.8069345714545,
+     'y': 0.0,
+     'yd': -0.1480982396001,
+     'z': 0.2440472102925,
+     'zd': 0.1058778746261}
+    >>> moore = basu_to_moore_input(basu, rr, lam)
+    >>> pprint(moore)
+    {'q1': -0.0,
+     'q2': -0.17447337661787718,
+     'q3': -0.0,
+     'q4': 0.6206670416476966,
+     'q5': 0.3300446174593725,
+     'q6': -0.0,
+     'q7': -0.2311385135743,
+     'q8': -0.0,
+     'u1': 2.6703213326046784,
+     'u2': -2.453592884421596e-14,
+     'u3': -0.7830033527065,
+     'u4': -0.6068425835418,
+     'u5': 0.0119185528069,
+     'u6': -8.912989661489,
+     'u7': -0.4859824687093,
+     'u8': -8.0133620584155}
+    >>> moore['u1p'] = 1.0
+    >>> moore['u2p'] = 2.0
+    >>> moore['u3p'] = 3.0
+    >>> moore['u4p'] = 4.0
+    >>> moore['u5p'] = 5.0
+    >>> moore['u6p'] = 6.0
+    >>> moore['u7p'] = 7.0
+    >>> moore['u8p'] = 8.0
+    >>> pprint(moore_to_basu(moore, rr, lam))
+    {'betaf': 0.0,
+     'betafd': 8.0133620584155,
+     'betafdd': -8.0,
+     'betar': 0.0,
+     'betard': 8.912989661489,
+     'betardd': -6.0,
+     'phi': 3.1257073014894,
+     'phid': -0.0119185528069,
+     'phidd': -5.0,
+     'psi': 0.9501292851472,
+     'psid': 0.6068425835418,
+     'psidd': -4.0,
+     'psif': 0.2311385135743,
+     'psifd': 0.4859824687093,
+     'psifdd': -7.0,
+     'theta': 0.0,
+     'thetad': 0.7830033527065,
+     'thetadd': -3.0,
+     'x': 0.0,
+     'xd': -2.8069345714545,
+     'xdd': -0.24465703387278925,
+     'y': 0.0,
+     'yd': -0.14809823960010002,
+     'ydd': 2.804969014148545,
+     'z': 0.2440472102925096,
+     'zd': 0.10587787462605407,
+     'zdd': -0.7877658248084111}
 
     """
 
@@ -620,6 +714,31 @@ def basu_to_moore_input(basu, rr, lam):
         A dictionary with the coordinates, q's, and speeds, u's, for the Moore
         formulation.
 
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from pprint import pprint
+    >>> from dtk.bicycle import basu_table_one_input, basu_to_moore_input
+    >>> vars = basu_table_one_input()
+    >>> pprint(basu_to_moore_input(vars, 0.3, np.pi/10))
+    {'q1': -0.0,
+     'q2': -0.17447337661787718,
+     'q3': -0.0,
+     'q4': 0.6206670416476966,
+     'q5': 0.3300446174593725,
+     'q6': -0.0,
+     'q7': -0.2311385135743,
+     'q8': -0.0,
+     'u1': 2.6703213326046784,
+     'u2': -2.453592884421596e-14,
+     'u3': -0.7830033527065,
+     'u4': -0.6068425835418,
+     'u5': 0.0119185528069,
+     'u6': -8.912989661489,
+     'u7': -0.4859824687093,
+     'u8': -8.0133620584155}
+
     """
 
     moore = {}
@@ -690,8 +809,12 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
 
     >>> import numpy as np
     >>> from dtk.bicycle import pitch_from_roll_and_steer
-    >>> np.rad2deg(pitch_from_roll_and_steer(np.deg2rad(10.0), np.deg2rad(-5.0), 0.3, 0.3, 0.6, 0.3, 0.02))
-    25.949714697571242
+    >>> from dtk.bicycle import benchmark_parameters, benchmark_to_moore
+    >>> steer, roll = np.deg2rad(10.0), np.deg2rad(-5.0)
+    >>> p = benchmark_to_moore(benchmark_parameters())
+    >>> np.rad2deg(pitch_from_roll_and_steer(steer, roll, p['rf'], p['rr'],
+    ...                                      p['d1'], p['d2'], p['d3']))
+    18.062710178550127
 
     """
     def pitch_constraint(q5, q4, q7, rF, rR, d1, d2, d3):
@@ -983,6 +1106,23 @@ def sort_modes(evals, evecs):
     general eigenvalues for the bike model (e.g. there isn't always a distinct
     weave, capsize and caster). Some type of check unsing the derivative of the
     curves could make it more robust.
+
+    Examples
+    --------
+
+    >>> from dtk.bicycle import (benchmark_matrices,
+    ...                          benchmark_state_space_vs_speed, sort_modes)
+    >>> from dtk.control import eig_of_series
+    >>> M, C1, K0, K2 = benchmark_matrices()
+    >>> _, A, _ = benchmark_state_space_vs_speed(M, C1, K0, K2)
+    >>> weave, capsize, caster = sort_modes(*eig_of_series(A))
+    >>> weave['evals'][0:2]
+    array([[-5.53094372+0.j, -3.13164325+0.j],
+           [-5.8702391 +0.j, -3.11751166+0.j]])
+    >>> capsize['evals'][0:2]
+    array([3.13164325+0.j, 3.16834073+0.j])
+    >>> caster['evals'][0:2]
+    array([5.53094372+0.j, 5.16831044+0.j])
 
     '''
     evalsorg = np.zeros_like(evals)
