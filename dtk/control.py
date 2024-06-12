@@ -81,6 +81,7 @@ def plot_phasor(eigenvalues, eigenvectors, components=None, compNames=None,
 
     return figs
 
+
 def sort_modes(evals, evecs):
     """Sort a series of eigenvalues and eigenvectors into modes.
 
@@ -121,6 +122,7 @@ def sort_modes(evals, evecs):
             # keep track of the indices we've used
             used.append(np.argmin(dist))
     return evalsorg, evecsorg
+
 
 def eig_of_series(matrices):
     """Returns the eigenvalues and eigenvectors for a series of matrices.
@@ -349,9 +351,17 @@ class Bode(object):
        A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
        C, D = np.eye(4), np.zeros((4, 2))
 
-       sys = StateSpace(A, B, C, D)
+       states = ['Roll Angle', 'Steer Angle', 'Roll Rate', 'Steer Rate']
+       inputs = ['Roll Torque', 'Steer Torque']
 
-       freqs = np.logspace(0.0, 10.0)
+       sys = StateSpace(A, B, C, D,
+           name='Carvallo-Whipple Bicycle',
+           stateNames=states,
+           inputNames=inputs,
+           outputNames=states,
+       )
+
+       freqs = np.logspace(0.0, 3.0, num=400)
 
        bode = Bode(freqs, sys)
 
@@ -409,7 +419,7 @@ class Bode(object):
                 pass
 
             self.plot_system(system, self.magnitudes[i], self.phases[i],
-                    **kwargs)
+                             **kwargs)
 
         #for f in self.figs:
             #leg = f.phaseAx.legend(loc=4)
@@ -545,6 +555,7 @@ class Bode(object):
 
                 plotNum += 1
 
+
 class StateSpace(object):
     """A linear time invariant system described by its state space."""
     def __init__(self, A, B, C, D, **kwargs):
@@ -636,26 +647,30 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
 
        speed = 4.6  # m/s
        A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
-       C, D = np.eye(4), np.zeros((4, 2))
+       C, D = np.array([1.0, 0.0, 0.0, 0.0]), np.zeros(1)
 
-       freqs = np.logspace(0.0, 10.0)
+       freqs = np.logspace(0.0, 3.0, num=301)
 
-       bode(A, B, C, D, freqs)
+       bode((A, B[:, 0].reshape(4, 1), C, D), freqs)
+
+    .. plot::
+       :context: close-figs
+       :include-source:
+
+       bode((A, B[:, 0].reshape(4, 1), C, D), freqs,
+           label='Nice Curve',
+           title='My Bode Plot',
+           color='black',
+       )
 
     """
     if fig is None:
-        fig = plt.Figure()
+        fig, ax = plt.subplots(2, 1, sharex=True, layout="constrained")
+    else:
+        ax = fig.axes
 
-    yprops = dict(rotation=90, horizontalalignment='right',
-                  verticalalignment='center', x=-0.01)
-
-    axprops = {}
-    # axes [left, bottom, width, height]
-    fig.ax1 = fig.add_axes([.125, .525, .825, .275], **axprops)
-    fig.ax2 = fig.add_axes([.125, .2, .825, .275], **axprops)
-
-    magnitude = np.zeros(len(frequency))
-    phase = np.zeros(len(frequency))
+    magnitude = np.zeros_like(frequency)
+    phase = np.zeros_like(frequency)
 
     try:
         A, B, C, D = system
@@ -663,44 +678,41 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
         num, den = system
         n = np.poly1d(num)
         d = np.poly1d(den)
-        Gjw = n(1j * frequency) / d(1j * frequency)
+        Gjw = n(1j*frequency)/d(1j*frequency)
         magnitude = 20.*np.log10(np.abs(Gjw))
         phase = 180./np.pi*np.unwrap(np.arctan2(np.imag(Gjw), np.real(Gjw)))
     else:
-        I = np.eye(A.shape[0])
+        identity = np.eye(A.shape[0])
         for i, f in enumerate(frequency):
             # this inverse is expensive, can this be reformed to be solved with
             # a faster method?
-            sImA_inv = np.linalg.inv(1j * f * I - A)
+            sImA_inv = np.linalg.inv(1j*f*identity - A)
             G = np.dot(np.dot(C, sImA_inv), B) + D
-            magnitude[i] = 20. * np.log10(np.abs(G))
+            magnitude[i] = 20.0*np.log10(np.abs(G))
             phase[i] = np.angle(G)
-        phase = 180. / np.pi * np.unwrap(phase)
+        phase = 180.0/np.p *np.unwrap(phase)
 
-    fig.ax1.semilogx(frequency, magnitude, label=label)
+    if color is None:
+        ax[0].semilogx(frequency, magnitude, label=label)
+    else:
+        ax[0].semilogx(frequency, magnitude, label=label, color=color)
 
     if title:
-        fig.ax1.set_title(title)
+        ax[0].set_title(title)
 
-    fig.ax2.semilogx(frequency, phase, label=label)
+    if color is None:
+        ax[1].semilogx(frequency, phase, label=label)
+    else:
+        ax[1].semilogx(frequency, phase, label=label, color=color)
 
-    fig.axprops['sharex'] = fig.axprops['sharey'] = fig.ax1
-    fig.ax1.grid()
-    fig.ax2.grid()
+    ax[0].grid()
+    ax[1].grid()
 
-    plt.setp(fig.ax1.get_xticklabels(), visible=False)
-    plt.setp(fig.ax1.get_yticklabels(), visible=True)
-    plt.setp(fig.ax2.get_yticklabels(), visible=True)
-    fig.ax1.set_ylabel('Magnitude [dB]', **yprops)
-    fig.ax2.set_ylabel('Phase [deg]', **yprops)
-    fig.ax2.set_xlabel('Frequency [rad/s]')
+    ax[0].set_ylabel('Magnitude [dB]')
+    ax[1].set_ylabel('Phase [deg]')
+    ax[1].set_xlabel('Frequency [rad/s]')
 
     if label:
-        fig.ax1.legend()
-
-    if color:
-        print(color)
-        plt.setp(fig.ax1.lines, color=color)
-        plt.setp(fig.ax2.lines, color=color)
+        ax[0].legend()
 
     return magnitude, phase, fig
