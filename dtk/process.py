@@ -307,7 +307,7 @@ def coefficient_of_determination(measured, predicted):
        The coefficient of determination.
 
     Examples
-    -------
+    --------
 
     >>> import numpy as np
     >>> from dtk.process import coefficient_of_determination
