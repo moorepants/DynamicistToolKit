@@ -97,10 +97,10 @@ You can build the documentation if you have Sphinx and numpydoc::
    $ make html
    $ firefox _build/html/index.html
 
-To locally build on Windows, open an Anaconda prompt (the base environment has sphinx and numpydoc installed), navigate to the 
-DynamicistToolKit directory and execute::
+To locally build on Windows, open an Anaconda prompt (the base environment has
+sphinx and numpydoc installed), navigate to the DynamicistToolKit directory and
+execute::
 
    $ cd docs
    $ make.bat html
    $ start "" ".\_build\html\index.html"
-   

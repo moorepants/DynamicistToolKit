@@ -762,7 +762,7 @@ def power_spectrum(data, sample_rate, remove_dc_component=False):
 
 
 def cumulative_power_spectrum(data, sample_rate, relative=True,
-                     remove_dc_component=False):
+                              remove_dc_component=False):
     r"""
     Return the cumulative power spectrum of a signal::
 
@@ -771,7 +771,7 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
     Notes
     -----
 
-    - ``cumulative_power_spectrum()`` performs zero-padding. Parseval's theorem 
+    - ``cumulative_power_spectrum()`` performs zero-padding. Parseval's theorem
       is satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
@@ -841,13 +841,12 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("cumulative avg. power")
-       plt.suptitle((f"Sample rate: {f_s} Hz, Signal period: {T} s," 
+       plt.suptitle((f"Sample rate: {f_s} Hz, Signal period: {T} s,"
                     " relative=True"))
 
     """
-    frequency, power = power_spectrum(data,
-                                    sample_rate,
-                                    remove_dc_component=remove_dc_component)
+    frequency, power = power_spectrum(data, sample_rate,
+                                      remove_dc_component=remove_dc_component)
 
     cumulative_power = np.cumsum(power)
 

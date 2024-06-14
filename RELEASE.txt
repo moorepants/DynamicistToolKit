@@ -6,11 +6,6 @@ git tag -a vX.X.X -m "Version X.X.X"
 git push --tags
 Update to dev version number.
 Checkout tag
-python setup.py register sdist upload
-Copy the last conda recipe dir for the new version.
-Edit the meta.yaml file.
-# NOTE : You have to run the Python versions separately. Conda 2 broke this functionality.
-conda build --python "2.7" --python "3.3" --python "3.4" --python "3.5" --python "3.6" conda/dynamicisttoolkit-x.x.x
-conda convert -p all <each tar ball> -o /tmp/conda-builds/
-find /tmp/conda-builds -name dyn*.bz2 -exec anaconda upload --force -u moorepants {} \;
+python setup.py sdist
+twine upload dist/DynamicistToolKitXXX.tar.gz
 Make sure the latest version is available on readthedocs.org
