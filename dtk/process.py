@@ -470,9 +470,9 @@ def curve_area_stats(x, y):
                          0.5*area,
                          0.75*area,
                          0.98*area])  # shape (5,m)
-    CumArea = cumtrapz(y.T, x=x.T)  # shape(m,n)
+    cummlative_area = cumtrapz(y.T, x=x.T)  # shape(m,n)
     xstats = {'2p': [], 'lq': [], 'median': [], 'uq': [], '98p': []}
-    for j, curve in enumerate(CumArea):
+    for j, curve in enumerate(cummlative_area):
         flags = [False for flag in range(5)]
         for i, val in enumerate(curve):
             if val > percents[0][j] and not flags[0]:
