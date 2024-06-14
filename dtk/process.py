@@ -654,7 +654,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     return frequency, amplitude
 
 
-def pow_spectrum(data, sample_rate, remove_dc_component=False):
+def power_spectrum(data, sample_rate, remove_dc_component=False):
     """
     Return the power spectrum of a signal::
 
@@ -662,7 +662,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
 
     Notes
     -----
-    - pow_spectrum() performs zero-padding. Parseval's
+    - power_spectrum() performs zero-padding. Parseval's
       theorem is satisfied for the padded input signal. Provide input signals
       with 2^p samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
@@ -706,7 +706,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from dtk.process import pow_spectrum
+       from dtk.process import power_spectrum
 
        # sampling parameters
        N = 64   # signal period
@@ -723,7 +723,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        x[0:int(tau*f_s)] = A
 
        # power spectrum
-       freq, amp = pow_spectrum(x, f_s)
+       freq, amp = power_spectrum(x, f_s)
 
        # check Parseval's theorem
        energy_time = np.mean(np.abs(x)**2)
@@ -761,7 +761,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     return frequency, power
 
 
-def cumulative_pow_spectrum(data, sample_rate, relative=True,
+def cumulative_power_spectrum(data, sample_rate, relative=True,
                      remove_dc_component=False):
     r"""
     Return the cumulative power spectrum of a signal::
@@ -771,7 +771,7 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
     Notes
     -----
 
-    - ``cumulative_pow_spectrum()`` performs zero-padding. Parseval's theorem 
+    - ``cumulative_power_spectrum()`` performs zero-padding. Parseval's theorem 
       is satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
@@ -814,7 +814,7 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from dtk.process import cumulative_pow_spectrum
+       from dtk.process import cumulative_power_spectrum
 
        # sampling parameters
        N = 64  # signal period
@@ -831,7 +831,7 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
        x[0:int(tau*f_s)] = A
 
        # power spectrum
-       freq, amp = cumulative_pow_spectrum(x, f_s)
+       freq, amp = cumulative_power_spectrum(x, f_s)
 
        # plot
        fig, ax = plt.subplots(2,1, layout="constrained")
@@ -845,7 +845,7 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
                     relative=True")
 
     """
-    frequency, power = pow_spectrum(data,
+    frequency, power = power_spectrum(data,
                                     sample_rate,
                                     remove_dc_component=remove_dc_component)
 
