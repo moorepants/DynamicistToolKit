@@ -552,12 +552,12 @@ class TestSpectralAnalysis:
 
         # Absolute case:
 
-        # call cummulative power spectrum
+        # call cumulative power spectrum
         freq, amp = process.cumulative_pow_spectrum(self.x, 
                                                     self.f_s, 
                                                     relative=False)
 
-        # build expected spectrum. This is the cummulative version of the
+        # build expected spectrum. This is the cumulative version of the
         # spectrum used in test_pow_spectrum()
         amp_exp = np.zeros_like(amp)
         for fk, a in zip(self.frequencies_k, self.amplitudes):
@@ -574,7 +574,7 @@ class TestSpectralAnalysis:
 
         # Relative case:
 
-        # call cummulative power spectrum with relative = True (default)
+        # call cumulative power spectrum with relative = True (default)
         freq, amp = process.cumulative_pow_spectrum(self.x, self.f_s)
 
         # normalize the  spectrum.

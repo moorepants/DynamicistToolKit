@@ -762,7 +762,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
 def cumulative_pow_spectrum(data, sample_rate, relative=True,
                      remove_dc_component=False):
     r"""
-    Return the cummulative power spectrum of a signal::
+    Return the cumulative power spectrum of a signal::
 
        S(f) = \sum_{k=0}^f |X(k)|^2
 
@@ -798,12 +798,12 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
     frequency : ndarray, shape (p,)
         The frequencies where p is a power of 2 close to m.
     cumulative_power : ndarray, shape (p,n)
-        The cummulative power up to each frequency.
+        The cumulative power up to each frequency.
 
     Examples
     --------
 
-    Create the cummulative power spectrum of a rect pulse and plot in time and
+    Create the cumulative power spectrum of a rect pulse and plot in time and
     frequency domain.
 
     .. plot::
@@ -838,7 +838,7 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
        ax[0].set_ylabel("$x(t)$")
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
-       ax[1].set_ylabel("Cummulative avg. power")
+       ax[1].set_ylabel("cumulative avg. power")
        plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, relative=True")
 
     """
