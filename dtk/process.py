@@ -841,8 +841,8 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("cumulative avg. power")
-       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, 
-                    relative=True")
+       plt.suptitle((f"Sample rate: {f_s} Hz, Signal period: {T} s," 
+                    " relative=True"))
 
     """
     frequency, power = power_spectrum(data,
