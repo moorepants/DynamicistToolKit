@@ -12,6 +12,8 @@ Contents:
 
 .. include:: ../README.rst
 
+.. include:: ../CONTRIBUTING.rst
+
 .. include:: ../CHANGELOG.rst
 
 Indices and tables

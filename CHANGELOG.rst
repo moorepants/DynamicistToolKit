@@ -2,6 +2,27 @@
 Release Notes
 =============
 
+0.6.0
+=====
+
+- Drop support for Python <3.8 and bumped dependency versions to match Ubuntu
+  22.04. [PR #40]
+- Changed the correction factor in ``butterworth`` to a digital filter
+  correction instead of the prior used analog factor (backwards incompatible
+  output). [PR #43]
+- Add new functions ``pow_spectrum`` and ``cum_pow_spectrum``. [PR #45]
+- Switched testing framework from nose (fails on Python 3.12) to pytest. [PR
+  #46]
+- Display the control module functions in the Sphinx documentation. [PR #47]
+- Removed numpy.matrix in favor of numpy.array, which may lead to possible
+  backwards incompatible outputs.
+- Added examples to all functions with doctests and improved docstring quality.
+- Repaired some functions to actually produce what they were designed to
+  produce with the new dependencies (there was some rather archaic plotting
+  code mostly).
+- Switched CI from Travis to Github Actions.
+- Removed old Vagrant based installation options.
+
 0.5.3
 =====
 
