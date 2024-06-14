@@ -446,9 +446,9 @@ def test_time_vector():
 
 class TestSpectralAnalysis:
     """
-    Test the functions freq_spectrum(), pow_spectrum() and cumulative_pow_spectrum()
-    based on a common test signal.
-
+    Test the functions freq_spectrum(), pow_spectrum() and 
+    cumulative_pow_spectrum() based on a common test signal.
+    
     """
 
     def setup_method(self):

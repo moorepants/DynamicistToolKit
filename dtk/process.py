@@ -769,8 +769,8 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
     Notes
     -----
 
-    - ``cumulative_pow_spectrum()`` performs zero-padding. Parseval's theorem is
-      satisfied for the padded input signal. Provide input signals with 2^p
+    - ``cumulative_pow_spectrum()`` performs zero-padding. Parseval's theorem 
+      is satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
@@ -839,7 +839,8 @@ def cumulative_pow_spectrum(data, sample_rate, relative=True,
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("cumulative avg. power")
-       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, relative=True")
+       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, 
+                    relative=True")
 
     """
     frequency, power = pow_spectrum(data,
