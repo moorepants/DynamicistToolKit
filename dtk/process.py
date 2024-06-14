@@ -511,9 +511,11 @@ def curve_area_stats(x, y):
                          0.5*area,
                          0.75*area,
                          0.98*area])  # shape (5,m)
-    CumArea = cumulative_trapezoid(y.T, x=x.T)  # shape(m,n)
+
+    cummlative_area = cumulative_trapezoid(y.T, x=x.T)  # shape(m,n)
+
     xstats = {'2p': [], 'lq': [], 'median': [], 'uq': [], '98p': []}
-    for j, curve in enumerate(CumArea):
+    for j, curve in enumerate(cummlative_area):
         flags = [False for flag in range(5)]
         for i, val in enumerate(curve):
             if val > percents[0][j] and not flags[0]:
@@ -652,7 +654,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     return frequency, amplitude
 
 
-def pow_spectrum(data, sample_rate, remove_dc_component=False):
+def power_spectrum(data, sample_rate, remove_dc_component=False):
     """
     Return the power spectrum of a signal::
 
@@ -660,7 +662,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
 
     Notes
     -----
-    - pow_spectrum() performs zero-padding. Parseval's
+    - power_spectrum() performs zero-padding. Parseval's
       theorem is satisfied for the padded input signal. Provide input signals
       with 2^p samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
@@ -704,7 +706,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from dtk.process import pow_spectrum
+       from dtk.process import power_spectrum
 
        # sampling parameters
        N = 64   # signal period
@@ -721,7 +723,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
        x[0:int(tau*f_s)] = A
 
        # power spectrum
-       freq, amp = pow_spectrum(x, f_s)
+       freq, amp = power_spectrum(x, f_s)
 
        # check Parseval's theorem
        energy_time = np.mean(np.abs(x)**2)
@@ -759,18 +761,18 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     return frequency, power
 
 
-def cum_pow_spectrum(data, sample_rate, relative=True,
+def cumulative_power_spectrum(data, sample_rate, relative=True,
                      remove_dc_component=False):
     r"""
-    Return the cummulative power spectrum of a signal::
+    Return the cumulative power spectrum of a signal::
 
        S(f) = \sum_{k=0}^f |X(k)|^2
 
     Notes
     -----
 
-    - ``cum_pow_spectrum()`` performs zero-padding. Parseval's theorem is
-      satisfied for the padded input signal. Provide input signals with 2^p
+    - ``cumulative_power_spectrum()`` performs zero-padding. Parseval's theorem 
+      is satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
@@ -797,13 +799,13 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
     -------
     frequency : ndarray, shape (p,)
         The frequencies where p is a power of 2 close to m.
-    cum_power : ndarray, shape (p,n)
-        The cummulative power up to each frequency.
+    cumulative_power : ndarray, shape (p,n)
+        The cumulative power up to each frequency.
 
     Examples
     --------
 
-    Create the cummulative power spectrum of a rect pulse and plot in time and
+    Create the cumulative power spectrum of a rect pulse and plot in time and
     frequency domain.
 
     .. plot::
@@ -812,7 +814,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from dtk.process import cum_pow_spectrum
+       from dtk.process import cumulative_power_spectrum
 
        # sampling parameters
        N = 64  # signal period
@@ -829,7 +831,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
        x[0:int(tau*f_s)] = A
 
        # power spectrum
-       freq, amp = cum_pow_spectrum(x, f_s)
+       freq, amp = cumulative_power_spectrum(x, f_s)
 
        # plot
        fig, ax = plt.subplots(2,1, layout="constrained")
@@ -838,21 +840,22 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
        ax[0].set_ylabel("$x(t)$")
        ax[1].stem(freq,amp)
        ax[1].set_xlabel("$f$ in Hz")
-       ax[1].set_ylabel("Cummulative avg. power")
-       plt.suptitle(f"Sample rate: {f_s} Hz, Signal period: {T} s, relative=True")
+       ax[1].set_ylabel("cumulative avg. power")
+       plt.suptitle((f"Sample rate: {f_s} Hz, Signal period: {T} s," 
+                    " relative=True"))
 
     """
-    frequency, power = pow_spectrum(data,
+    frequency, power = power_spectrum(data,
                                     sample_rate,
                                     remove_dc_component=remove_dc_component)
 
-    cum_power = np.cumsum(power)
+    cumulative_power = np.cumsum(power)
 
     # if requested, normalize to the total power.
     if relative:
-        cum_power = cum_power / cum_power[-1]
+        cumulative_power = cumulative_power / cumulative_power[-1]
 
-    return frequency, cum_power
+    return frequency, cumulative_power
 
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
