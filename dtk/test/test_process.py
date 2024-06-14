@@ -446,7 +446,7 @@ def test_time_vector():
 
 class TestSpectralAnalysis:
     """
-    Test the functions freq_spectrum(), pow_spectrum() and cum_pow_spectrum()
+    Test the functions freq_spectrum(), pow_spectrum() and cumulative_pow_spectrum()
     based on a common test signal.
 
     """
@@ -548,12 +548,14 @@ class TestSpectralAnalysis:
                "theorem!")
         assert np.allclose(avgpwr_time, avgpwr_freq), msg
 
-    def test_cum_pow_spectrum(self):
+    def test_cumulative_pow_spectrum(self):
 
         # Absolute case:
 
         # call cummulative power spectrum
-        freq, amp = process.cum_pow_spectrum(self.x, self.f_s, relative=False)
+        freq, amp = process.cumulative_pow_spectrum(self.x, 
+                                                    self.f_s, 
+                                                    relative=False)
 
         # build expected spectrum. This is the cummulative version of the
         # spectrum used in test_pow_spectrum()
@@ -573,7 +575,7 @@ class TestSpectralAnalysis:
         # Relative case:
 
         # call cummulative power spectrum with relative = True (default)
-        freq, amp = process.cum_pow_spectrum(self.x, self.f_s)
+        freq, amp = process.cumulative_pow_spectrum(self.x, self.f_s)
 
         # normalize the  spectrum.
         amp_exp = amp_exp / amp_exp[-1]

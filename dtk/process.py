@@ -759,7 +759,7 @@ def pow_spectrum(data, sample_rate, remove_dc_component=False):
     return frequency, power
 
 
-def cum_pow_spectrum(data, sample_rate, relative=True,
+def cumulative_pow_spectrum(data, sample_rate, relative=True,
                      remove_dc_component=False):
     r"""
     Return the cummulative power spectrum of a signal::
@@ -769,7 +769,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
     Notes
     -----
 
-    - ``cum_pow_spectrum()`` performs zero-padding. Parseval's theorem is
+    - ``cumulative_pow_spectrum()`` performs zero-padding. Parseval's theorem is
       satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
@@ -797,7 +797,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
     -------
     frequency : ndarray, shape (p,)
         The frequencies where p is a power of 2 close to m.
-    cum_power : ndarray, shape (p,n)
+    cumulative_power : ndarray, shape (p,n)
         The cummulative power up to each frequency.
 
     Examples
@@ -812,7 +812,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from dtk.process import cum_pow_spectrum
+       from dtk.process import cumulative_pow_spectrum
 
        # sampling parameters
        N = 64  # signal period
@@ -829,7 +829,7 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
        x[0:int(tau*f_s)] = A
 
        # power spectrum
-       freq, amp = cum_pow_spectrum(x, f_s)
+       freq, amp = cumulative_pow_spectrum(x, f_s)
 
        # plot
        fig, ax = plt.subplots(2,1, layout="constrained")
@@ -846,13 +846,13 @@ def cum_pow_spectrum(data, sample_rate, relative=True,
                                     sample_rate,
                                     remove_dc_component=remove_dc_component)
 
-    cum_power = np.cumsum(power)
+    cumulative_power = np.cumsum(power)
 
     # if requested, normalize to the total power.
     if relative:
-        cum_power = cum_power / cum_power[-1]
+        cumulative_power = cumulative_power / cumulative_power[-1]
 
-    return frequency, cum_power
+    return frequency, cumulative_power
 
 
 def butterworth(data, cutoff, samplerate, order=2, axis=-1, btype='lowpass',
