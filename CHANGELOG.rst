@@ -6,14 +6,15 @@ Release Notes
 =====
 
 - Drop support for Python <3.8 and bumped dependency versions to match Ubuntu
-  22.04. [PR #40]
+  22.04. [PR `#40`_]
 - Changed the correction factor in ``butterworth`` to a digital filter
   correction instead of the prior used analog factor (backwards incompatible
-  output). [PR #43]
-- Add new functions ``pow_spectrum`` and ``cum_pow_spectrum``. [PR #45]
+  output). [PR `#43`_]
+- Add new functions ``pow_spectrum`` and ``cumulative_power_spectrum``. [PR
+  `#45`_]
 - Switched testing framework from nose (fails on Python 3.12) to pytest. [PR
-  #46]
-- Display the control module functions in the Sphinx documentation. [PR #47]
+  `#46`_]
+- Display the control module functions in the Sphinx documentation. [PR `#47`_]
 - Removed numpy.matrix in favor of numpy.array, which may lead to possible
   backwards incompatible outputs.
 - Added examples to all functions with doctests and improved docstring quality.
@@ -22,6 +23,11 @@ Release Notes
   code mostly).
 - Switched CI from Travis to Github Actions.
 - Removed old Vagrant based installation options.
+
+.. _#43: https://github.com/moorepants/DynamicistToolKit/pull/43
+.. _#45: https://github.com/moorepants/DynamicistToolKit/pull/45
+.. _#46: https://github.com/moorepants/DynamicistToolKit/pull/46
+.. _#47: https://github.com/moorepants/DynamicistToolKit/pull/47
 
 0.5.3
 =====
