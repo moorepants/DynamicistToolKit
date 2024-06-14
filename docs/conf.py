@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DynamicistToolKit'
-copyright = u'2011-2024, Jason K. Moore'
+copyright = u'2011-2024, DynamicistToolKit Authors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
