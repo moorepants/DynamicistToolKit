@@ -1011,6 +1011,9 @@ def normalize(sig, hasNans=False):
     normSig : ndarray, shape(n,)
         The signal normalized with respect to the maximum value.
 
+    Examples
+    --------
+
     >>> import numpy as np
     >>> from dtk.process import normalize
     >>> t = np.linspace(0.0, 2*np.pi, num=11)
