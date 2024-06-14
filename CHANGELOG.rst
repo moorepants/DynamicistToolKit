@@ -24,6 +24,7 @@ Release Notes
 - Switched CI from Travis to Github Actions.
 - Removed old Vagrant based installation options.
 
+.. _#40: https://github.com/moorepants/DynamicistToolKit/pull/40
 .. _#43: https://github.com/moorepants/DynamicistToolKit/pull/43
 .. _#45: https://github.com/moorepants/DynamicistToolKit/pull/45
 .. _#46: https://github.com/moorepants/DynamicistToolKit/pull/46
