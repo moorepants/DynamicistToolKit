@@ -1031,7 +1031,7 @@ def normalize(sig, hasNans=False):
     else:
         normSig = sig / np.max(sig)
 
-    return float(normSig)
+    return normSig
 
 
 def derivative(x, y, method='forward', padding=None):
