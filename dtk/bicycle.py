@@ -812,8 +812,9 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     >>> from dtk.bicycle import benchmark_parameters, benchmark_to_moore
     >>> steer, roll = np.deg2rad(10.0), np.deg2rad(-5.0)
     >>> p = benchmark_to_moore(benchmark_parameters())
-    >>> np.rad2deg(pitch_from_roll_and_steer(steer, roll, p['rf'], p['rr'],
-    ...                                      p['d1'], p['d2'], p['d3']))
+    >>> float(np.rad2deg(pitch_from_roll_and_steer(steer, roll,
+    ...                                            p['rf'], p['rr'],
+    ...                                            p['d1'], p['d2'], p['d3'])))
     18.062710178550127
 
     """
@@ -1024,7 +1025,7 @@ def lambda_from_abc(rF, rR, a, b, c):
 
     >>> from dtk.bicycle import lambda_from_abc
     >>> import numpy as np
-    >>> np.rad2deg(lambda_from_abc(0.31, 0.29, 1.0, 0.1, 0.5))
+    >>> float(np.rad2deg(lambda_from_abc(0.31, 0.29, 1.0, 0.1, 0.5)))
     25.392364580504058
 
     '''

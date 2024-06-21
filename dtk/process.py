@@ -1020,7 +1020,7 @@ def normalize(sig, hasNans=False):
     >>> from dtk.process import normalize
     >>> t = np.linspace(0.0, 2*np.pi, num=11)
     >>> y = 5.0*np.sin(t)
-    >>> np.max(normalize(y))
+    >>> float(np.max(normalize(y)))
     1.0
 
     '''
