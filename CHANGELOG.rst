@@ -2,6 +2,14 @@
 Release Notes
 =============
 
+0.6.1
+=====
+
+- Include ``make.bat`` in the source tarball.
+- Make compatible with NumPy 2.0. [PR `#53`_]
+
+.. _#53: https://github.com/moorepants/DynamicistToolKit/pull/53
+
 0.6.0
 =====
 
