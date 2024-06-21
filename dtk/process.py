@@ -345,7 +345,7 @@ def coefficient_of_determination(measured, predicted):
 
     # TODO : Does not give the same r^2 as fit_goodness below.
 
-    return r_squared
+    return float(r_squared)
 
 
 def fit_goodness(ym, yp):
