@@ -345,7 +345,7 @@ def coefficient_of_determination(measured, predicted):
 
     # TODO : Does not give the same r^2 as fit_goodness below.
 
-    return r_squared
+    return float(r_squared)
 
 
 def fit_goodness(ym, yp):
@@ -395,7 +395,7 @@ def fit_goodness(ym, yp):
     SSE = SST - SSR
     rsq = SSR/SST
 
-    return rsq, SSE, SST, SSR
+    return float(rsq), float(SSE), float(SST), float(SSR)
 
 
 def spline_over_nan(x, y):
@@ -1020,7 +1020,7 @@ def normalize(sig, hasNans=False):
     >>> from dtk.process import normalize
     >>> t = np.linspace(0.0, 2*np.pi, num=11)
     >>> y = 5.0*np.sin(t)
-    >>> np.max(normalize(y))
+    >>> float(np.max(normalize(y)))
     1.0
 
     '''

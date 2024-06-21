@@ -812,8 +812,9 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
     >>> from dtk.bicycle import benchmark_parameters, benchmark_to_moore
     >>> steer, roll = np.deg2rad(10.0), np.deg2rad(-5.0)
     >>> p = benchmark_to_moore(benchmark_parameters())
-    >>> np.rad2deg(pitch_from_roll_and_steer(steer, roll, p['rf'], p['rr'],
-    ...                                      p['d1'], p['d2'], p['d3']))
+    >>> float(np.rad2deg(pitch_from_roll_and_steer(steer, roll,
+    ...                                            p['rf'], p['rr'],
+    ...                                            p['d1'], p['d2'], p['d3'])))
     18.062710178550127
 
     """
@@ -835,7 +836,7 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
 
     q5 = newton(pitch_constraint, guess, args=args)
 
-    return q5
+    return float(q5)
 
 
 def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
@@ -968,12 +969,12 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     IBrot = R @ IB @ R.T
 
     # bicycle frame inertia
-    mP['ic11'] = IBrot[0, 0]
-    mP['ic12'] = IBrot[0, 1]
-    mP['ic22'] = IBrot[1, 1]
-    mP['ic23'] = IBrot[1, 2]
-    mP['ic31'] = IBrot[2, 0]
-    mP['ic33'] = IBrot[2, 2]
+    mP['ic11'] = float(IBrot[0, 0])
+    mP['ic12'] = float(IBrot[0, 1])
+    mP['ic22'] = float(IBrot[1, 1])
+    mP['ic23'] = float(IBrot[1, 2])
+    mP['ic31'] = float(IBrot[2, 0])
+    mP['ic33'] = float(IBrot[2, 2])
 
     # rotate the benchmark bicycle fork inertia through the steer axis tilt,
     # lambda
@@ -983,12 +984,12 @@ def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
     IHrot = R @ IH @ R.T
 
     # fork/handlebar inertia
-    mP['ie11'] = IHrot[0, 0]
-    mP['ie12'] = IHrot[0, 1]
-    mP['ie22'] = IHrot[1, 1]
-    mP['ie23'] = IHrot[1, 2]
-    mP['ie31'] = IHrot[2, 0]
-    mP['ie33'] = IHrot[2, 2]
+    mP['ie11'] = float(IHrot[0, 0])
+    mP['ie12'] = float(IHrot[0, 1])
+    mP['ie22'] = float(IHrot[1, 1])
+    mP['ie23'] = float(IHrot[1, 2])
+    mP['ie31'] = float(IHrot[2, 0])
+    mP['ie33'] = float(IHrot[2, 2])
 
     # gravity
     mP['g'] = bP['g']
@@ -1024,7 +1025,7 @@ def lambda_from_abc(rF, rR, a, b, c):
 
     >>> from dtk.bicycle import lambda_from_abc
     >>> import numpy as np
-    >>> np.rad2deg(lambda_from_abc(0.31, 0.29, 1.0, 0.1, 0.5))
+    >>> float(np.rad2deg(lambda_from_abc(0.31, 0.29, 1.0, 0.1, 0.5)))
     25.392364580504058
 
     '''
@@ -1037,7 +1038,7 @@ def lambda_from_abc(rF, rR, a, b, c):
 
     lam = newton(lam_equality, guess, args=args)
 
-    return lam
+    return float(lam)
 
 
 def trail(rF, lam, fo):

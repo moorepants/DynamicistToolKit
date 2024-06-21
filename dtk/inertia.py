@@ -274,7 +274,7 @@ def total_com(coordinates, masses):
     products = masses * coordinates
     mT = np.sum(masses)
     cT = np.sum(products, axis=1) / mT
-    return mT, cT
+    return float(mT), cT
 
 
 def rotate_inertia_about_y(I, angle):
