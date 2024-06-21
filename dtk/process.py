@@ -395,7 +395,7 @@ def fit_goodness(ym, yp):
     SSE = SST - SSR
     rsq = SSR/SST
 
-    return rsq, SSE, SST, SSR
+    return float(rsq), float(SSE), float(SST), float(SSR)
 
 
 def spline_over_nan(x, y):
@@ -1031,7 +1031,7 @@ def normalize(sig, hasNans=False):
     else:
         normSig = sig / np.max(sig)
 
-    return normSig
+    return float(normSig)
 
 
 def derivative(x, y, method='forward', padding=None):
