@@ -835,7 +835,7 @@ def pitch_from_roll_and_steer(q4, q7, rF, rR, d1, d2, d3, guess=None):
 
     q5 = newton(pitch_constraint, guess, args=args)
 
-    return flaot(q5)
+    return float(q5)
 
 
 def benchmark_to_moore(benchmarkParameters, oldMassCenter=False):
