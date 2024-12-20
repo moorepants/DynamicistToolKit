@@ -633,7 +633,7 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
     # calculate the closest power of 2 for the length of the data
     n = nextpow2(L)
 
-    Y = fft(data, n, norm="forward")
+    Y = fft(data, n, norm=norm)
     f = fftfreq(n, d=time)
     # f = sampleRate/2.*linspace(0, 1, n)
     # print 'f =', f, f.shape, type(f)
