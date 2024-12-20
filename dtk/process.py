@@ -662,13 +662,13 @@ def power_spectrum(data, sample_rate, remove_dc_component=False):
 
     Notes
     -----
-    - power_spectrum() performs zero-padding. Parseval's
+    - ``power_spectrum()`` performs zero-padding. Parseval's
       theorem is satisfied for the padded input signal. Provide input signals
       with 2^p samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
-      Parseval's theoreom on the interval [0, f_N].
-    - If the dc component is removed with remove_dc_component=True, the results
+      Parseval's theoreom on the interval ``[0, f_N]``. This calculates total power.
+    - If the dc component is removed with ``remove_dc_component=True``, the results
       do not satisfy Parseval's theorem.
 
     Parameters
@@ -680,8 +680,8 @@ def power_spectrum(data, sample_rate, remove_dc_component=False):
         The signal sampling rate in Hertz.
     remove_dc_component : bool, optional
         If True, the DC component (f = 0) is not included in the returned
-        spectrum ]0,f_N[. If False the returned spectrum covers
-        [0, f_N[. The default is True.
+        spectrum ``]0,f_N[``. If False the returned spectrum covers
+        ``[0, f_N[``. The default is True.
 
 
     Returns
@@ -746,7 +746,7 @@ def power_spectrum(data, sample_rate, remove_dc_component=False):
     # call freq_spectrum with orthonormal normalization (i.e. 1/sqrt(N)) to
     # ensure that Parseval's theorem is satisfied.
     frequency, amplitude = freq_spectrum(
-        data, sample_rate, norm="ortho",
+        data, sample_rate, norm="forward",
         remove_dc_component=remove_dc_component)
 
     # Power is the square of the amplitude.
@@ -776,7 +776,7 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
       samples to prevent zero-padding.
     - The power contributions of positive and negative frequencies are
       combined in the positive half spectrum so that the results satisfy
-      Parseval's theoreom on the interval ``[0, f_N]``.
+      Parseval's theoreom on the interval ``[0, f_N]``. This calculates total power.
     - If the dc component is removed with ``remove_dc_component=True``, the
       results do not satisfy Parseval's theorem.
 
