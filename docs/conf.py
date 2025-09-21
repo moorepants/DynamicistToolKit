@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys, os
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -54,8 +55,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'DynamicistToolKit'
-copyright = u'2011-2024, DynamicistToolKit Authors'
+project = 'DynamicistToolKit'
+copyright = f'2011-{datetime.now().year}, DynamicistToolKit Authors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
