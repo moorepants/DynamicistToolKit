@@ -2,6 +2,16 @@
 Release Notes
 =============
 
+0.6.2
+=====
+
+- Bug fix: Pass norm argument to numpy.fft.fft() in process.freq_spectrum() [PR `#55`_]
+- Correct normalization for power spectra from ortho to forward. The magnitudes
+  of the power spectra continue to satisfy Parseval's Theorem. [PR `#55`_]
+- Add pyproject.toml file.
+
+.. _#55: https://github.com/moorepants/DynamicistToolKit/pull/55
+
 0.6.1
 =====
 
