@@ -1345,3 +1345,188 @@ def benchmark_state_space(M, C1, K0, K2, v, g):
     B = np.vstack((np.zeros((2, 2)), invM))
 
     return A, B
+
+
+def generate_symbolic_bicycle_kinematics():
+    import sympy as sm
+    import sympy.physics.mechanics as me
+
+    x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr, rf = sm.symbols(
+        'x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr, rf')
+
+    # Newtonian Frame
+    N = me.ReferenceFrame('N')
+    # Yaw Frame
+    A = me.ReferenceFrame('A')
+    # Roll Frame
+    B = me.ReferenceFrame('B')
+    # Rear Frame
+    C = me.ReferenceFrame('C')
+    # Rear Wheel Frame
+    D = me.ReferenceFrame('D')
+    # Front Frame
+    E = me.ReferenceFrame('E')
+    # Front Wheel Frame
+    F = me.ReferenceFrame('F')
+
+    # The following defines a 3-1-2 Tait-Bryan rotation with yaw (q3), roll
+    # (q4), pitch (q5) angles to orient the rear frame relative to the ground
+    # (Newtonian frame). The front frame is then rotated through the steer
+    # angle (q7) about the rear frame's 3 axis. The wheels are not oriented, as
+    # q6 and q8 end up being ignorable coordinates.
+
+    # rear frame yaw
+    A.orient(N, 'Axis', (q3, N.z))
+    # rear frame roll
+    B.orient(A, 'Axis', (q4, A.x))
+    # rear frame pitch
+    C.orient(B, 'Axis', (q5, B.y))
+    # rear wheel rotation
+    D.orient(C, 'Axis', (q6, C.y))
+    # front frame steer
+    E.orient(C, 'Axis', (q7, C.z))
+    # front wheel rotation
+    F.orient(E, 'Axis', (q8, E.y))
+
+    # point fixed on the ground
+    o = me.Point('o')
+
+    # rear wheel contact point
+    nd = me.Point('nd')
+    nd.set_pos(o, x*N.x + y*N.y + z*N.z)
+
+    # rim point to rear wheel center
+    do = me.Point('do')
+    do.set_pos(nd, -rr*B.z)
+
+    # rear wheel center to steer axis point
+    ce = me.Point('ce')
+    ce.set_pos(do, d1*C.x)
+
+    # steer axis point to the ?
+    ff = me.Point('ff')
+    ff.set_pos(ce, d2*E.z)
+
+    # ? to the front wheel center
+    fo = me.Point('fo')
+    fo.set_pos(ff, d3*E.x)
+
+    return (N, A, B, C, D, E, F, o, nd, do, ce, ff, fo, x, y, z, q3, q4, q5,
+            q6, q7, q8, d1, d2, d3, rr, rf)
+
+
+def plot_3d_bicycle(x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v, d1_v,
+                    d2_v, d3_v, rr_v, rf_v):
+    """
+
+    .. plot::
+       :context: reset
+       :include-source:
+
+       from dtk.bicycle import benchmark_parameters, benchmark_to_moore, plot_3d_bicycle
+       bpar = benchmark_parameters()
+       mpar = benchmark_to_moore(bpar)
+       plot_3d_bicycle(0.0, 0.0, 0.0, 0.0, 0.0, bpar['lam'], 0.0, 0.0, 0.0,
+                       mpar['d1'], mpar['d2'], mpar['d3'], mpar['rr'], mpar['rf'])
+
+    """
+
+    import matplotlib.pyplot as plt
+    from symmeplot.matplotlib import Scene3D
+    import sympy.physics.mechanics as me
+
+    (N, A, B, C, D, E, F, o, nd, do, ce, ff, fo, x, y, z, q3, q4, q5, q6, q7,
+     q8, d1, d2, d3, rr, rf) = generate_symbolic_bicycle_kinematics()
+
+    rwheel = me.RigidBody('rwheel', do, D, 0.0,
+                          (me.inertia(D, 1.0, 1.0, 1.0), do))
+    fwheel = me.RigidBody('rwheel', fo, F, 0.0,
+                          (me.inertia(F, 1.0, 1.0, 1.0), fo))
+
+    fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+
+    scene = Scene3D(N, o, ax=ax, scale=1.0)
+
+    rear_wheel_plot = scene.add_body(rwheel,
+                                     plot_frame_properties={"scale": 0.3})
+    rear_wheel_plot.attach_circle(do, rr, C.y, facecolor="black", alpha=0.4,
+                                  edgecolor="black")
+
+    front_wheel_plot = scene.add_body(fwheel,
+                                      plot_frame_properties={"scale": 0.3})
+    front_wheel_plot.attach_circle(fo, rf, E.y, facecolor="black", alpha=0.4,
+                                   edgecolor="black")
+
+    scene.add_line([do, ce, ff, fo], color='k', linewidth=2)
+
+    scene.lambdify_system((x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr,
+                           rf))
+    scene.evaluate_system(x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v,
+                          d1_v, d2_v, d3_v, rr_v, rf_v)
+
+    scene.plot()
+    ax.invert_zaxis()
+
+    return scene
+
+
+def animate_3d_bicycle(time, x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v,
+                       d1_v, d2_v, d3_v, rr_v, rf_v, save=False):
+    """
+    .. plot::
+       :context: reset
+       :include-source:
+
+       import numpy as np
+       from scipy.signal import lti, lsim
+       from dtk.bicycle import (benchmark_matrices, benchmark_state_space,
+                                animate_3d_bicycle)
+       t = np.linspace(0.0, 5.0)
+       x0 = np.array([0.0, 0.0, 1.5, 0.0])
+       speed = 4.6  # m/s
+       A, B = benchmark_state_space(*benchmark_matrices(), speed, 9.81)
+       C, D = np.eye(4), np.zeros((4, 2))
+       system = lti(A, B, C, D)
+       t, y, _ = lsim(system, 0.0, t, X0=x0)
+
+       from dtk.bicycle import (benchmark_parameters, benchmark_to_moore,
+                                plot_3d_bicycle)
+       bpar = benchmark_parameters()
+       mpar = benchmark_to_moore(bpar)
+       ani = animate_3d_bicycle(
+           t,
+           np.zeros_like(y[:, 0]),
+           np.zeros_like(y[:, 0]),
+           np.zeros_like(y[:, 0]),
+           np.zeros_like(y[:, 0]),
+           y[:, 0],
+           bpar['lam']*np.ones_like(y[:, 0]),
+           np.zeros_like(y[:, 0]),
+           y[:, 1],
+           np.zeros_like(y[:, 0]),
+           mpar['d1'],
+           mpar['d2'],
+           mpar['d3'],
+           mpar['rr'],
+           mpar['rf'],
+           save=True,
+       )
+
+    """
+    FPS = 30.0
+
+    scene = plot_3d_bicycle(x_v[0], y_v[0], z_v[0], q3_v[0], q4_v[0], q5_v[0],
+                            q6_v[0], q7_v[0], q8_v[0], d1_v, d2_v, d3_v, rr_v,
+                            rf_v)
+
+    def update(i):
+        return (x_v[i], y_v[i], z_v[i], q3_v[i], q4_v[i], q5_v[i], q6_v[i],
+                q7_v[i], q8_v[i], d1_v, d2_v, d3_v, rr_v, rf_v)
+
+    slow_factor = 3  # int
+    ani = scene.animate(update, frames=len(time),
+                        interval=slow_factor/FPS*1000)
+    if save:
+        ani.save("animation.gif", fps=FPS//slow_factor)
+
+    return ani
