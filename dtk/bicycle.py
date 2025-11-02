@@ -1391,13 +1391,9 @@ def generate_symbolic_bicycle_kinematics():
     # point fixed on the ground
     o = me.Point('o')
 
-    # rear wheel contact point
-    nd = me.Point('nd')
-    nd.set_pos(o, x*N.x + y*N.y + z*N.z)
-
-    # rim point to rear wheel center
+    # origin to rear wheel center
     do = me.Point('do')
-    do.set_pos(nd, -rr*B.z)
+    do.set_pos(o, x*N.x + y*N.y + z*N.z)
 
     # rear wheel center to steer axis point
     ce = me.Point('ce')
@@ -1411,23 +1407,38 @@ def generate_symbolic_bicycle_kinematics():
     fo = me.Point('fo')
     fo.set_pos(ff, d3*E.x)
 
-    return (N, A, B, C, D, E, F, o, nd, do, ce, ff, fo, x, y, z, q3, q4, q5,
-            q6, q7, q8, d1, d2, d3, rr, rf)
+    return (N, A, B, C, D, E, F, o, do, ce, ff, fo, x, y, z, q3, q4, q5, q6,
+            q7, q8, d1, d2, d3, rr, rf)
 
 
-def plot_3d_bicycle(x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v, d1_v,
-                    d2_v, d3_v, rr_v, rf_v):
+def plot_3d_bicycle(x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr, rf):
     """
 
     .. plot::
        :context: reset
        :include-source:
 
-       from dtk.bicycle import benchmark_parameters, benchmark_to_moore, plot_3d_bicycle
+       import numpy as np
+       from dtk.bicycle import (benchmark_parameters, benchmark_to_moore,
+                                plot_3d_bicycle)
        bpar = benchmark_parameters()
        mpar = benchmark_to_moore(bpar)
-       plot_3d_bicycle(0.0, 0.0, 0.0, 0.0, 0.0, bpar['lam'], 0.0, 0.0, 0.0,
-                       mpar['d1'], mpar['d2'], mpar['d3'], mpar['rr'], mpar['rf'])
+       plot_3d_bicycle(
+           0.2,
+           0.2,
+           -0.2,
+           -np.deg2rad(10.0),
+           -np.deg2rad(20.0),
+           bpar['lam'],
+           np.deg2rad(90.0),
+           np.deg2rad(40.0),
+           np.deg2rad(135.0),
+           mpar['d1'],
+           mpar['d2'],
+           mpar['d3'],
+           mpar['rr'],
+           mpar['rf'],
+       )
 
     """
 
@@ -1435,34 +1446,32 @@ def plot_3d_bicycle(x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v, d1_v,
     from symmeplot.matplotlib import Scene3D
     import sympy.physics.mechanics as me
 
-    (N, A, B, C, D, E, F, o, nd, do, ce, ff, fo, x, y, z, q3, q4, q5, q6, q7,
-     q8, d1, d2, d3, rr, rf) = generate_symbolic_bicycle_kinematics()
-
-    rwheel = me.RigidBody('rwheel', do, D, 0.0,
-                          (me.inertia(D, 1.0, 1.0, 1.0), do))
-    fwheel = me.RigidBody('rwheel', fo, F, 0.0,
-                          (me.inertia(F, 1.0, 1.0, 1.0), fo))
+    (N, A, B, C, D, E, F,
+     o, do, ce, ff, fo,
+     x_s, y_s, z_s, q3_s, q4_s, q5_s, q6_s, q7_s, q8_s,
+     d1_s, d2_s, d3_s, rr_s, rf_s) = generate_symbolic_bicycle_kinematics()
 
     fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
 
     scene = Scene3D(N, o, ax=ax, scale=1.0)
 
+    rwheel = me.RigidBody('rwheel', do, D, 0.0, (me.inertia(D, 1, 1, 1), do))
     rear_wheel_plot = scene.add_body(rwheel,
                                      plot_frame_properties={"scale": 0.3})
-    rear_wheel_plot.attach_circle(do, rr, C.y, facecolor="black", alpha=0.4,
+    rear_wheel_plot.attach_circle(do, rr_s, C.y, facecolor="black", alpha=0.4,
                                   edgecolor="black")
 
+    fwheel = me.RigidBody('rwheel', fo, F, 0.0, (me.inertia(F, 1, 1, 1), fo))
     front_wheel_plot = scene.add_body(fwheel,
                                       plot_frame_properties={"scale": 0.3})
-    front_wheel_plot.attach_circle(fo, rf, E.y, facecolor="black", alpha=0.4,
+    front_wheel_plot.attach_circle(fo, rf_s, E.y, facecolor="black", alpha=0.4,
                                    edgecolor="black")
 
     scene.add_line([do, ce, ff, fo], color='k', linewidth=2)
 
-    scene.lambdify_system((x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr,
-                           rf))
-    scene.evaluate_system(x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v,
-                          d1_v, d2_v, d3_v, rr_v, rf_v)
+    scene.lambdify_system((x_s, y_s, z_s, q3_s, q4_s, q5_s, q6_s, q7_s, q8_s,
+                           d1_s, d2_s, d3_s, rr_s, rf_s))
+    scene.evaluate_system(x, y, z, q3, q4, q5, q6, q7, q8, d1, d2, d3, rr, rf)
 
     scene.plot()
     ax.invert_zaxis()
@@ -1513,7 +1522,7 @@ def animate_3d_bicycle(time, x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v,
        )
 
     """
-    FPS = 30.0
+    FPS = int(1/(time[1] - time[0]))
 
     scene = plot_3d_bicycle(x_v[0], y_v[0], z_v[0], q3_v[0], q4_v[0], q5_v[0],
                             q6_v[0], q7_v[0], q8_v[0], d1_v, d2_v, d3_v, rr_v,
@@ -1523,7 +1532,7 @@ def animate_3d_bicycle(time, x_v, y_v, z_v, q3_v, q4_v, q5_v, q6_v, q7_v, q8_v,
         return (x_v[i], y_v[i], z_v[i], q3_v[i], q4_v[i], q5_v[i], q6_v[i],
                 q7_v[i], q8_v[i], d1_v, d2_v, d3_v, rr_v, rf_v)
 
-    slow_factor = 3  # int
+    slow_factor = 1  # int
     ani = scene.animate(update, frames=len(time),
                         interval=slow_factor/FPS*1000)
     if save:
