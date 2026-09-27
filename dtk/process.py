@@ -656,40 +656,42 @@ def freq_spectrum(data, sampleRate, norm="forward", remove_dc_component=True):
 
 def power_spectrum(data, sample_rate, remove_dc_component=False):
     """
-    Return the power spectrum of a signal::
+    Return the power spectrum of a signal:
 
-        S(f) = |X(f)|^2
+    .. math::
+
+       S(f) = |X(f)|^2
 
     Notes
     -----
-    - ``power_spectrum()`` performs zero-padding. Parseval's
-      theorem is satisfied for the padded input signal. Provide input signals
-      with 2^p samples to prevent zero-padding.
-    - The power contributions of positive and negative frequencies are
-      combined in the positive half spectrum so that the results satisfy
-      Parseval's theoreom on the interval ``[0, f_N]``. This calculates total power.
-    - If the dc component is removed with ``remove_dc_component=True``, the results
-      do not satisfy Parseval's theorem.
+    - ``power_spectrum()`` performs zero-padding. Parseval's theorem is
+      satisfied for the padded input signal. Provide input signals with 2^p
+      samples to prevent zero-padding.
+    - The power contributions of positive and negative frequencies are combined
+      in the positive half spectrum so that the results satisfy Parseval's
+      theoreom on the interval ``[0, f_N]``. This calculates total power.
+    - If the dc component is removed with ``remove_dc_component=True``, the
+      results do not satisfy Parseval's theorem.
 
     Parameters
     ----------
     data : ndarray, shape (m,) or shape(n,m)
-        The array of time signals where n is the number of variables and m is
-        the number of time steps.
+       The array of time signals where n is the number of variables and m is
+       the number of time steps.
     sample_rate : int
-        The signal sampling rate in Hertz.
+       The signal sampling rate in Hertz.
     remove_dc_component : bool, optional
-        If True, the DC component (f = 0) is not included in the returned
-        spectrum ``]0,f_N[``. If False the returned spectrum covers
-        ``[0, f_N[``. The default is True.
+       If True, the DC component (f = 0) is not included in the returned
+       spectrum ``]0,f_N[``. If False the returned spectrum covers ``[0,
+       f_N[``. The default is True.
 
 
     Returns
     -------
     frequency : ndarray, shape (p,)
-        The frequencies where p is a power of 2 close to m.
+       The frequencies where p is a power of 2 close to m.
     power : ndarray, shape (p,n)
-        The power at each frequency.
+       The power at each frequency.
 
     Examples
     --------
@@ -764,7 +766,9 @@ def power_spectrum(data, sample_rate, remove_dc_component=False):
 def cumulative_power_spectrum(data, sample_rate, relative=True,
                               remove_dc_component=False):
     r"""
-    Return the cumulative power spectrum of a signal::
+    Return the cumulative power spectrum of a signal:
+
+    .. math::
 
        S(f) = \sum_{k=0}^f |X(k)|^2
 
@@ -774,33 +778,33 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
     - ``cumulative_power_spectrum()`` performs zero-padding. Parseval's theorem
       is satisfied for the padded input signal. Provide input signals with 2^p
       samples to prevent zero-padding.
-    - The power contributions of positive and negative frequencies are
-      combined in the positive half spectrum so that the results satisfy
-      Parseval's theoreom on the interval ``[0, f_N]``. This calculates total power.
+    - The power contributions of positive and negative frequencies are combined
+      in the positive half spectrum so that the results satisfy Parseval's
+      theoreom on the interval ``[0, f_N]``. This calculates total power.
     - If the dc component is removed with ``remove_dc_component=True``, the
       results do not satisfy Parseval's theorem.
 
     Parameters
     ----------
     data : ndarray, shape (m,) or shape(n,m)
-        The array of time signals where n is the number of variables and m is
-        the number of time steps.
+       The array of time signals where n is the number of variables and m is
+       the number of time steps.
     sample_rate : int
-        The signal sampling rate in Hertz.
+       The signal sampling rate in Hertz.
     relative : bool, optional
-        If True, the returned amplitued is expressed relative to the total
-        power. The default is True.
+       If True, the returned amplitued is expressed relative to the total
+       power. The default is True.
     remove_dc_component : bool, optional
-        If True, the DC component (f = 0) is not included in the returned
-        spectrum ``]0,f_N[``. If False the returned spectrum covers ``[0,
-        f_N[``.  The default is False.
+       If True, the DC component (f = 0) is not included in the returned
+       spectrum ``]0,f_N[``. If False the returned spectrum covers ``[0,
+       f_N[``.  The default is False.
 
     Returns
     -------
     frequency : ndarray, shape (p,)
-        The frequencies where p is a power of 2 close to m.
+       The frequencies where p is a power of 2 close to m.
     cumulative_power : ndarray, shape (p,n)
-        The cumulative power up to each frequency.
+       The cumulative power up to each frequency.
 
     Examples
     --------
@@ -842,7 +846,7 @@ def cumulative_power_spectrum(data, sample_rate, relative=True,
        ax[1].set_xlabel("$f$ in Hz")
        ax[1].set_ylabel("cumulative avg. power")
        plt.suptitle((f"Sample rate: {f_s} Hz, Signal period: {T} s,"
-                    " relative=True"))
+                     " relative=True"))
 
     """
     frequency, power = power_spectrum(data, sample_rate,
