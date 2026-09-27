@@ -1,13 +1,13 @@
 name: dynamicisttoolkit-dev
 channels:
   - conda-forge
-# NOTE : The minimum versions correspond to those in Ubuntu 22.04 LTS.
+# NOTE : The minimum versions correspond to those in Ubuntu 24.04 LTS.
 dependencies:
   - coverage >=6.2
-  - matplotlib>=3.5.1
-  - numpy >=1.21.5
-  - numpydoc >=1.2
-  - pytest >=6.2.5
-  - scipy>=1.8.0
-  - setuptools >=59.6.0
-  - sphinx >=4.3.2
+  - matplotlib>=3.6.3
+  - numpy >=1.26.4
+  - numpydoc >=1.6.0
+  - pytest >=7.4.4
+  - scipy>=1.11.4
+  - setuptools >=68.1.2
+  - sphinx >=7.2.6
