@@ -11,12 +11,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ['3.8', '3.10', '3.12']
+        python: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
     - name: Set up Git repository
-      uses: actions/checkout@v4
-    - name: Install Conda environment with Micromamba
-      uses: conda-incubator/setup-miniconda@v3
+      uses: actions/checkout@v7
+    - name: Install Conda and environment
+      uses: conda-incubator/setup-miniconda@v4
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python }}
