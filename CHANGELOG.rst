@@ -2,6 +2,13 @@
 Release Notes
 =============
 
+0.7.0
+=====
+
+- Support moves to Python 3.10-3.14.
+- Bump minimum dependency versions to match with Ubuntu 24.04 LTS.
+- Adjust various calculations to handle NumPy deprecations.
+
 0.6.2
 =====
 
