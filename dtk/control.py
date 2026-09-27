@@ -888,8 +888,8 @@ def bode(system, frequency, fig=None, label=None, title=None, color=None):
             # a faster method?
             sImA_inv = np.linalg.inv(1j*f*identity - A)
             G = np.dot(np.dot(C, sImA_inv), B) + D
-            magnitude[i] = 20.0*np.log10(np.abs(G))
-            phase[i] = np.angle(G)
+            magnitude[i] = np.asscalar(20.0*np.log10(np.abs(G)))
+            phase[i] = np.asscalar(np.angle(G))
         phase = 180.0/np.pi*np.unwrap(phase)
 
     if color is None:
